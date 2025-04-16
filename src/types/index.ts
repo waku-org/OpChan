@@ -1,3 +1,6 @@
+import { CellMessage, CommentMessage, PostMessage, VoteMessage } from "@/lib/waku/types";
+
+export type OpchanMessage = CellMessage | PostMessage | CommentMessage | VoteMessage;
 
 export interface User {
   address: string;
@@ -17,10 +20,11 @@ export interface Post {
   id: string;
   cellId: string;
   authorAddress: string;
+  title: string;
   content: string;
   timestamp: number;
-  upvotes: string[];
-  downvotes: string[];
+  upvotes: VoteMessage[];
+  downvotes: VoteMessage[];
 }
 
 export interface Comment {
@@ -29,6 +33,6 @@ export interface Comment {
   authorAddress: string;
   content: string;
   timestamp: number;
-  upvotes: string[];
-  downvotes: string[];
+  upvotes: VoteMessage[];
+  downvotes: VoteMessage[];
 }

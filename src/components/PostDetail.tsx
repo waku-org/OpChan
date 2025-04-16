@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Comment } from '@/types/forum';
+import { Comment } from '@/types';
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();

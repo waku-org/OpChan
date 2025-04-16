@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { User } from '@/types/forum';
+import { User } from '@/types';
 
 interface AuthContextType {
   currentUser: User | null;

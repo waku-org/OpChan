@@ -1,5 +1,5 @@
 
-import { Cell, Post, Comment } from "../types/forum";
+import { Cell, Post, Comment } from "../types";
 
 export const mockCells: Cell[] = [
   {

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { Cell, Post, Comment } from '@/types/forum';
+import { Cell, Post, Comment } from '@/types';
 import { mockCells, mockPosts, mockComments } from '@/data/mockData';
 import { useAuth } from './AuthContext';
 

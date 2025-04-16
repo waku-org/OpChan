@@ -25,6 +25,7 @@ export interface CellMessage extends BaseMessage {
   id: string;
   name: string;
   description: string;
+  icon: string;
 }
 
 /**
@@ -45,7 +46,6 @@ export interface CommentMessage extends BaseMessage {
   type: MessageType.COMMENT;
   id: string;
   postId: string;
-  parentId?: string; // Optional for nested comments
   content: string;
 }
 
@@ -56,24 +56,7 @@ export interface VoteMessage extends BaseMessage {
   type: MessageType.VOTE;
   id: string;
   targetId: string; // ID of the post or comment being voted on
-  value: number; // 1 for upvote, -1 for downvote
-}
-
-/**
- * Union type of all possible message types
- */
-export type OpchanMessage = CellMessage | PostMessage | CommentMessage | VoteMessage;
-
-/**
- * Listener function type for Waku service events
- */
-export type MessageListener<T extends OpchanMessage> = (message: T) => void;
-
-/**
- * Subscription object returned when registering listeners
- */
-export interface Subscription {
-  unsubscribe: () => void;
+  value: 1 | -1; 
 }
 
 /**
