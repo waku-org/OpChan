@@ -32,7 +32,7 @@ class MessageManager {
             defaultBootstrap: false,
             networkConfig: NETWORK_CONFIG,
             autoStart: true,
-            bootstrapPeers: BOOTSTRAP_NODES,
+            bootstrapPeers: BOOTSTRAP_NODES[42],
             lightPush:{autoRetry: true, retryIntervalMs: 1000}
         });
         return new MessageManager(node);
@@ -46,6 +46,32 @@ class MessageManager {
         this.node = node;
         this.ephemeralProtocolsManager = new EphemeralProtocolsManager(node);
         this.storeManager = new StoreManager(node);
+    }
+
+    public async queryStore() {
+        const messages = await this.storeManager.queryStore();
+        
+        for (const message of messages) {
+            this.updateCache(message);
+        }
+
+        return messages;
+    }
+
+    public async sendMessage(message: OpchanMessage) {
+        await this.ephemeralProtocolsManager.sendMessage(message);
+        //TODO: should we update the cache here? or just from store/filter?
+        this.updateCache(message);
+    }
+
+    public async subscribeToMessages(types: MessageType[] = [MessageType.CELL, MessageType.POST, MessageType.COMMENT, MessageType.VOTE]) {
+        const { result, subscription } = await this.ephemeralProtocolsManager.subscribeToMessages(types);
+        
+        for (const message of result) {
+            this.updateCache(message);
+        }
+        
+        return { messages: result, subscription };
     }
 
     private updateCache(message: OpchanMessage) {
@@ -72,36 +98,7 @@ class MessageManager {
         }
     }
 
-    public async queryStore() {
-        const messages = await this.storeManager.queryStore();
-        
-        // Populate cache from store messages
-        for (const message of messages) {
-            this.updateCache(message);
-        }
-
-        return messages;
-    }
-
-    public async sendMessage(message: OpchanMessage) {
-        await this.ephemeralProtocolsManager.sendMessage(message);
-        // Also update local cache with the message we just sent
-        this.updateCache(message);
-    }
-
-    public async subscribeToMessages(types: MessageType[] = [MessageType.CELL, MessageType.POST, MessageType.COMMENT, MessageType.VOTE]) {
-        const { result, subscription } = await this.ephemeralProtocolsManager.subscribeToMessages(types);
-        
-        // Set up a callback that will be triggered for new messages
-        // New messages from the subscription will be processed directly by the ephemeralProtocolsManager
-        // and returned via the result array, so we just need to add them to the cache
-        for (const message of result) {
-            this.updateCache(message);
-        }
-        
-        // Return result and subscription for any external processing
-        return { messages: result, subscription };
-    }
+    
 }
 
 const messageManager = await MessageManager.create();
