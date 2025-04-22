@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Comment } from '@/types';
+import { CypherImage } from './ui/CypherImage';
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();

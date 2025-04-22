@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -109,4 +108,41 @@
   .comment-card {
     @apply border-l-2 border-cyber-muted pl-4 py-2 my-3 hover:border-cyber-accent transition-colors;
   }
+}
+
+/* Cyberpunk glow animation for CypherImage */
+@keyframes cyber-flicker {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.8));
+  }
+  8%, 10% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.8));
+  }
+  20%, 25% {
+    opacity: 1;
+    filter: drop-shadow(0 0 1px rgba(0, 255, 255, 0.5));
+  }
+  30% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 8px rgba(0, 255, 255, 1));
+  }
+  40%, 45% {
+    opacity: 1;
+    filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.6));
+  }
+  50%, 55% {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 3px rgba(0, 255, 255, 0.8));
+  }
+  60%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.6));
+  }
+}
+
+.cyberpunk-glow {
+  animation: cyber-flicker 8s infinite;
+  will-change: filter, opacity;
 }

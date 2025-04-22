@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Layout, MessageSquare, RefreshCw } from 'lucide-react';
 import { CreateCellDialog } from './CreateCellDialog';
 import { Button } from '@/components/ui/button';
+import { CypherImage } from './ui/CypherImage';
 
 const CellList = () => {
   const { cells, isInitialLoading, posts, refreshData, isRefreshing } = useForum();
@@ -67,10 +68,11 @@ const CellList = () => {
           cells.map((cell) => (
             <Link to={`/cell/${cell.id}`} key={cell.id} className="board-card group">
               <div className="flex gap-4 items-start">
-                <img 
+                <CypherImage 
                   src={cell.icon} 
                   alt={cell.name} 
                   className="w-16 h-16 object-cover rounded-sm border border-cyber-muted group-hover:border-cyber-accent transition-colors"
+                  generateUniqueFallback={true}
                 />
                 <div className="flex-1">
                   <h2 className="text-xl font-bold mb-1 group-hover:text-cyber-accent transition-colors">{cell.name}</h2>

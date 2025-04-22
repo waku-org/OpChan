@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, MessageSquare, MessageCircle, ArrowUp, ArrowDown, Clock, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { CypherImage } from './ui/CypherImage';
 
 const PostList = () => {
   const { cellId } = useParams<{ cellId: string }>();
@@ -99,10 +100,11 @@ const PostList = () => {
       </div>
       
       <div className="flex gap-4 items-start mb-6">
-        <img 
+        <CypherImage 
           src={cell.icon} 
           alt={cell.name} 
           className="w-12 h-12 object-cover rounded-sm border border-cyber-muted"
+          generateUniqueFallback={true}
         />
         <div className="flex-1">
           <div className="flex items-center justify-between">

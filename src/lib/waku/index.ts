@@ -156,6 +156,7 @@ class MessageManager {
         const messages = await this.storeManager.queryStore();
         
         for (const message of messages) {
+            console.log("message", message);
             this.updateCache(message);
         }
 
