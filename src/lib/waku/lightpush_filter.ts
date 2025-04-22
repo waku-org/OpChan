@@ -1,8 +1,8 @@
 import { LightNode } from "@waku/sdk";
-import { decodeCellMessage, decodeCommentMessage, decodePostMessage, decoders, decodeVoteMessage, encodeMessage, encoders } from "./codec";
 import { CellMessage, CommentMessage, MessageType, PostMessage, VoteMessage } from "./types";
 import { CONTENT_TOPICS } from "./constants";
 import { OpchanMessage } from "@/types";
+import { encodeMessage, encoders, decoders, decodeMessage } from "./codec";
 
 export class EphemeralProtocolsManager {
     private node: LightNode;
@@ -13,45 +13,21 @@ export class EphemeralProtocolsManager {
 
     public async sendMessage(message: OpchanMessage) {
         const encodedMessage = encodeMessage(message);
-        await this.node.lightPush.send(encoders[message.type], {
+        const result = await this.node.lightPush.send(encoders[message.type], {
             payload: encodedMessage
         });
+        return result;
     }
 
     public async subscribeToMessages(types: MessageType[]) {
         const result: (CellMessage | PostMessage | CommentMessage | VoteMessage)[] = [];
 
         const subscription = await this.node.filter.subscribe(Object.values(decoders), async (message) => {
-            const {contentTopic, payload} = message;
-            const toDecode = [
-                types.includes(MessageType.CELL) ? decodeCellMessage(payload) : null,
-                types.includes(MessageType.POST) ? decodePostMessage(payload) : null,
-                types.includes(MessageType.COMMENT) ? decodeCommentMessage(payload) : null,
-                types.includes(MessageType.VOTE) ? decodeVoteMessage(payload) : null
-            ]
-            const decodedMessage = await Promise.race(toDecode);
+            const {payload} = message;
 
-            let parsedMessage: OpchanMessage | null = null;
-            switch(contentTopic) {
-                case CONTENT_TOPICS['cell']:
-                    parsedMessage = decodedMessage as CellMessage;
-                    break;
-                case CONTENT_TOPICS['post']:
-                    parsedMessage = decodedMessage as PostMessage;
-                    break;
-                case CONTENT_TOPICS['comment']:
-                    parsedMessage = decodedMessage as CommentMessage;
-                    break;
-                case CONTENT_TOPICS['vote']:
-                    parsedMessage = decodedMessage as VoteMessage;
-                    break;
-                default:
-                    console.error(`Unknown content topic: ${contentTopic}`);
-                    return;
-            }
-
-            if (parsedMessage) {
-                result.push(parsedMessage);
+            const decodedMessage = decodeMessage(payload);
+            if (types.includes(decodedMessage.type)) {
+                result.push(decodedMessage);
             }
         });
 

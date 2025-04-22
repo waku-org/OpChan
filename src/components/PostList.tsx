@@ -1,22 +1,31 @@
-
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useForum } from '@/contexts/ForumContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageSquare, MessageCircle, ArrowUp, ArrowDown, Clock } from 'lucide-react';
+import { ArrowLeft, MessageSquare, MessageCircle, ArrowUp, ArrowDown, Clock, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const PostList = () => {
   const { cellId } = useParams<{ cellId: string }>();
-  const { getCellById, getPostsByCell, createPost, loading } = useForum();
+  const { 
+    getCellById, 
+    getPostsByCell, 
+    getCommentsByPost,
+    createPost, 
+    isInitialLoading, 
+    isPostingPost, 
+    isRefreshing, 
+    refreshData 
+  } = useForum();
   const { isAuthenticated } = useAuth();
+  const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  if (!cellId || loading) {
+  if (!cellId || isInitialLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
@@ -70,14 +79,14 @@ const PostList = () => {
     
     if (!newPostContent.trim()) return;
     
-    setIsSubmitting(true);
     try {
-      const post = await createPost(cellId, newPostContent);
+      const post = await createPost(cellId, newPostTitle, newPostContent);
       if (post) {
+        setNewPostTitle('');
         setNewPostContent('');
       }
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      console.error("Error creating post:", error);
     }
   };
   
@@ -95,8 +104,19 @@ const PostList = () => {
           alt={cell.name} 
           className="w-12 h-12 object-cover rounded-sm border border-cyber-muted"
         />
-        <div>
-          <h1 className="text-2xl font-bold text-glow">{cell.name}</h1>
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-glow">{cell.name}</h1>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={refreshData} 
+              disabled={isRefreshing}
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
           <p className="text-cyber-neutral">{cell.description}</p>
         </div>
       </div>
@@ -108,19 +128,28 @@ const PostList = () => {
               <MessageSquare className="w-4 h-4" />
               New Thread
             </h2>
-            <Textarea
-              placeholder="What's on your mind?"
-              value={newPostContent}
-              onChange={(e) => setNewPostContent(e.target.value)}
-              className="mb-3 bg-cyber-muted/50 border-cyber-muted resize-none"
-              disabled={isSubmitting}
-            />
+            <div className="mb-3">
+              <Input
+                placeholder="Thread title"
+                value={newPostTitle}
+                onChange={(e) => setNewPostTitle(e.target.value)}
+                className="mb-3 bg-cyber-muted/50 border-cyber-muted"
+                disabled={isPostingPost}
+              />
+              <Textarea
+                placeholder="What's on your mind?"
+                value={newPostContent}
+                onChange={(e) => setNewPostContent(e.target.value)}
+                className="bg-cyber-muted/50 border-cyber-muted resize-none"
+                disabled={isPostingPost}
+              />
+            </div>
             <div className="flex justify-end">
               <Button 
                 type="submit" 
-                disabled={isSubmitting || !newPostContent.trim()}
+                disabled={isPostingPost || !newPostContent.trim() || !newPostTitle.trim()}
               >
-                {isSubmitting ? 'Posting...' : 'Post Thread'}
+                {isPostingPost ? 'Posting...' : 'Post Thread'}
               </Button>
             </div>
           </form>
@@ -142,6 +171,7 @@ const PostList = () => {
           posts.map(post => (
             <Link to={`/post/${post.id}`} key={post.id} className="thread-card block">
               <div>
+                <h3 className="font-medium mb-1">{post.title}</h3>
                 <p className="text-sm mb-3">{post.content}</p>
                 <div className="flex items-center gap-4 text-xs text-cyber-neutral">
                   <span className="flex items-center">
@@ -150,8 +180,7 @@ const PostList = () => {
                   </span>
                   <span className="flex items-center">
                     <MessageCircle className="w-3 h-3 mr-1" />
-                    {/* This would need to be calculated based on actual comments */}
-                    0 comments
+                    {getCommentsByPost(post.id).length} comments
                   </span>
                   <div className="flex items-center">
                     <ArrowUp className="w-3 h-3 mr-1" />

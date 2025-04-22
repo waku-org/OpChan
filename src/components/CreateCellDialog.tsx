@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,7 +31,7 @@ const formSchema = z.object({
 });
 
 export function CreateCellDialog() {
-  const { createCell } = useForum();
+  const { createCell, isPostingCell } = useForum();
   const { isAuthenticated } = useAuth();
   const [open, setOpen] = React.useState(false);
   
@@ -73,7 +72,7 @@ export function CreateCellDialog() {
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter cell title" {...field} />
+                    <Input placeholder="Enter cell title" {...field} disabled={isPostingCell} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -89,6 +88,7 @@ export function CreateCellDialog() {
                     <Textarea 
                       placeholder="Enter cell description"
                       {...field}
+                      disabled={isPostingCell}
                     />
                   </FormControl>
                   <FormMessage />
@@ -106,6 +106,7 @@ export function CreateCellDialog() {
                       placeholder="Enter icon URL"
                       type="url"
                       {...field}
+                      disabled={isPostingCell}
                     />
                   </FormControl>
                   <FormMessage />
@@ -115,9 +116,9 @@ export function CreateCellDialog() {
             <Button 
               type="submit" 
               className="w-full"
-              disabled={form.formState.isSubmitting}
+              disabled={isPostingCell}
             >
-              {form.formState.isSubmitting && (
+              {isPostingCell && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               Create Cell

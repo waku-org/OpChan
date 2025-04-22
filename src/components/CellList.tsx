@@ -1,15 +1,15 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useForum } from '@/contexts/ForumContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Layout, MessageSquare } from 'lucide-react';
+import { Layout, MessageSquare, RefreshCw } from 'lucide-react';
 import { CreateCellDialog } from './CreateCellDialog';
+import { Button } from '@/components/ui/button';
 
 const CellList = () => {
-  const { cells, loading, posts } = useForum();
+  const { cells, isInitialLoading, posts, refreshData, isRefreshing } = useForum();
 
-  if (loading) {
+  if (isInitialLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <h1 className="text-2xl font-bold mb-6 text-glow">Loading Cells...</h1>
@@ -42,29 +42,48 @@ const CellList = () => {
           <Layout className="text-cyber-accent w-6 h-6" />
           <h1 className="text-2xl font-bold text-glow">Cells</h1>
         </div>
-        <CreateCellDialog />
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={refreshData} 
+            disabled={isRefreshing}
+            title="Refresh data"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
+          <CreateCellDialog />
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cells.map((cell) => (
-          <Link to={`/cell/${cell.id}`} key={cell.id} className="board-card group">
-            <div className="flex gap-4 items-start">
-              <img 
-                src={cell.icon} 
-                alt={cell.name} 
-                className="w-16 h-16 object-cover rounded-sm border border-cyber-muted group-hover:border-cyber-accent transition-colors"
-              />
-              <div className="flex-1">
-                <h2 className="text-xl font-bold mb-1 group-hover:text-cyber-accent transition-colors">{cell.name}</h2>
-                <p className="text-sm text-cyber-neutral mb-2">{cell.description}</p>
-                <div className="flex items-center text-xs text-cyber-neutral">
-                  <MessageSquare className="w-3 h-3 mr-1" />
-                  <span>{getPostCount(cell.id)} threads</span>
+        {cells.length === 0 ? (
+          <div className="col-span-2 text-center py-12">
+            <div className="text-cyber-neutral mb-4">
+              No cells found. Be the first to create one!
+            </div>
+          </div>
+        ) : (
+          cells.map((cell) => (
+            <Link to={`/cell/${cell.id}`} key={cell.id} className="board-card group">
+              <div className="flex gap-4 items-start">
+                <img 
+                  src={cell.icon} 
+                  alt={cell.name} 
+                  className="w-16 h-16 object-cover rounded-sm border border-cyber-muted group-hover:border-cyber-accent transition-colors"
+                />
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold mb-1 group-hover:text-cyber-accent transition-colors">{cell.name}</h2>
+                  <p className="text-sm text-cyber-neutral mb-2">{cell.description}</p>
+                  <div className="flex items-center text-xs text-cyber-neutral">
+                    <MessageSquare className="w-3 h-3 mr-1" />
+                    <span>{getPostCount(cell.id)} threads</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );

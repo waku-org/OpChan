@@ -1,12 +1,15 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useForum } from '@/contexts/ForumContext';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, LogOut, Terminal } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ShieldCheck, LogOut, Terminal, Wifi, WifiOff } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const Header = () => {
   const { currentUser, isAuthenticated, connectWallet, disconnectWallet, verifyOrdinal } = useAuth();
+  const { isNetworkConnected, isRefreshing } = useForum();
   
   const handleConnect = async () => {
     await connectWallet();
@@ -33,7 +36,36 @@ const Header = () => {
           </span>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center">
+                <Badge 
+                  variant={isNetworkConnected ? "default" : "destructive"}
+                  className="flex items-center gap-1 mr-2"
+                >
+                  {isNetworkConnected ? (
+                    <>
+                      <Wifi className="w-3 h-3" />
+                      <span className="text-xs">Connected</span>
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="w-3 h-3" />
+                      <span className="text-xs">Offline</span>
+                    </>
+                  )}
+                </Badge>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isNetworkConnected 
+                ? "Connected to Waku network" 
+                : "Not connected to Waku network. Some features may be unavailable."}</p>
+              {isRefreshing && <p>Refreshing data...</p>}
+            </TooltipContent>
+          </Tooltip>
+          
           {!currentUser ? (
             <Button 
               variant="outline" 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useForum } from '@/contexts/ForumContext';
@@ -6,19 +5,31 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send } from 'lucide-react';
+import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Comment } from '@/types';
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
-  const { posts, comments, getCommentsByPost, createComment, votePost, voteComment, getCellById, loading } = useForum();
+  const { 
+    posts, 
+    comments, 
+    getCommentsByPost, 
+    createComment, 
+    votePost, 
+    voteComment, 
+    getCellById, 
+    isInitialLoading, 
+    isPostingComment,
+    isVoting,
+    isRefreshing,
+    refreshData
+  } = useForum();
   const { currentUser, isAuthenticated } = useAuth();
   const [newComment, setNewComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  if (!postId || loading) {
+  if (!postId || isInitialLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
@@ -77,14 +88,13 @@ const PostDetail = () => {
     
     if (!newComment.trim()) return;
     
-    setIsSubmitting(true);
     try {
       const result = await createComment(postId, newComment);
       if (result) {
         setNewComment('');
       }
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      console.error("Error creating comment:", error);
     }
   };
   
@@ -98,19 +108,18 @@ const PostDetail = () => {
     await voteComment(commentId, isUpvote);
   };
   
-  const isPostUpvoted = currentUser && post.upvotes.includes(currentUser.address);
-  const isPostDownvoted = currentUser && post.downvotes.includes(currentUser.address);
+  const isPostUpvoted = currentUser && post.upvotes.some(vote => vote.author === currentUser.address);
+  const isPostDownvoted = currentUser && post.downvotes.some(vote => vote.author === currentUser.address);
   
   const isCommentVoted = (comment: Comment, isUpvote: boolean) => {
     if (!currentUser) return false;
-    return isUpvote 
-      ? comment.upvotes.includes(currentUser.address)
-      : comment.downvotes.includes(currentUser.address);
+    const votes = isUpvote ? comment.upvotes : comment.downvotes;
+    return votes.some(vote => vote.author === currentUser.address);
   };
   
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <Link 
           to={cell ? `/cell/${cell.id}` : '/'} 
           className="text-cyber-accent hover:underline flex items-center gap-1 text-sm"
@@ -118,6 +127,15 @@ const PostDetail = () => {
           <ArrowLeft className="w-4 h-4" /> 
           {cell ? `Back to ${cell.name}` : 'Back to Cells'}
         </Link>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={refreshData} 
+          disabled={isRefreshing}
+          title="Refresh data"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
       
       <div className="border border-cyber-muted rounded-sm p-4 mb-8">
@@ -126,7 +144,7 @@ const PostDetail = () => {
             <button 
               className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${isPostUpvoted ? 'text-cyber-accent' : ''}`}
               onClick={() => handleVotePost(true)}
-              disabled={!isAuthenticated}
+              disabled={!isAuthenticated || isVoting}
               title={isAuthenticated ? "Upvote" : "Verify Ordinal to vote"}
             >
               <ArrowUp className="w-5 h-5" />
@@ -135,7 +153,7 @@ const PostDetail = () => {
             <button 
               className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${isPostDownvoted ? 'text-cyber-accent' : ''}`}
               onClick={() => handleVotePost(false)}
-              disabled={!isAuthenticated}
+              disabled={!isAuthenticated || isVoting}
               title={isAuthenticated ? "Downvote" : "Verify Ordinal to vote"}
             >
               <ArrowDown className="w-5 h-5" />
@@ -143,6 +161,7 @@ const PostDetail = () => {
           </div>
           
           <div className="flex-1">
+            <h2 className="text-xl font-bold mb-2">{post.title}</h2>
             <p className="text-lg mb-4">{post.content}</p>
             <div className="flex items-center gap-4 text-xs text-cyber-neutral">
               <span className="flex items-center">
@@ -170,11 +189,11 @@ const PostDetail = () => {
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 className="flex-1 bg-cyber-muted/50 border-cyber-muted resize-none"
-                disabled={isSubmitting}
+                disabled={isPostingComment}
               />
               <Button 
                 type="submit" 
-                disabled={isSubmitting || !newComment.trim()}
+                disabled={isPostingComment || !newComment.trim()}
                 size="icon"
               >
                 <Send className="w-4 h-4" />
@@ -204,7 +223,7 @@ const PostDetail = () => {
                   <button 
                     className={`p-0.5 rounded-sm hover:bg-cyber-muted/50 ${isCommentVoted(comment, true) ? 'text-cyber-accent' : ''}`}
                     onClick={() => handleVoteComment(comment.id, true)}
-                    disabled={!isAuthenticated}
+                    disabled={!isAuthenticated || isVoting}
                     title={isAuthenticated ? "Upvote" : "Verify Ordinal to vote"}
                   >
                     <ArrowUp className="w-4 h-4" />
@@ -213,7 +232,7 @@ const PostDetail = () => {
                   <button 
                     className={`p-0.5 rounded-sm hover:bg-cyber-muted/50 ${isCommentVoted(comment, false) ? 'text-cyber-accent' : ''}`}
                     onClick={() => handleVoteComment(comment.id, false)}
-                    disabled={!isAuthenticated}
+                    disabled={!isAuthenticated || isVoting}
                     title={isAuthenticated ? "Downvote" : "Verify Ordinal to vote"}
                   >
                     <ArrowDown className="w-4 h-4" />

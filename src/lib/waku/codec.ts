@@ -1,29 +1,45 @@
 import { createDecoder, createEncoder } from '@waku/sdk';
 import { MessageType } from './types';
 import {  CellMessage, PostMessage, CommentMessage, VoteMessage } from './types';
-import { CONTENT_TOPICS } from './constants';
+import { CONTENT_TOPICS, NETWORK_CONFIG } from './constants';
 import { OpchanMessage } from '@/types';
 
 export const encoders = {
     [MessageType.CELL]: createEncoder({
         contentTopic: CONTENT_TOPICS['cell'],
+        pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
     }),
     [MessageType.POST]: createEncoder({
       contentTopic: CONTENT_TOPICS['post'], 
+      pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
     }),
     [MessageType.COMMENT]: createEncoder({
       contentTopic: CONTENT_TOPICS['comment'],
+      pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
     }),
     [MessageType.VOTE]: createEncoder({
       contentTopic: CONTENT_TOPICS['vote'],
+      pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
     }),
 }
 
 export const decoders = {
-    [MessageType.CELL]: createDecoder(CONTENT_TOPICS['cell']),
-    [MessageType.POST]: createDecoder(CONTENT_TOPICS['post']),
-    [MessageType.COMMENT]: createDecoder(CONTENT_TOPICS['comment']),
-    [MessageType.VOTE]: createDecoder(CONTENT_TOPICS['vote']),
+    [MessageType.CELL]: createDecoder(CONTENT_TOPICS['cell'], {
+        clusterId: NETWORK_CONFIG.clusterId,
+        shard: 0
+    }),
+    [MessageType.POST]: createDecoder(CONTENT_TOPICS['post'], {
+        clusterId: NETWORK_CONFIG.clusterId,
+        shard: 0
+    }),
+    [MessageType.COMMENT]: createDecoder(CONTENT_TOPICS['comment'], {
+        clusterId: NETWORK_CONFIG.clusterId,
+        shard: 0
+    }),
+    [MessageType.VOTE]: createDecoder(CONTENT_TOPICS['vote'], {
+        clusterId: NETWORK_CONFIG.clusterId,
+        shard: 0
+    }),
 }
 
 /**
@@ -36,35 +52,23 @@ export function encodeMessage(message: OpchanMessage): Uint8Array {
 
 
 /**
- * Type-specific decoders
- */
-export function decodeCellMessage(payload: Uint8Array): CellMessage {
-  return decodeMessage(payload, MessageType.CELL) as CellMessage;
-}
-
-export function decodePostMessage(payload: Uint8Array): PostMessage {
-  return decodeMessage(payload, MessageType.POST) as PostMessage;
-}
-
-export function decodeCommentMessage(payload: Uint8Array): CommentMessage {
-  return decodeMessage(payload, MessageType.COMMENT) as CommentMessage;
-}
-
-export function decodeVoteMessage(payload: Uint8Array): VoteMessage {
-  return decodeMessage(payload, MessageType.VOTE) as VoteMessage;
-} 
-
-/**
  * Decode a message from a Uint8Array based on its type
  */
-function decodeMessage(payload: Uint8Array, type?: MessageType): OpchanMessage {
+export function decodeMessage(payload: Uint8Array): CellMessage | PostMessage | CommentMessage | VoteMessage {
   const messageJson = new TextDecoder().decode(payload);  
   const message = JSON.parse(messageJson) as OpchanMessage;
   
-  if (type && message.type !== type) {
-    throw new Error(`Expected message of type ${type}, but got ${message.type}`);
-  }
   
-  // Return the decoded message
-  return message;
+  switch(message.type) {
+    case MessageType.CELL:
+      return message as CellMessage;
+    case MessageType.POST:
+      return message as PostMessage;
+    case MessageType.COMMENT:
+      return message as CommentMessage;
+    case MessageType.VOTE:
+      return message as VoteMessage;
+    default:
+      throw new Error(`Unknown message type: ${message}`);
+  }
 }
