@@ -46,8 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const connectWallet = async () => {
     setIsAuthenticating(true);
     try {
-      // In a real app, this would connect to a Bitcoin wallet
-      // For now, we'll simulate a wallet connection with a mock address
+      //TODO: replace with actual wallet connection
       const mockAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
       
       // Create a new user object
@@ -101,8 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsAuthenticating(true);
     try {
-      // In a real app, this would verify Ordinal ownership
-      // For demo purposes, we'll simulate a successful verification
+      //TODO: replace with actual Ordinal verification
       const updatedUser = {
         ...currentUser,
         ordinalOwnership: true,
