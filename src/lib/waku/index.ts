@@ -203,6 +203,5 @@ class MessageManager {
     }
 }
 
-// Create singleton instance
 const messageManager = await MessageManager.create();
 export default messageManager;
