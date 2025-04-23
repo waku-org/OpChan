@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { User } from '@/types';
+import { OrdinalAPI } from '@/lib/identity/ordinal';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -18,6 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const { toast } = useToast();
+  const ordinalApi = new OrdinalAPI();
   
   // Check for existing session on mount
   useEffect(() => {
@@ -87,9 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  // Mock Ordinal verification
   const verifyOrdinal = async () => {
-    if (!currentUser) {
+    if (!currentUser || !currentUser.address) {
       toast({
         title: "Not Connected",
         description: "Please connect your wallet first.",
@@ -100,28 +100,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsAuthenticating(true);
     try {
-      //TODO: replace with actual Ordinal verification
+      toast({ title: "Verifying Ordinal", description: "Checking your wallet for Ordinal Operators..." });
+      
+      const response = await ordinalApi.getOperatorDetails(currentUser.address);
+      const hasOperators = response.has_operators;
+
       const updatedUser = {
         ...currentUser,
-        ordinalOwnership: true,
-        signature: "mockSignature123",
+        ordinalOwnership: hasOperators,
         lastChecked: Date.now(),
       };
       
       setCurrentUser(updatedUser);
       localStorage.setItem('opchan-user', JSON.stringify(updatedUser));
       
-      toast({
-        title: "Ordinal Verified",
-        description: "You can now post and interact with the forum.",
-      });
+      if (hasOperators) {
+        toast({
+          title: "Ordinal Verified",
+          description: "You can now post and interact with the forum.",
+        });
+      } else {
+        toast({
+          title: "Verification Failed",
+          description: "No Ordinal Operators found in the connected wallet.",
+          variant: "destructive",
+        });
+      }
       
-      return true;
+      return hasOperators;
     } catch (error) {
       console.error("Error verifying Ordinal:", error);
+      let errorMessage = "Failed to verify Ordinal ownership. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       toast({
-        title: "Verification Failed",
-        description: "Failed to verify Ordinal ownership. Please try again.",
+        title: "Verification Error",
+        description: errorMessage,
         variant: "destructive",
       });
       return false;
