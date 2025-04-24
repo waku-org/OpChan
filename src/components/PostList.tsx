@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageSquare, MessageCircle, ArrowUp, ArrowDown, Clock, RefreshCw } from 'lucide-react';
+import { ArrowLeft, MessageSquare, MessageCircle, ArrowUp, ArrowDown, Clock, RefreshCw, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { CypherImage } from './ui/CypherImage';
+import { Badge } from '@/components/ui/badge';
 
 const PostList = () => {
   const { cellId } = useParams<{ cellId: string }>();
@@ -20,9 +21,12 @@ const PostList = () => {
     isInitialLoading, 
     isPostingPost, 
     isRefreshing, 
-    refreshData 
+    refreshData,
+    votePost,
+    isVoting,
+    posts
   } = useForum();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, currentUser, verificationStatus } = useAuth();
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
   
@@ -54,7 +58,7 @@ const PostList = () => {
   }
   
   const cell = getCellById(cellId);
-  const posts = getPostsByCell(cellId);
+  const cellPosts = getPostsByCell(cellId);
   
   if (!cell) {
     return (
@@ -91,6 +95,19 @@ const PostList = () => {
     }
   };
   
+  const handleVotePost = async (postId: string, isUpvote: boolean) => {
+    if (!isAuthenticated) return;
+    await votePost(postId, isUpvote);
+  };
+  
+  const isPostVoted = (postId: string, isUpvote: boolean) => {
+    if (!currentUser) return false;
+    const post = posts.find(p => p.id === postId);
+    if (!post) return false;
+    const votes = isUpvote ? post.upvotes : post.downvotes;
+    return votes.some(vote => vote.author === currentUser.address);
+  };
+  
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6">
@@ -123,7 +140,7 @@ const PostList = () => {
         </div>
       </div>
       
-      {isAuthenticated && (
+      {verificationStatus === 'verified-owner' && (
         <div className="mb-8">
           <form onSubmit={handleCreatePost}>
             <h2 className="text-sm font-bold mb-2 flex items-center gap-1">
@@ -158,8 +175,30 @@ const PostList = () => {
         </div>
       )}
       
+      {verificationStatus === 'verified-none' && (
+        <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20">
+          <div className="flex items-center gap-2 mb-2">
+            <Eye className="w-4 h-4 text-cyber-neutral" />
+            <h3 className="font-medium">Read-Only Mode</h3>
+          </div>
+          <p className="text-sm text-cyber-neutral mb-2">
+            Your wallet does not contain any Ordinal Operators. You can browse threads but cannot post or interact.
+          </p>
+          <Badge variant="outline" className="text-xs">No Ordinals Found</Badge>
+        </div>
+      )}
+      
+      {!currentUser && (
+        <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 text-center">
+          <p className="text-sm mb-3">Connect wallet and verify Ordinal ownership to post</p>
+          <Button asChild size="sm">
+            <Link to="/">Connect Wallet</Link>
+          </Button>
+        </div>
+      )}
+      
       <div className="space-y-4">
-        {posts.length === 0 ? (
+        {cellPosts.length === 0 ? (
           <div className="text-center py-12">
             <MessageCircle className="w-12 h-12 mx-auto mb-4 text-cyber-neutral opacity-50" />
             <h2 className="text-xl font-bold mb-2">No Threads Yet</h2>
@@ -170,32 +209,41 @@ const PostList = () => {
             </p>
           </div>
         ) : (
-          posts.map(post => (
-            <Link to={`/post/${post.id}`} key={post.id} className="thread-card block">
-              <div>
-                <h3 className="font-medium mb-1">{post.title}</h3>
-                <p className="text-sm mb-3">{post.content}</p>
-                <div className="flex items-center gap-4 text-xs text-cyber-neutral">
-                  <span className="flex items-center">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {formatDistanceToNow(post.timestamp, { addSuffix: true })}
-                  </span>
-                  <span className="flex items-center">
-                    <MessageCircle className="w-3 h-3 mr-1" />
-                    {getCommentsByPost(post.id).length} comments
-                  </span>
-                  <div className="flex items-center">
-                    <ArrowUp className="w-3 h-3 mr-1" />
-                    <span>{post.upvotes.length}</span>
-                    <ArrowDown className="w-3 h-3 mx-1" />
-                    <span>{post.downvotes.length}</span>
-                  </div>
-                  <span className="truncate max-w-[120px]">
-                    {post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}
-                  </span>
+          cellPosts.map(post => (
+            <div key={post.id} className="post-card p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 hover:bg-cyber-muted/30 transition duration-200">
+              <div className="flex gap-4">
+                <div className="flex flex-col items-center">
+                  <button 
+                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${isPostVoted(post.id, true) ? 'text-cyber-accent' : ''}`}
+                    onClick={() => handleVotePost(post.id, true)}
+                    disabled={!isAuthenticated || isVoting}
+                    title={isAuthenticated ? "Upvote" : "Verify Ordinal to vote"}
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm py-1">{post.upvotes.length - post.downvotes.length}</span>
+                  <button 
+                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${isPostVoted(post.id, false) ? 'text-cyber-accent' : ''}`}
+                    onClick={() => handleVotePost(post.id, false)}
+                    disabled={!isAuthenticated || isVoting}
+                    title={isAuthenticated ? "Downvote" : "Verify Ordinal to vote"}
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <div className="flex-1">
+                  <Link to={`/post/${post.id}`} className="block">
+                    <h2 className="text-lg font-bold hover:text-cyber-accent">{post.title}</h2>
+                    <p className="line-clamp-2 text-sm mb-3">{post.content}</p>
+                    <div className="flex items-center gap-4 text-xs text-cyber-neutral">
+                      <span>{formatDistanceToNow(post.timestamp, { addSuffix: true })}</span>
+                      <span>by {post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}</span>
+                    </div>
+                  </Link>
                 </div>
               </div>
-            </Link>
+            </div>
           ))
         )}
       </div>

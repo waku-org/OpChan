@@ -3,10 +3,13 @@ import { useToast } from '@/components/ui/use-toast';
 import { User } from '@/types';
 import { OrdinalAPI } from '@/lib/identity/ordinal';
 
+export type VerificationStatus = 'unverified' | 'verified-none' | 'verified-owner' | 'verifying';
+
 interface AuthContextType {
   currentUser: User | null;
   isAuthenticated: boolean;
   isAuthenticating: boolean;
+  verificationStatus: VerificationStatus;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   verifyOrdinal: () => Promise<boolean>;
@@ -17,28 +20,34 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('unverified');
   const { toast } = useToast();
   const ordinalApi = new OrdinalAPI();
   
-  // Check for existing session on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('opchan-user');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        // Check if the stored authentication is still valid (not expired)
         const lastChecked = user.lastChecked || 0;
-        const expiryTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        const expiryTime = 24 * 60 * 60 * 1000; 
         
         if (Date.now() - lastChecked < expiryTime) {
           setCurrentUser(user);
+          
+          if ('ordinalOwnership' in user) {
+            setVerificationStatus(user.ordinalOwnership ? 'verified-owner' : 'verified-none');
+          } else {
+            setVerificationStatus('unverified');
+          }
         } else {
-          // Clear expired session
           localStorage.removeItem('opchan-user');
+          setVerificationStatus('unverified');
         }
       } catch (e) {
         console.error("Failed to parse stored user data", e);
         localStorage.removeItem('opchan-user');
+        setVerificationStatus('unverified');
       }
     }
   }, []);
@@ -59,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Store user data
       setCurrentUser(newUser);
       localStorage.setItem('opchan-user', JSON.stringify(newUser));
+      setVerificationStatus('unverified');
       
       toast({
         title: "Wallet Connected",
@@ -82,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const disconnectWallet = () => {
     setCurrentUser(null);
     localStorage.removeItem('opchan-user');
+    setVerificationStatus('unverified');
     toast({
       title: "Disconnected",
       description: "Your wallet has been disconnected.",
@@ -99,8 +110,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     setIsAuthenticating(true);
+    setVerificationStatus('verifying');
+    
     try {
-      toast({ title: "Verifying Ordinal", description: "Checking your wallet for Ordinal Operators..." });
+      toast({ 
+        title: "Verifying Ordinal", 
+        description: "Checking your wallet for Ordinal Operators..." 
+      });
       
       const response = await ordinalApi.getOperatorDetails(currentUser.address);
       const hasOperators = response.has_operators;
@@ -114,31 +130,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser(updatedUser);
       localStorage.setItem('opchan-user', JSON.stringify(updatedUser));
       
+      // Update verification status
+      setVerificationStatus(hasOperators ? 'verified-owner' : 'verified-none');
+      
       if (hasOperators) {
         toast({
           title: "Ordinal Verified",
-          description: "You can now post and interact with the forum.",
+          description: "You now have full access to post and interact with the forum.",
         });
       } else {
         toast({
-          title: "Verification Failed",
-          description: "No Ordinal Operators found in the connected wallet.",
-          variant: "destructive",
+          title: "Read-Only Access",
+          description: "No Ordinal Operators found. You have read-only access.",
+          variant: "default",
         });
       }
       
       return hasOperators;
     } catch (error) {
       console.error("Error verifying Ordinal:", error);
+      setVerificationStatus('unverified');
+      
       let errorMessage = "Failed to verify Ordinal ownership. Please try again.";
       if (error instanceof Error) {
         errorMessage = error.message;
       }
+      
       toast({
         title: "Verification Error",
         description: errorMessage,
         variant: "destructive",
       });
+      
       return false;
     } finally {
       setIsAuthenticating(false);
@@ -151,6 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         currentUser,
         isAuthenticated: !!currentUser?.ordinalOwnership,
         isAuthenticating,
+        verificationStatus,
         connectWallet,
         disconnectWallet,
         verifyOrdinal,

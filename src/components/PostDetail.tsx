@@ -5,10 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send, RefreshCw, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Comment } from '@/types';
 import { CypherImage } from './ui/CypherImage';
+import { Badge } from '@/components/ui/badge';
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -27,34 +28,21 @@ const PostDetail = () => {
     isRefreshing,
     refreshData
   } = useForum();
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, verificationStatus } = useAuth();
   const [newComment, setNewComment] = useState('');
   
-  if (!postId || isInitialLoading) {
+  if (!postId) return <div>Invalid post ID</div>;
+  
+  if (isInitialLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-6">
-          <div className="text-cyber-accent flex items-center gap-1 text-sm">
-            <ArrowLeft className="w-4 h-4" /> Loading...
-          </div>
-        </div>
-        
-        <div className="border border-cyber-muted rounded-sm p-4 mb-8">
-          <Skeleton className="h-6 w-3/4 mb-2 bg-cyber-muted" />
-          <Skeleton className="h-6 w-1/2 mb-4 bg-cyber-muted" />
-          <Skeleton className="h-4 w-32 bg-cyber-muted" />
-        </div>
-        
-        <Skeleton className="h-32 w-full mb-8 bg-cyber-muted" />
-        
+      <div className="container mx-auto px-4 py-6">
+        <Skeleton className="h-6 w-32 mb-6" />
+        <Skeleton className="h-10 w-3/4 mb-3" />
+        <Skeleton className="h-32 w-full mb-6" />
+        <Skeleton className="h-6 w-48 mb-4" />
         <div className="space-y-4">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="ml-4 border-l-2 border-cyber-muted pl-4 py-2">
-              <Skeleton className="h-4 w-full mb-2 bg-cyber-muted" />
-              <Skeleton className="h-4 w-3/4 mb-2 bg-cyber-muted" />
-              <Skeleton className="h-3 w-24 bg-cyber-muted" />
-            </div>
-          ))}
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
         </div>
       </div>
     );
@@ -64,25 +52,18 @@ const PostDetail = () => {
   
   if (!post) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-6">
-          <Link to="/" className="text-cyber-accent hover:underline flex items-center gap-1 text-sm">
-            <ArrowLeft className="w-4 h-4" /> Back to Cells
-          </Link>
-        </div>
-        <div className="p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Post Not Found</h1>
-          <p className="text-cyber-neutral mb-6">The post you're looking for doesn't exist or may have been pruned.</p>
-          <Button asChild>
-            <Link to="/">Return to Cells</Link>
-          </Button>
-        </div>
+      <div className="container mx-auto px-4 py-6 text-center">
+        <h2 className="text-xl font-bold mb-4">Post not found</h2>
+        <p className="mb-4">The post you're looking for doesn't exist or has been removed.</p>
+        <Button asChild>
+          <Link to="/">Go back home</Link>
+        </Button>
       </div>
     );
   }
   
   const cell = getCellById(post.cellId);
-  const postComments = getCommentsByPost(postId);
+  const postComments = getCommentsByPost(post.id);
   
   const handleCreateComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,12 +81,12 @@ const PostDetail = () => {
   };
   
   const handleVotePost = async (isUpvote: boolean) => {
-    if (!isAuthenticated) return;
+    if (verificationStatus !== 'verified-owner') return;
     await votePost(post.id, isUpvote);
   };
   
   const handleVoteComment = async (commentId: string, isUpvote: boolean) => {
-    if (!isAuthenticated) return;
+    if (verificationStatus !== 'verified-owner') return;
     await voteComment(commentId, isUpvote);
   };
   
@@ -118,44 +99,39 @@ const PostDetail = () => {
     return votes.some(vote => vote.author === currentUser.address);
   };
   
+  const getIdentityImageUrl = (address: string) => {
+    return `https://api.dicebear.com/7.x/identicon/svg?seed=${address}`;
+  };
+  
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-6 flex items-center justify-between">
-        <Link 
-          to={cell ? `/cell/${cell.id}` : '/'} 
-          className="text-cyber-accent hover:underline flex items-center gap-1 text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" /> 
-          {cell ? `Back to ${cell.name}` : 'Back to Cells'}
-        </Link>
+    <div className="container mx-auto px-4 py-6">
+      <div className="mb-6">
         <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={refreshData} 
-          disabled={isRefreshing}
-          title="Refresh data"
+          onClick={() => navigate(`/cell/${post.cellId}`)} 
+          variant="ghost" 
+          size="sm"
+          className="mb-4"
         >
-          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Back to /{cell?.name || 'cell'}/
         </Button>
-      </div>
-      
-      <div className="border border-cyber-muted rounded-sm p-4 mb-8">
-        <div className="flex gap-2 items-start">
-          <div className="flex flex-col items-center mr-2">
+        
+        <div className="flex gap-4 items-start">
+          <div className="flex flex-col items-center">
             <button 
               className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${isPostUpvoted ? 'text-cyber-accent' : ''}`}
               onClick={() => handleVotePost(true)}
-              disabled={!isAuthenticated || isVoting}
-              title={isAuthenticated ? "Upvote" : "Verify Ordinal to vote"}
+              disabled={verificationStatus !== 'verified-owner' || isVoting}
+              title={verificationStatus === 'verified-owner' ? "Upvote" : "Full access required to vote"}
             >
               <ArrowUp className="w-5 h-5" />
             </button>
-            <span className="text-xs py-1">{post.upvotes.length - post.downvotes.length}</span>
+            <span className="text-sm py-1">{post.upvotes.length - post.downvotes.length}</span>
             <button 
               className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${isPostDownvoted ? 'text-cyber-accent' : ''}`}
               onClick={() => handleVotePost(false)}
-              disabled={!isAuthenticated || isVoting}
-              title={isAuthenticated ? "Downvote" : "Verify Ordinal to vote"}
+              disabled={verificationStatus !== 'verified-owner' || isVoting}
+              title={verificationStatus === 'verified-owner' ? "Downvote" : "Full access required to vote"}
             >
               <ArrowDown className="w-5 h-5" />
             </button>
@@ -181,7 +157,7 @@ const PostDetail = () => {
         </div>
       </div>
       
-      {isAuthenticated ? (
+      {verificationStatus === 'verified-owner' ? (
         <div className="mb-8">
           <form onSubmit={handleCreateComment}>
             <div className="flex gap-2">
@@ -201,6 +177,17 @@ const PostDetail = () => {
               </Button>
             </div>
           </form>
+        </div>
+      ) : verificationStatus === 'verified-none' ? (
+        <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20">
+          <div className="flex items-center gap-2 mb-2">
+            <Eye className="w-4 h-4 text-cyber-neutral" />
+            <h3 className="font-medium">Read-Only Mode</h3>
+          </div>
+          <p className="text-sm text-cyber-neutral">
+            Your wallet has been verified but does not contain any Ordinal Operators. 
+            You can browse threads but cannot comment or vote.
+          </p>
         </div>
       ) : (
         <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 text-center">
@@ -224,8 +211,8 @@ const PostDetail = () => {
                   <button 
                     className={`p-0.5 rounded-sm hover:bg-cyber-muted/50 ${isCommentVoted(comment, true) ? 'text-cyber-accent' : ''}`}
                     onClick={() => handleVoteComment(comment.id, true)}
-                    disabled={!isAuthenticated || isVoting}
-                    title={isAuthenticated ? "Upvote" : "Verify Ordinal to vote"}
+                    disabled={verificationStatus !== 'verified-owner' || isVoting}
+                    title={verificationStatus === 'verified-owner' ? "Upvote" : "Full access required to vote"}
                   >
                     <ArrowUp className="w-4 h-4" />
                   </button>
@@ -233,24 +220,29 @@ const PostDetail = () => {
                   <button 
                     className={`p-0.5 rounded-sm hover:bg-cyber-muted/50 ${isCommentVoted(comment, false) ? 'text-cyber-accent' : ''}`}
                     onClick={() => handleVoteComment(comment.id, false)}
-                    disabled={!isAuthenticated || isVoting}
-                    title={isAuthenticated ? "Downvote" : "Verify Ordinal to vote"}
+                    disabled={verificationStatus !== 'verified-owner' || isVoting}
+                    title={verificationStatus === 'verified-owner' ? "Downvote" : "Full access required to vote"}
                   >
                     <ArrowDown className="w-4 h-4" />
                   </button>
                 </div>
-                
-                <div className="flex-1">
-                  <p className="text-sm mb-2">{comment.content}</p>
-                  <div className="flex items-center gap-3 text-xs text-cyber-neutral">
-                    <span className="flex items-center">
-                      <Clock className="w-3 h-3 mr-1" />
+                <div className="bg-cyber-muted/30 rounded-sm p-3 flex-1">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      <CypherImage 
+                        src={getIdentityImageUrl(comment.authorAddress)}
+                        alt={comment.authorAddress.slice(0, 6)}
+                        className="rounded-sm w-5 h-5 bg-cyber-muted"
+                      />
+                      <span className="text-xs text-cyber-neutral">
+                        {comment.authorAddress.slice(0, 6)}...{comment.authorAddress.slice(-4)}
+                      </span>
+                    </div>
+                    <span className="text-xs text-cyber-neutral">
                       {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
                     </span>
-                    <span className="truncate max-w-[120px]">
-                      {comment.authorAddress.slice(0, 6)}...{comment.authorAddress.slice(-4)}
-                    </span>
                   </div>
+                  <p className="text-sm break-words">{comment.content}</p>
                 </div>
               </div>
             </div>
