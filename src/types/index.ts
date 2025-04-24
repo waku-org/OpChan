@@ -7,6 +7,9 @@ export interface User {
   ordinalOwnership?: boolean | { id: string; details: string };
   signature?: string;
   lastChecked?: number;
+  browserPubKey?: string; // Browser-generated public key for key delegation
+  delegationSignature?: string; // Signature from Bitcoin wallet for delegation
+  delegationExpiry?: number; // When the delegation expires
 }
 
 export interface Cell {
@@ -25,6 +28,8 @@ export interface Post {
   timestamp: number;
   upvotes: VoteMessage[];
   downvotes: VoteMessage[];
+  signature?: string; // Message signature
+  browserPubKey?: string; // Public key that signed the message
 }
 
 export interface Comment {
@@ -35,4 +40,12 @@ export interface Comment {
   timestamp: number;
   upvotes: VoteMessage[];
   downvotes: VoteMessage[];
+  signature?: string; // Message signature
+  browserPubKey?: string; // Public key that signed the message
+}
+
+// Extended message types for verification
+export interface SignedMessage {
+  signature?: string; // Signature of the message
+  browserPubKey?: string; // Public key that signed the message
 }

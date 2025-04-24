@@ -3,6 +3,7 @@ import { CellMessage, CommentMessage, MessageType, PostMessage, VoteMessage } fr
 import messageManager from '@/lib/waku';
 import { Cell, Comment, Post, User } from '@/types';
 import { transformCell, transformComment, transformPost } from './transformers';
+import { MessageSigning } from '@/lib/identity/signatures/message-signing';
 
 type ToastFunction = (props: { 
   title: string; 
@@ -10,7 +11,52 @@ type ToastFunction = (props: {
   variant?: "default" | "destructive"; 
 }) => void;
 
-// Create a post
+async function signAndSendMessage<T extends PostMessage | CommentMessage | VoteMessage | CellMessage>(
+  message: T,
+  currentUser: User | null,
+  messageSigning: MessageSigning,
+  toast: ToastFunction
+): Promise<T | null> {
+  if (!currentUser) {
+    toast({
+      title: "Authentication Required",
+      description: "You need to be authenticated to perform this action.",
+      variant: "destructive",
+    });
+    return null;
+  }
+  
+  try {
+    let signedMessage: T | null = null;
+    
+    if (messageSigning) {
+      signedMessage = await messageSigning.signMessage(message);
+      
+      if (!signedMessage) {
+        toast({
+          title: "Key Delegation Required",
+          description: "Please delegate a signing key for better UX.",
+          variant: "destructive",
+        });
+        return null;
+      }
+    } else {
+      signedMessage = message;
+    }
+    
+    await messageManager.sendMessage(signedMessage);
+    return signedMessage;
+  } catch (error) {
+    console.error("Error signing and sending message:", error);
+    toast({
+      title: "Message Error",
+      description: "Failed to sign and send message. Please try again.",
+      variant: "destructive",
+    });
+    return null;
+  }
+}
+
 export const createPost = async (
   cellId: string, 
   title: string, 
@@ -18,7 +64,8 @@ export const createPost = async (
   currentUser: User | null, 
   isAuthenticated: boolean,
   toast: ToastFunction,
-  updateStateFromCache: () => void
+  updateStateFromCache: () => void,
+  messageSigning?: MessageSigning
 ): Promise<Post | null> => {
   if (!isAuthenticated || !currentUser) {
     toast({
@@ -47,10 +94,15 @@ export const createPost = async (
       author: currentUser.address
     };
 
-    // Send the message to the network
-    await messageManager.sendMessage(postMessage);
+    const sentMessage = await signAndSendMessage(
+      postMessage,
+      currentUser,
+      messageSigning!,
+      toast
+    );
     
-    // Update UI (the cache is already updated in sendMessage)
+    if (!sentMessage) return null;
+    
     updateStateFromCache();
     
     toast({
@@ -58,8 +110,7 @@ export const createPost = async (
       description: "Your post has been published successfully.",
     });
     
-    // Return the transformed post
-    return transformPost(postMessage);
+    return transformPost(sentMessage);
   } catch (error) {
     console.error("Error creating post:", error);
     toast({
@@ -71,14 +122,14 @@ export const createPost = async (
   }
 };
 
-// Create a comment
 export const createComment = async (
   postId: string, 
   content: string, 
   currentUser: User | null, 
   isAuthenticated: boolean,
   toast: ToastFunction,
-  updateStateFromCache: () => void
+  updateStateFromCache: () => void,
+  messageSigning?: MessageSigning
 ): Promise<Comment | null> => {
   if (!isAuthenticated || !currentUser) {
     toast({
@@ -106,10 +157,15 @@ export const createComment = async (
       author: currentUser.address
     };
 
-    // Send the message to the network
-    await messageManager.sendMessage(commentMessage);
+    const sentMessage = await signAndSendMessage(
+      commentMessage,
+      currentUser,
+      messageSigning!,
+      toast
+    );
     
-    // Update UI (the cache is already updated in sendMessage)
+    if (!sentMessage) return null;
+    
     updateStateFromCache();
     
     toast({
@@ -117,8 +173,7 @@ export const createComment = async (
       description: "Your comment has been published.",
     });
     
-    // Return the transformed comment
-    return transformComment(commentMessage);
+    return transformComment(sentMessage);
   } catch (error) {
     console.error("Error creating comment:", error);
     toast({
@@ -130,74 +185,15 @@ export const createComment = async (
   }
 };
 
-// Vote on a post or comment
-export const vote = async (
-  targetId: string, 
-  isUpvote: boolean, 
-  currentUser: User | null, 
-  isAuthenticated: boolean,
-  toast: ToastFunction,
-  updateStateFromCache: () => void
-): Promise<boolean> => {
-  if (!isAuthenticated || !currentUser) {
-    toast({
-      title: "Authentication Required",
-      description: "You need to verify Ordinal ownership to vote.",
-      variant: "destructive",
-    });
-    return false;
-  }
-
-  try {
-    const voteType = isUpvote ? "upvote" : "downvote";
-    toast({
-      title: `Sending ${voteType}`,
-      description: "Recording your vote on the network...",
-    });
-    
-    const voteId = uuidv4();
-    
-    const voteMessage: VoteMessage = {
-      type: MessageType.VOTE,
-      id: voteId,
-      targetId,
-      value: isUpvote ? 1 : -1,
-      timestamp: Date.now(),
-      author: currentUser.address
-    };
-
-    // Send the vote message to the network
-    await messageManager.sendMessage(voteMessage);
-    
-    // Update UI (the cache is already updated in sendMessage)
-    updateStateFromCache();
-    
-    toast({
-      title: "Vote Recorded",
-      description: `Your ${voteType} has been registered.`,
-    });
-    
-    return true;
-  } catch (error) {
-    console.error("Error voting:", error);
-    toast({
-      title: "Vote Failed",
-      description: "Failed to register your vote. Please try again.",
-      variant: "destructive",
-    });
-    return false;
-  }
-};
-
-// Create a cell
 export const createCell = async (
-  name: string, 
-  description: string, 
+  name: string,
+  description: string,
   icon: string, 
   currentUser: User | null, 
   isAuthenticated: boolean,
   toast: ToastFunction,
-  updateStateFromCache: () => void
+  updateStateFromCache: () => void,
+  messageSigning?: MessageSigning
 ): Promise<Cell | null> => {
   if (!isAuthenticated || !currentUser) {
     toast({
@@ -226,25 +222,94 @@ export const createCell = async (
       author: currentUser.address
     };
 
-    // Send the cell message to the network
-    await messageManager.sendMessage(cellMessage);
+    const sentMessage = await signAndSendMessage(
+      cellMessage,
+      currentUser,
+      messageSigning!,
+      toast
+    );
     
-    // Update UI (the cache is already updated in sendMessage)
+    if (!sentMessage) return null;
+    
     updateStateFromCache();
     
     toast({
       title: "Cell Created",
-      description: "Your cell has been created successfully.",
+      description: "Your cell has been published.",
     });
     
-    return transformCell(cellMessage);
+    return transformCell(sentMessage);
   } catch (error) {
     console.error("Error creating cell:", error);
     toast({
-      title: "Cell Creation Failed",
+      title: "Cell Failed",
       description: "Failed to create cell. Please try again.",
       variant: "destructive",
     });
     return null;
+  }
+};
+
+export const vote = async (
+  targetId: string, 
+  isUpvote: boolean, 
+  currentUser: User | null, 
+  isAuthenticated: boolean,
+  toast: ToastFunction,
+  updateStateFromCache: () => void,
+  messageSigning?: MessageSigning
+): Promise<boolean> => {
+  if (!isAuthenticated || !currentUser) {
+    toast({
+      title: "Authentication Required",
+      description: "You need to verify Ordinal ownership to vote.",
+      variant: "destructive",
+    });
+    return false;
+  }
+
+  try {
+    const voteType = isUpvote ? "upvote" : "downvote";
+    toast({
+      title: `Sending ${voteType}`,
+      description: "Recording your vote on the network...",
+    });
+    
+    const voteId = uuidv4();
+    
+    const voteMessage: VoteMessage = {
+      type: MessageType.VOTE,
+      id: voteId,
+      targetId,
+      value: isUpvote ? 1 : -1,
+      timestamp: Date.now(),
+      author: currentUser.address
+    };
+
+    const sentMessage = await signAndSendMessage(
+      voteMessage,
+      currentUser,
+      messageSigning!,
+      toast
+    );
+    
+    if (!sentMessage) return false;
+    
+    updateStateFromCache();
+    
+    toast({
+      title: "Vote Recorded",
+      description: `Your ${voteType} has been registered.`,
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error voting:", error);
+    toast({
+      title: "Vote Failed",
+      description: "Failed to register your vote. Please try again.",
+      variant: "destructive",
+    });
+    return false;
   }
 }; 

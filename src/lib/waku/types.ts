@@ -15,6 +15,8 @@ export interface BaseMessage {
   type: MessageType;
   timestamp: number;
   author: string;
+  signature?: string; // Message signature for verification
+  browserPubKey?: string; // Public key that signed the message
 }
 
 /**

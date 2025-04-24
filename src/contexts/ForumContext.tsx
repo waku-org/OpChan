@@ -1,19 +1,45 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useToast } from '@/components/ui/use-toast';
 import { Cell, Post, Comment } from '@/types';
-import { useAuth } from './AuthContext';
+import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
-  getDataFromCache, 
   createPost, 
   createComment, 
   vote, 
-  createCell, 
-  refreshData as refreshNetworkData, 
-  initializeNetwork, 
+  createCell 
+} from './forum/actions';
+import { 
   setupPeriodicQueries, 
-  monitorNetworkHealth,
-  ForumContextType
-} from './forum';
+  monitorNetworkHealth, 
+  initializeNetwork 
+} from './forum/network';
+import messageManager from '@/lib/waku';
+import { transformCell, transformComment, transformPost } from './forum/transformers';
+
+interface ForumContextType {
+  cells: Cell[];
+  posts: Post[];
+  comments: Comment[];
+  // Granular loading states
+  isInitialLoading: boolean;
+  isPostingCell: boolean;
+  isPostingPost: boolean;
+  isPostingComment: boolean;
+  isVoting: boolean;
+  isRefreshing: boolean;
+  // Network status
+  isNetworkConnected: boolean;
+  error: string | null;
+  getCellById: (id: string) => Cell | undefined;
+  getPostsByCell: (cellId: string) => Post[];
+  getCommentsByPost: (postId: string) => Comment[];
+  createPost: (cellId: string, title: string, content: string) => Promise<Post | null>;
+  createComment: (postId: string, content: string) => Promise<Comment | null>;
+  votePost: (postId: string, isUpvote: boolean) => Promise<boolean>;
+  voteComment: (commentId: string, isUpvote: boolean) => Promise<boolean>;
+  createCell: (name: string, description: string, icon: string) => Promise<Cell | null>;
+  refreshData: () => Promise<void>;
+}
 
 const ForumContext = createContext<ForumContextType | undefined>(undefined);
 
@@ -21,35 +47,58 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const [cells, setCells] = useState<Cell[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
-  
-// Loading states
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isPostingCell, setIsPostingCell] = useState(false);
   const [isPostingPost, setIsPostingPost] = useState(false);
   const [isPostingComment, setIsPostingComment] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // Network connection status
   const [isNetworkConnected, setIsNetworkConnected] = useState(false);
-  
   const [error, setError] = useState<string | null>(null);
-  const { currentUser, isAuthenticated } = useAuth();
+  
   const { toast } = useToast();
-
-  // Function to update UI state from message cache
+  const { currentUser, isAuthenticated, messageSigning } = useAuth();
+  
+  // Transform message cache data to the expected types
   const updateStateFromCache = () => {
-    const data = getDataFromCache();
-    setCells(data.cells);
-    setPosts(data.posts);
-    setComments(data.comments);
+    // Transform cells
+    setCells(
+      Object.values(messageManager.messageCache.cells).map(cell => 
+        transformCell(cell)
+      )
+    );
+    
+    // Transform posts
+    setPosts(
+      Object.values(messageManager.messageCache.posts).map(post => 
+        transformPost(post)
+      )
+    );
+    
+    // Transform comments
+    setComments(
+      Object.values(messageManager.messageCache.comments).map(comment => 
+        transformComment(comment)
+      )
+    );
   };
-
-  // Function to refresh data from the network
+  
   const handleRefreshData = async () => {
     setIsRefreshing(true);
-    await refreshNetworkData(isNetworkConnected, toast, updateStateFromCache, setError);
-    setIsRefreshing(false);
+    try {
+      // Manually query the network for updates
+      await messageManager.queryStore();
+      updateStateFromCache();
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Refresh Failed",
+        description: "Could not fetch the latest data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Monitor network connection status
@@ -89,35 +138,77 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
 
   const handleCreatePost = async (cellId: string, title: string, content: string): Promise<Post | null> => {
     setIsPostingPost(true);
-    const result = await createPost(cellId, title, content, currentUser, isAuthenticated, toast, updateStateFromCache);
+    const result = await createPost(
+      cellId, 
+      title, 
+      content, 
+      currentUser, 
+      isAuthenticated, 
+      toast, 
+      updateStateFromCache,
+      messageSigning
+    );
     setIsPostingPost(false);
     return result;
   };
 
   const handleCreateComment = async (postId: string, content: string): Promise<Comment | null> => {
     setIsPostingComment(true);
-    const result = await createComment(postId, content, currentUser, isAuthenticated, toast, updateStateFromCache);
+    const result = await createComment(
+      postId, 
+      content, 
+      currentUser, 
+      isAuthenticated, 
+      toast, 
+      updateStateFromCache,
+      messageSigning
+    );
     setIsPostingComment(false);
     return result;
   };
 
   const handleVotePost = async (postId: string, isUpvote: boolean): Promise<boolean> => {
     setIsVoting(true);
-    const result = await vote(postId, isUpvote, currentUser, isAuthenticated, toast, updateStateFromCache);
+    const result = await vote(
+      postId, 
+      isUpvote, 
+      currentUser, 
+      isAuthenticated, 
+      toast, 
+      updateStateFromCache,
+      messageSigning
+    );
     setIsVoting(false);
     return result;
   };
 
   const handleVoteComment = async (commentId: string, isUpvote: boolean): Promise<boolean> => {
     setIsVoting(true);
-    const result = await vote(commentId, isUpvote, currentUser, isAuthenticated, toast, updateStateFromCache);
+    const result = await vote(
+      commentId, 
+      isUpvote, 
+      currentUser, 
+      isAuthenticated, 
+      toast, 
+      updateStateFromCache,
+      messageSigning
+    );
     setIsVoting(false);
     return result;
   };
 
   const handleCreateCell = async (name: string, description: string, icon: string): Promise<Cell | null> => {
     setIsPostingCell(true);
-    const result = await createCell(name, description, icon, currentUser, isAuthenticated, toast, updateStateFromCache);
+    const result = await createCell(
+      name, 
+      description, 
+      icon, 
+      currentUser, 
+      isAuthenticated, 
+      toast, 
+      updateStateFromCache,
+      messageSigning
+    );
     setIsPostingCell(false);
     return result;
   };
@@ -155,7 +246,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
 export const useForum = () => {
   const context = useContext(ForumContext);
   if (context === undefined) {
-    throw new Error('useForum must be used within a ForumProvider');
+    throw new Error("useForum must be used within a ForumProvider");
   }
   return context;
 };

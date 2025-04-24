@@ -4,11 +4,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useForum } from '@/contexts/ForumContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, LogOut, Terminal, Wifi, WifiOff, Eye, MessageSquare, RefreshCw } from 'lucide-react';
+import { ShieldCheck, LogOut, Terminal, Wifi, WifiOff, Eye, MessageSquare, RefreshCw, Key } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const Header = () => {
-  const { currentUser, isAuthenticated, verificationStatus, connectWallet, disconnectWallet, verifyOrdinal } = useAuth();
+  const { 
+    currentUser, 
+    isAuthenticated, 
+    verificationStatus, 
+    connectWallet, 
+    disconnectWallet, 
+    verifyOrdinal, 
+    delegateKey, 
+    isDelegationValid,
+    delegationTimeRemaining 
+  } = useAuth();
   const { isNetworkConnected, isRefreshing } = useForum();
   
   const handleConnect = async () => {
@@ -21,6 +31,56 @@ const Header = () => {
   
   const handleVerify = async () => {
     await verifyOrdinal();
+  };
+
+  const handleDelegateKey = async () => {
+    await delegateKey();
+  };
+
+  // Format delegation time remaining for display
+  const formatDelegationTime = () => {
+    if (!isDelegationValid()) return null;
+    
+    const timeRemaining = delegationTimeRemaining();
+    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${hours}h ${minutes}m`;
+  };
+
+  const renderDelegationButton = () => {
+    // Only show delegation button for verified Ordinal owners
+    if (verificationStatus !== 'verified-owner') return null;
+    
+    const hasValidDelegation = isDelegationValid();
+    const timeRemaining = formatDelegationTime();
+    
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant={hasValidDelegation ? "outline" : "default"}
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={handleDelegateKey}
+          >
+            <Key className="w-4 h-4" />
+            {hasValidDelegation 
+              ? <span>Key Delegated ({timeRemaining})</span> 
+              : <span>Delegate Key</span>}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-[260px]">
+          {hasValidDelegation ? (
+            <p>You have a delegated browser key active for {timeRemaining}. 
+               You won't need to sign messages with your wallet for most actions.</p>
+          ) : (
+            <p>Delegate a browser key to avoid signing every action with your wallet. 
+               Improves UX by reducing wallet popups for 24 hours.</p>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    );
   };
 
   const renderAccessBadge = () => {
@@ -182,6 +242,7 @@ const Header = () => {
           ) : (
             <>
               {renderAccessBadge()}
+              {renderDelegationButton()}
               <span className="hidden md:flex items-center text-sm text-cyber-neutral px-3">
                 {currentUser.address.slice(0, 6)}...{currentUser.address.slice(-4)}
               </span>

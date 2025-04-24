@@ -1,7 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { User } from '@/types';
 import { OrdinalAPI } from '@/lib/identity/ordinal';
+import { KeyDelegation } from '@/lib/identity/signatures/key-delegation';
+import { PhantomWalletAdapter } from '@/lib/identity/wallets/phantom';
+import { MessageSigning } from '@/lib/identity/signatures/message-signing';
 
 export type VerificationStatus = 'unverified' | 'verified-none' | 'verified-owner' | 'verifying';
 
@@ -13,6 +16,10 @@ interface AuthContextType {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   verifyOrdinal: () => Promise<boolean>;
+  delegateKey: () => Promise<boolean>;
+  isDelegationValid: () => boolean;
+  delegationTimeRemaining: () => number;
+  messageSigning: MessageSigning;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +30,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('unverified');
   const { toast } = useToast();
   const ordinalApi = new OrdinalAPI();
+  
+  // Create refs for our services so they persist between renders
+  const phantomWalletRef = useRef(new PhantomWalletAdapter());
+  const keyDelegationRef = useRef(new KeyDelegation());
+  const messageSigningRef = useRef(new MessageSigning(keyDelegationRef.current));
   
   useEffect(() => {
     const storedUser = localStorage.getItem('opchan-user');
@@ -52,16 +64,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Mock wallet connection for development
   const connectWallet = async () => {
     setIsAuthenticating(true);
     try {
-      //TODO: replace with actual wallet connection
-      const mockAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+      // Check if Phantom wallet is installed
+      if (!phantomWalletRef.current.isInstalled()) {
+        toast({
+          title: "Wallet Not Found",
+          description: "Please install Phantom wallet to continue.",
+          variant: "destructive",
+        });
+        throw new Error("Phantom wallet not installed");
+      }
+      
+      // Connect to wallet
+      const address = await phantomWalletRef.current.connect();
       
       // Create a new user object
       const newUser: User = {
-        address: mockAddress,
+        address,
         lastChecked: Date.now(),
       };
       
@@ -72,10 +93,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       toast({
         title: "Wallet Connected",
-        description: `Connected with address ${mockAddress.slice(0, 6)}...${mockAddress.slice(-4)}`,
+        description: `Connected with address ${address.slice(0, 6)}...${address.slice(-4)}`,
       });
       
-      // Don't return the address anymore to match the Promise<void> return type
+      // Prompt the user to verify ordinal ownership and delegate key
+      toast({
+        title: "Action Required",
+        description: "Please verify your Ordinal ownership and delegate a signing key for better UX.",
+      });
+      
     } catch (error) {
       console.error("Error connecting wallet:", error);
       toast({
@@ -90,9 +116,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const disconnectWallet = () => {
+    // Disconnect from Phantom wallet
+    phantomWalletRef.current.disconnect();
+    
+    // Clear user data and delegation
     setCurrentUser(null);
     localStorage.removeItem('opchan-user');
+    keyDelegationRef.current.clearDelegation();
     setVerificationStatus('unverified');
+    
     toast({
       title: "Disconnected",
       description: "Your wallet has been disconnected.",
@@ -136,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (hasOperators) {
         toast({
           title: "Ordinal Verified",
-          description: "You now have full access to post and interact with the forum.",
+          description: "You now have full access. We recommend delegating a key for better UX.",
         });
       } else {
         toast({
@@ -168,6 +200,109 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * Creates a key delegation by generating a browser keypair, having the
+   * wallet sign a delegation message, and storing the delegation
+   */
+  const delegateKey = async (): Promise<boolean> => {
+    if (!currentUser || !currentUser.address) {
+      toast({
+        title: "Not Connected",
+        description: "Please connect your wallet first.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    setIsAuthenticating(true);
+    
+    try {
+      toast({
+        title: "Delegating Key",
+        description: "Generating a browser keypair for quick signing...",
+      });
+      
+      // Generate a browser keypair
+      const keypair = await keyDelegationRef.current.generateKeypair();
+      
+      // Calculate expiry time (24 hours from now)
+      const expiryHours = 24;
+      const expiryTimestamp = Date.now() + (expiryHours * 60 * 60 * 1000);
+      
+      // Create delegation message
+      const delegationMessage = keyDelegationRef.current.createDelegationMessage(
+        keypair.publicKey,
+        currentUser.address,
+        expiryTimestamp
+      );
+      
+      toast({
+        title: "Signing Required",
+        description: "Please sign the delegation message with your wallet...",
+      });
+      
+      const signature = await phantomWalletRef.current.signMessage(delegationMessage);
+      
+      const delegationInfo = keyDelegationRef.current.createDelegation(
+        currentUser.address,
+        signature,
+        keypair.publicKey,
+        keypair.privateKey,
+        expiryHours
+      );
+      
+      keyDelegationRef.current.storeDelegation(delegationInfo);
+      
+      const updatedUser = {
+        ...currentUser,
+        browserPubKey: keypair.publicKey,
+        delegationSignature: signature,
+        delegationExpiry: expiryTimestamp,
+      };
+      
+      setCurrentUser(updatedUser);
+      localStorage.setItem('opchan-user', JSON.stringify(updatedUser));
+      
+      toast({
+        title: "Key Delegated",
+        description: `You won't need to sign every action for the next ${expiryHours} hours.`,
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error delegating key:", error);
+      
+      let errorMessage = "Failed to delegate key. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Delegation Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      return false;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+  
+  /**
+   * Checks if the current delegation is valid
+   */
+  const isDelegationValid = (): boolean => {
+    return keyDelegationRef.current.isDelegationValid();
+  };
+  
+  /**
+   * Returns the time remaining on the current delegation in milliseconds
+   */
+  const delegationTimeRemaining = (): number => {
+    return keyDelegationRef.current.getDelegationTimeRemaining();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -178,6 +313,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         connectWallet,
         disconnectWallet,
         verifyOrdinal,
+        delegateKey,
+        isDelegationValid,
+        delegationTimeRemaining,
+        messageSigning: messageSigningRef.current,
       }}
     >
       {children}
