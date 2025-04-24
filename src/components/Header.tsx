@@ -4,8 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useForum } from '@/contexts/ForumContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, LogOut, Terminal, Wifi, WifiOff, Eye, MessageSquare, RefreshCw, Key } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ShieldCheck, LogOut, Terminal, Wifi, WifiOff, AlertTriangle, CheckCircle, Key, RefreshCw, CircleSlash } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const Header = () => {
   const { 
@@ -37,20 +37,18 @@ const Header = () => {
     await delegateKey();
   };
 
-  // Format delegation time remaining for display
   const formatDelegationTime = () => {
     if (!isDelegationValid()) return null;
     
     const timeRemaining = delegationTimeRemaining();
     const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
     const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${hours}h ${minutes}m`;
+
+    return `${hours}h ${minutes}m`; 
   };
 
   const renderDelegationButton = () => {
-    // Only show delegation button for verified Ordinal owners
-    if (verificationStatus !== 'verified-owner') return null;
+    if (verificationStatus !== 'verified-owner') return null; 
     
     const hasValidDelegation = isDelegationValid();
     const timeRemaining = formatDelegationTime();
@@ -61,22 +59,20 @@ const Header = () => {
           <Button
             variant={hasValidDelegation ? "outline" : "default"}
             size="sm"
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 text-xs px-2 h-7" 
             onClick={handleDelegateKey}
           >
-            <Key className="w-4 h-4" />
+            <Key className="w-3 h-3" /> 
             {hasValidDelegation 
-              ? <span>Key Delegated ({timeRemaining})</span> 
-              : <span>Delegate Key</span>}
+              ? <span>KEY ACTIVE ({timeRemaining})</span> 
+              : <span>DELEGATE KEY</span>}
           </Button>
         </TooltipTrigger>
-        <TooltipContent className="max-w-[260px]">
+        <TooltipContent className="max-w-[260px] text-sm">
           {hasValidDelegation ? (
-            <p>You have a delegated browser key active for {timeRemaining}. 
-               You won't need to sign messages with your wallet for most actions.</p>
+            <p>Browser key active for ~{timeRemaining}. Wallet signatures not needed for most actions.</p>
           ) : (
-            <p>Delegate a browser key to avoid signing every action with your wallet. 
-               Improves UX by reducing wallet popups for 24 hours.</p>
+            <p>Delegate a browser key for 24h to avoid constant wallet signing.</p>
           )}
         </TooltipContent>
       </Tooltip>
@@ -86,15 +82,23 @@ const Header = () => {
   const renderAccessBadge = () => {
     if (verificationStatus === 'unverified') {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleVerify}
-          className="flex items-center gap-1"
-        >
-          <ShieldCheck className="w-4 h-4" />
-          <span>Verify Ordinal</span>
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleVerify}
+              className="flex items-center gap-1 text-xs px-2 h-7 border-destructive text-destructive hover:bg-destructive/10" 
+            >
+              <AlertTriangle className="w-3 h-3" /> 
+              <span>[UNVERIFIED] Verify</span>
+            </Button>
+          </TooltipTrigger>
+           <TooltipContent className="max-w-[260px] text-sm">
+             <p className="font-semibold mb-1">Action Required</p>
+             <p>Verify your Ordinal ownership to enable posting, commenting, and voting.</p>
+           </TooltipContent>
+        </Tooltip>
       );
     }
     
@@ -102,86 +106,54 @@ const Header = () => {
       return (
         <Badge 
           variant="outline" 
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 text-xs px-2 h-7"
         >
           <RefreshCw className="w-3 h-3 animate-spin" />
-          <span className="text-xs">Verifying...</span>
+          <span>[VERIFYING...]</span>
         </Badge>
       );
     }
     
     if (verificationStatus === 'verified-none') {
       return (
-        <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge 
-                variant="secondary" 
-                className="flex items-center gap-1 cursor-help"
-              >
-                <Eye className="w-3 h-3" />
-                <span className="text-xs">Read-Only Access</span>
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[260px]">
-              <p className="font-semibold mb-1">Wallet Verified - No Ordinals Found</p>
-              <p className="text-sm mb-1">Your wallet has been verified but does not contain any Ordinal Operators.</p>
-              <p className="text-sm text-muted-foreground">You can browse content but cannot post, comment, or vote.</p>
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant="ghost" 
-                className="h-6 w-6" 
-                onClick={handleVerify}
-              >
-                <RefreshCw className="h-3 w-3" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Verify again</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
+        <Tooltip>
+           <TooltipTrigger asChild>
+             <Badge 
+               variant="secondary" 
+               className="flex items-center gap-1 cursor-help text-xs px-2 h-7"
+             >
+               <CircleSlash className="w-3 h-3" /> 
+               <span>[VERIFIED | READ-ONLY]</span>
+             </Badge>
+           </TooltipTrigger>
+           <TooltipContent className="max-w-[260px] text-sm">
+             <p className="font-semibold mb-1">Wallet Verified - No Ordinals</p>
+             <p>No Ordinal Operators found. Read-only access granted.</p>
+             <Button size="sm" variant="link" onClick={handleVerify} className="p-0 h-auto mt-1 text-xs">Verify Again?</Button>
+           </TooltipContent>
+        </Tooltip>
       );
     }
     
+    // Verified - Ordinal Owner
     if (verificationStatus === 'verified-owner') {
       return (
-        <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge 
-                variant="default" 
-                className="flex items-center gap-1 cursor-help bg-cyber-accent"
-              >
-                <MessageSquare className="w-3 h-3" />
-                <span className="text-xs">Full Access</span>
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[260px]">
-              <p className="font-semibold mb-1">Ordinal Operators Verified!</p>
-              <p className="text-sm">You have full forum access with permission to post, comment, and vote.</p>
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant="ghost" 
-                className="h-6 w-6" 
-                onClick={handleVerify}
-              >
-                <RefreshCw className="h-3 w-3" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Verify again</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
+         <Tooltip>
+           <TooltipTrigger asChild>
+             <Badge 
+               variant="default" 
+               className="flex items-center gap-1 cursor-help text-xs px-2 h-7 bg-primary text-primary-foreground" 
+             >
+               <CheckCircle className="w-3 h-3" /> 
+               <span>[OWNER ✔]</span>
+             </Badge>
+           </TooltipTrigger>
+           <TooltipContent className="max-w-[260px] text-sm">
+              <p className="font-semibold mb-1">Ordinal Owner Verified!</p>
+              <p>Full forum access granted.</p>
+              <Button size="sm" variant="link" onClick={handleVerify} className="p-0 h-auto mt-1 text-xs">Verify Again?</Button>
+           </TooltipContent>
+        </Tooltip>
       );
     }
     
@@ -189,44 +161,38 @@ const Header = () => {
   };
   
   return (
-    <header className="border-b border-cyber-muted bg-cyber-dark">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+    <header className="border-b border-cyber-muted bg-cyber-dark fixed top-0 left-0 right-0 z-50 h-16"> 
+      <div className="container mx-auto px-4 h-full flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Terminal className="text-cyber-accent w-6 h-6" />
           <Link to="/" className="text-xl font-bold text-glow text-cyber-accent">
             OpChan
           </Link>
-          <span className="text-xs bg-cyber-muted px-2 py-0.5 rounded ml-2">
-            PoC v0.1
-          </span>
+         
         </div>
         
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-3 items-center"> 
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center">
-                <Badge 
-                  variant={isNetworkConnected ? "default" : "destructive"}
-                  className="flex items-center gap-1 mr-2"
-                >
-                  {isNetworkConnected ? (
-                    <>
-                      <Wifi className="w-3 h-3" />
-                      <span className="text-xs">Connected</span>
-                    </>
-                  ) : (
-                    <>
-                      <WifiOff className="w-3 h-3" />
-                      <span className="text-xs">Offline</span>
-                    </>
-                  )}
-                </Badge>
-              </div>
+              <Badge 
+                variant={isNetworkConnected ? "default" : "destructive"}
+                className="flex items-center gap-1 text-xs px-2 h-7 cursor-help" 
+              >
+                {isNetworkConnected ? (
+                  <>
+                    <Wifi className="w-3 h-3" />
+                    <span>WAKU: Connected</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-3 h-3" />
+                    <span>WAKU: Offline</span>
+                  </>
+                )}
+              </Badge>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>{isNetworkConnected 
-                ? "Connected to Waku network" 
-                : "Not connected to Waku network. Some features may be unavailable."}</p>
+            <TooltipContent className="text-sm">
+              <p>{isNetworkConnected ? "Waku network connection active." : "Waku network connection lost."}</p>
               {isRefreshing && <p>Refreshing data...</p>}
             </TooltipContent>
           </Tooltip>
@@ -236,25 +202,38 @@ const Header = () => {
               variant="outline" 
               size="sm"
               onClick={handleConnect}
+              className="text-xs px-2 h-7" 
             >
               Connect Wallet
             </Button>
           ) : (
-            <>
+            <div className="flex gap-2 items-center"> 
               {renderAccessBadge()}
               {renderDelegationButton()}
-              <span className="hidden md:flex items-center text-sm text-cyber-neutral px-3">
-                {currentUser.address.slice(0, 6)}...{currentUser.address.slice(-4)}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleDisconnect}
-                title="Disconnect wallet"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="hidden md:flex items-center text-xs text-muted-foreground cursor-default px-2 h-7"> 
+                    {currentUser.address.slice(0, 5)}...{currentUser.address.slice(-4)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="text-sm">
+                  <p>{currentUser.address}</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                 <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleDisconnect}
+                    className="w-7 h-7" 
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                 </TooltipTrigger>
+                 <TooltipContent className="text-sm">Disconnect Wallet</TooltipContent>
+              </Tooltip>
+            </div>
           )}
         </div>
       </div>

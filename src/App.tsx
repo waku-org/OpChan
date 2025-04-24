@@ -18,10 +18,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ForumProvider } from "@/contexts/ForumContext";
-import Index from "./pages/Index";
 import CellPage from "./pages/CellPage";
 import PostPage from "./pages/PostPage";
 import NotFound from "./pages/NotFound";
+import Dashboard from "./pages/Dashboard";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -35,7 +35,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Dashboard />} />
               <Route path="/cell/:cellId" element={<CellPage />} />
               <Route path="/post/:postId" element={<PostPage />} />
               <Route path="*" element={<NotFound />} />

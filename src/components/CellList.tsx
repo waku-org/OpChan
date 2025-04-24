@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useForum } from '@/contexts/ForumContext';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Layout, MessageSquare, RefreshCw } from 'lucide-react';
+import { Layout, MessageSquare, RefreshCw, Loader2 } from 'lucide-react';
 import { CreateCellDialog } from './CreateCellDialog';
 import { Button } from '@/components/ui/button';
 import { CypherImage } from './ui/CypherImage';
@@ -12,22 +11,10 @@ const CellList = () => {
 
   if (isInitialLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 className="text-2xl font-bold mb-6 text-glow">Loading Cells...</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="border border-cyber-muted rounded-sm p-4">
-              <div className="flex gap-4 items-start">
-                <Skeleton className="w-16 h-16 rounded-sm bg-cyber-muted" />
-                <div className="flex-1">
-                  <Skeleton className="h-6 w-24 mb-2 bg-cyber-muted" />
-                  <Skeleton className="h-4 w-full mb-1 bg-cyber-muted" />
-                  <Skeleton className="h-4 w-1/2 bg-cyber-muted" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="container mx-auto px-4 py-16 text-center">
+        <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-primary" />
+        <p className="text-lg font-medium text-muted-foreground">Loading Cells...</p>
+        <p className="text-sm text-muted-foreground/70 mt-1">Connecting to the network and fetching data...</p>
       </div>
     );
   }
@@ -57,7 +44,7 @@ const CellList = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {cells.length === 0 ? (
           <div className="col-span-2 text-center py-12">
             <div className="text-cyber-neutral mb-4">

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,26 +6,25 @@
 
 @layer base {
   :root {
-    /* Cypherpunk theme */
-    --background: 226 20% 14%; /* cyber-dark */
-    --foreground: 0 0% 94%;
+    --background: 226 20% 12%; 
+    --foreground: 0 0% 95%; 
 
-    --card: 226 20% 14%;
+    --card: 226 20% 12%; 
     --card-foreground: 0 0% 94%;
 
     --popover: 226 20% 18%;
     --popover-foreground: 0 0% 94%;
 
-    --primary: 195 82% 42%; /* cyber-accent */
+    --primary: 195 82% 42%; 
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 226 20% 18%; /* slightly lighter than background */
+    --secondary: 226 20% 18%; 
     --secondary-foreground: 0 0% 94%;
 
-    --muted: 226 13% 27%; /* cyber-muted */
-    --muted-foreground: 225 6% 57%; /* cyber-neutral */
+    --muted: 226 13% 27%; 
+    --muted-foreground: 225 6% 57%; 
 
-    --accent: 195 82% 42%; /* cyber-accent */
+    --accent: 195 82% 42%; 
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 84% 60%;
@@ -35,7 +34,7 @@
     --input: 226 13% 27%;
     --ring: 195 82% 42%;
 
-    --radius: 0.25rem; /* smaller radius for shaper edges */
+    --radius: 0.25rem; 
 
     --sidebar-background: 226 20% 14%;
     --sidebar-foreground: 0 0% 94%;
@@ -55,9 +54,9 @@
 
   body {
     @apply bg-background text-foreground font-mono;
+    font-family: 'IBM Plex Mono', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   }
 
-  /* Terminal-like appearance */
   ::-webkit-scrollbar {
     width: 8px;
   }
@@ -75,22 +74,18 @@
     background: hsl(var(--muted-foreground));
   }
 
-  /* Add a subtle text-shadow to primary elements */
   .text-glow {
     text-shadow: 0 0 8px rgba(15, 160, 206, 0.5);
   }
 
-  /* Custom focus styles */
   *:focus-visible {
     @apply outline-none ring-2 ring-primary/70 ring-offset-1 ring-offset-background;
   }
   
-  /* Monospace styling */
   h1, h2, h3, h4, h5, h6, button, input, textarea {
     @apply font-mono;
   }
   
-  /* Button styles */
   .btn {
     @apply inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none disabled:opacity-50;
   }
@@ -102,15 +97,14 @@
   }
   
   .board-card {
-    @apply border border-cyber-muted bg-cyber-dark hover:bg-cyber-muted/20 transition-colors rounded-sm p-4 mb-4;
+    @apply border border-cyber-muted bg-cyber-dark hover:bg-cyber-muted/20 transition-colors rounded-sm p-3 mb-3;
   }
   
   .comment-card {
-    @apply border-l-2 border-cyber-muted pl-4 py-2 my-3 hover:border-cyber-accent transition-colors;
+    @apply border-l-2 border-muted pl-3 py-2 my-2 hover:border-primary transition-colors;
   }
 }
 
-/* Cyberpunk glow animation for CypherImage */
 @keyframes cyber-flicker {
   0%, 100% {
     opacity: 1;

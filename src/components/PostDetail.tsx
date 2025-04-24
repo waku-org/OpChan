@@ -4,8 +4,7 @@ import { useForum } from '@/contexts/ForumContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send, RefreshCw, Eye } from 'lucide-react';
+import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send, RefreshCw, Eye, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Comment } from '@/types';
 import { CypherImage } from './ui/CypherImage';
@@ -35,15 +34,9 @@ const PostDetail = () => {
   
   if (isInitialLoading) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <Skeleton className="h-6 w-32 mb-6" />
-        <Skeleton className="h-10 w-3/4 mb-3" />
-        <Skeleton className="h-32 w-full mb-6" />
-        <Skeleton className="h-6 w-48 mb-4" />
-        <div className="space-y-4">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </div>
+      <div className="container mx-auto px-4 py-16 text-center">
+        <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-primary" />
+        <p className="text-lg font-medium text-muted-foreground">Loading Post...</p>
       </div>
     );
   }
@@ -116,42 +109,44 @@ const PostDetail = () => {
           Back to /{cell?.name || 'cell'}/
         </Button>
         
-        <div className="flex gap-4 items-start">
-          <div className="flex flex-col items-center">
-            <button 
-              className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${isPostUpvoted ? 'text-cyber-accent' : ''}`}
-              onClick={() => handleVotePost(true)}
-              disabled={verificationStatus !== 'verified-owner' || isVoting}
-              title={verificationStatus === 'verified-owner' ? "Upvote" : "Full access required to vote"}
-            >
-              <ArrowUp className="w-5 h-5" />
-            </button>
-            <span className="text-sm py-1">{post.upvotes.length - post.downvotes.length}</span>
-            <button 
-              className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${isPostDownvoted ? 'text-cyber-accent' : ''}`}
-              onClick={() => handleVotePost(false)}
-              disabled={verificationStatus !== 'verified-owner' || isVoting}
-              title={verificationStatus === 'verified-owner' ? "Downvote" : "Full access required to vote"}
-            >
-              <ArrowDown className="w-5 h-5" />
-            </button>
-          </div>
-          
-          <div className="flex-1">
-            <h2 className="text-xl font-bold mb-2">{post.title}</h2>
-            <p className="text-lg mb-4">{post.content}</p>
-            <div className="flex items-center gap-4 text-xs text-cyber-neutral">
-              <span className="flex items-center">
-                <Clock className="w-3 h-3 mr-1" />
-                {formatDistanceToNow(post.timestamp, { addSuffix: true })}
-              </span>
-              <span className="flex items-center">
-                <MessageCircle className="w-3 h-3 mr-1" />
-                {postComments.length} {postComments.length === 1 ? 'comment' : 'comments'}
-              </span>
-              <span className="truncate max-w-[150px]">
-                {post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}
-              </span>
+        <div className="border border-muted rounded-sm p-3 mb-6">
+          <div className="flex gap-3 items-start">
+            <div className="flex flex-col items-center w-6 pt-1">
+              <button 
+                className={`p-1 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isPostUpvoted ? 'text-primary' : ''}`}
+                onClick={() => handleVotePost(true)}
+                disabled={verificationStatus !== 'verified-owner' || isVoting}
+                title={verificationStatus === 'verified-owner' ? "Upvote" : "Full access required to vote"}
+              >
+                <ArrowUp className="w-5 h-5" />
+              </button>
+              <span className="text-sm font-medium py-1">{post.upvotes.length - post.downvotes.length}</span>
+              <button 
+                className={`p-1 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isPostDownvoted ? 'text-primary' : ''}`}
+                onClick={() => handleVotePost(false)}
+                disabled={verificationStatus !== 'verified-owner' || isVoting}
+                title={verificationStatus === 'verified-owner' ? "Downvote" : "Full access required to vote"}
+              >
+                <ArrowDown className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1">
+              <h2 className="text-xl font-bold mb-2 text-foreground">{post.title}</h2>
+              <p className="text-base mb-4 text-foreground/90">{post.content}</p>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
+                  {formatDistanceToNow(post.timestamp, { addSuffix: true })}
+                </span>
+                <span className="flex items-center">
+                  <MessageCircle className="w-3 h-3 mr-1" />
+                  {postComments.length} {postComments.length === 1 ? 'comment' : 'comments'}
+                </span>
+                <span className="truncate max-w-[150px]">
+                  {post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -165,7 +160,7 @@ const PostDetail = () => {
                 placeholder="Add a comment..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 bg-cyber-muted/50 border-cyber-muted resize-none"
+                className="flex-1 bg-secondary/40 border-muted resize-none rounded-sm text-sm p-2"
                 disabled={isPostingComment}
               />
               <Button 
@@ -179,19 +174,19 @@ const PostDetail = () => {
           </form>
         </div>
       ) : verificationStatus === 'verified-none' ? (
-        <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20">
-          <div className="flex items-center gap-2 mb-2">
-            <Eye className="w-4 h-4 text-cyber-neutral" />
+        <div className="mb-8 p-3 border border-muted rounded-sm bg-secondary/30">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Eye className="w-4 h-4 text-muted-foreground" />
             <h3 className="font-medium">Read-Only Mode</h3>
           </div>
-          <p className="text-sm text-cyber-neutral">
+          <p className="text-sm text-muted-foreground">
             Your wallet has been verified but does not contain any Ordinal Operators. 
             You can browse threads but cannot comment or vote.
           </p>
         </div>
       ) : (
-        <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 text-center">
-          <p className="text-sm mb-3">Connect wallet and verify Ordinal ownership to comment</p>
+        <div className="mb-8 p-3 border border-muted rounded-sm bg-secondary/30 text-center">
+          <p className="text-sm mb-2">Connect wallet and verify Ordinal ownership to comment</p>
           <Button asChild size="sm">
             <Link to="/">Go to Home</Link>
           </Button>
@@ -200,25 +195,25 @@ const PostDetail = () => {
       
       <div className="space-y-2">
         {postComments.length === 0 ? (
-          <div className="text-center py-6 text-cyber-neutral">
+          <div className="text-center py-6 text-muted-foreground">
             <p>No comments yet</p>
           </div>
         ) : (
           postComments.map(comment => (
-            <div key={comment.id} className="comment-card">
+            <div key={comment.id} className="comment-card" id={`comment-${comment.id}`}>
               <div className="flex gap-2 items-start">
-                <div className="flex flex-col items-center mr-2">
+                <div className="flex flex-col items-center w-5 pt-0.5">
                   <button 
-                    className={`p-0.5 rounded-sm hover:bg-cyber-muted/50 ${isCommentVoted(comment, true) ? 'text-cyber-accent' : ''}`}
+                    className={`p-0.5 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isCommentVoted(comment, true) ? 'text-primary' : ''}`}
                     onClick={() => handleVoteComment(comment.id, true)}
                     disabled={verificationStatus !== 'verified-owner' || isVoting}
                     title={verificationStatus === 'verified-owner' ? "Upvote" : "Full access required to vote"}
                   >
                     <ArrowUp className="w-4 h-4" />
                   </button>
-                  <span className="text-xs py-0.5">{comment.upvotes.length - comment.downvotes.length}</span>
+                  <span className="text-xs font-medium py-0.5">{comment.upvotes.length - comment.downvotes.length}</span>
                   <button 
-                    className={`p-0.5 rounded-sm hover:bg-cyber-muted/50 ${isCommentVoted(comment, false) ? 'text-cyber-accent' : ''}`}
+                    className={`p-0.5 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isCommentVoted(comment, false) ? 'text-primary' : ''}`}
                     onClick={() => handleVoteComment(comment.id, false)}
                     disabled={verificationStatus !== 'verified-owner' || isVoting}
                     title={verificationStatus === 'verified-owner' ? "Downvote" : "Full access required to vote"}
@@ -226,19 +221,19 @@ const PostDetail = () => {
                     <ArrowDown className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="bg-cyber-muted/30 rounded-sm p-3 flex-1">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex-1 pt-0.5">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <div className="flex items-center gap-1.5">
                       <CypherImage 
                         src={getIdentityImageUrl(comment.authorAddress)}
                         alt={comment.authorAddress.slice(0, 6)}
-                        className="rounded-sm w-5 h-5 bg-cyber-muted"
+                        className="rounded-sm w-5 h-5 bg-secondary"
                       />
-                      <span className="text-xs text-cyber-neutral">
+                      <span className="text-xs text-muted-foreground">
                         {comment.authorAddress.slice(0, 6)}...{comment.authorAddress.slice(-4)}
                       </span>
                     </div>
-                    <span className="text-xs text-cyber-neutral">
+                    <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
                     </span>
                   </div>
