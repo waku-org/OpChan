@@ -33,11 +33,24 @@ async function signAndSendMessage<T extends PostMessage | CommentMessage | VoteM
       signedMessage = await messageSigning.signMessage(message);
       
       if (!signedMessage) {
-        toast({
-          title: "Key Delegation Required",
-          description: "Please delegate a signing key for better UX.",
-          variant: "destructive",
-        });
+        // Check if delegation exists but is expired
+        const isDelegationExpired = messageSigning['keyDelegation'] && 
+          !messageSigning['keyDelegation'].isDelegationValid() && 
+          messageSigning['keyDelegation'].retrieveDelegation();
+          
+        if (isDelegationExpired) {
+          toast({
+            title: "Key Delegation Expired",
+            description: "Your signing key has expired. Please re-delegate your key through the profile menu.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Key Delegation Required",
+            description: "Please delegate a signing key from your profile menu to post without wallet approval for each action.",
+            variant: "destructive",
+          });
+        }
         return null;
       }
     } else {
@@ -48,9 +61,20 @@ async function signAndSendMessage<T extends PostMessage | CommentMessage | VoteM
     return signedMessage;
   } catch (error) {
     console.error("Error signing and sending message:", error);
+    
+    let errorMessage = "Failed to sign and send message. Please try again.";
+    
+    if (error instanceof Error) {
+      if (error.message.includes("timeout") || error.message.includes("network")) {
+        errorMessage = "Network issue detected. Please check your connection and try again.";
+      } else if (error.message.includes("rejected") || error.message.includes("denied")) {
+        errorMessage = "Wallet signature request was rejected. Please approve signing to continue.";
+      }
+    }
+    
     toast({
       title: "Message Error",
-      description: "Failed to sign and send message. Please try again.",
+      description: errorMessage,
       variant: "destructive",
     });
     return null;

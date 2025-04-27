@@ -218,8 +218,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       toast({
-        title: "Delegating Key",
-        description: "Generating a browser keypair for quick signing...",
+        title: "Starting Key Delegation",
+        description: "This will let you post, comment, and vote without approving each action for 24 hours.",
       });
       
       // Generate a browser keypair
@@ -236,9 +236,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         expiryTimestamp
       );
       
+      // Format date for user-friendly display
+      const expiryDate = new Date(expiryTimestamp);
+      const formattedExpiry = expiryDate.toLocaleString();
+      
       toast({
-        title: "Signing Required",
-        description: "Please sign the delegation message with your wallet...",
+        title: "Wallet Signature Required",
+        description: `Please sign with your wallet to authorize a temporary key valid until ${formattedExpiry}. This improves UX by reducing wallet prompts.`,
       });
       
       const signature = await phantomWalletRef.current.signMessage(delegationMessage);
@@ -264,8 +268,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('opchan-user', JSON.stringify(updatedUser));
       
       toast({
-        title: "Key Delegated",
-        description: `You won't need to sign every action for the next ${expiryHours} hours.`,
+        title: "Key Delegation Successful",
+        description: `You can now interact with the forum without additional wallet approvals until ${formattedExpiry}.`,
       });
       
       return true;
@@ -273,12 +277,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Error delegating key:", error);
       
       let errorMessage = "Failed to delegate key. Please try again.";
+      
       if (error instanceof Error) {
-        errorMessage = error.message;
+        // Provide specific guidance based on error type
+        if (error.message.includes("rejected") || error.message.includes("declined") || error.message.includes("denied")) {
+          errorMessage = "You declined the signature request. Key delegation is optional but improves your experience.";
+        } else if (error.message.includes("timeout")) {
+          errorMessage = "Wallet request timed out. Please try again and approve the signature promptly.";
+        } else {
+          errorMessage = error.message;
+        }
       }
       
       toast({
-        title: "Delegation Error",
+        title: "Delegation Failed",
         description: errorMessage,
         variant: "destructive",
       });

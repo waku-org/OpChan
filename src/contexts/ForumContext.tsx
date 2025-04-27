@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Cell, Post, Comment } from '@/types';
+import { Cell, Post, Comment, OpchanMessage } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -61,25 +61,30 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   
   // Transform message cache data to the expected types
   const updateStateFromCache = () => {
-    // Transform cells
+    // Use the verifyMessage function from messageSigning if available
+    const verifyFn = isAuthenticated && messageSigning ? 
+      (message: OpchanMessage) => messageSigning.verifyMessage(message) : 
+      undefined;
+    
+    // Transform cells with verification
     setCells(
-      Object.values(messageManager.messageCache.cells).map(cell => 
-        transformCell(cell)
-      )
+      Object.values(messageManager.messageCache.cells)
+        .map(cell => transformCell(cell, verifyFn))
+        .filter(cell => cell !== null) as Cell[]
     );
     
-    // Transform posts
+    // Transform posts with verification
     setPosts(
-      Object.values(messageManager.messageCache.posts).map(post => 
-        transformPost(post)
-      )
+      Object.values(messageManager.messageCache.posts)
+        .map(post => transformPost(post, verifyFn))
+        .filter(post => post !== null) as Post[]
     );
     
-    // Transform comments
+    // Transform comments with verification
     setComments(
-      Object.values(messageManager.messageCache.comments).map(comment => 
-        transformComment(comment)
-      )
+      Object.values(messageManager.messageCache.comments)
+        .map(comment => transformComment(comment, verifyFn))
+        .filter(comment => comment !== null) as Comment[]
     );
   };
   

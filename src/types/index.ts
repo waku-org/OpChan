@@ -17,6 +17,8 @@ export interface Cell {
   name: string;
   description: string;
   icon: string;
+  signature?: string; // Message signature
+  browserPubKey?: string; // Public key that signed the message
 }
 
 export interface Post {
