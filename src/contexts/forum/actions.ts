@@ -468,4 +468,55 @@ export const moderateComment = async (
     });
     return false;
   }
+};
+
+export const moderateUser = async (
+  cellId: string,
+  userAddress: string,
+  reason: string | undefined,
+  currentUser: User | null,
+  isAuthenticated: boolean,
+  cellOwner: string,
+  toast: ToastFunction,
+  updateStateFromCache: () => void,
+  messageSigning?: MessageSigning
+): Promise<boolean> => {
+  if (!isAuthenticated || !currentUser) {
+    toast({
+      title: "Authentication Required",
+      description: "You need to verify Ordinal ownership to moderate users.",
+      variant: "destructive",
+    });
+    return false;
+  }
+  if (currentUser.address !== cellOwner) {
+    toast({
+      title: "Not Authorized",
+      description: "Only the cell admin can moderate users.",
+      variant: "destructive",
+    });
+    return false;
+  }
+  const message: ModerateMessage = {
+    type: MessageType.MODERATE,
+    cellId,
+    targetType: 'user',
+    targetId: userAddress,
+    reason,
+    author: currentUser.address,
+    timestamp: Date.now(),
+    signature: '',
+    browserPubKey: currentUser.browserPubKey,
+  };
+  const sent = await signAndSendMessage(message, currentUser, messageSigning!, toast);
+  if (sent) {
+    updateStateFromCache();
+    toast({
+      title: "User Moderated",
+      description: `User ${userAddress} has been moderated in this cell.`,
+      variant: "default",
+    });
+    return true;
+  }
+  return false;
 }; 

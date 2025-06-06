@@ -68,8 +68,8 @@ export interface VoteMessage extends BaseMessage {
 export interface ModerateMessage extends BaseMessage {
   type: MessageType.MODERATE;
   cellId: string;
-  targetType: 'post' | 'comment';
-  targetId: string;
+  targetType: 'post' | 'comment' | 'user';
+  targetId: string; // postId, commentId, or user address (for user moderation)
   reason?: string;
 }
 

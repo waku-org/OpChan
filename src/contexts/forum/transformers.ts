@@ -47,8 +47,15 @@ export const transformPost = (
   const upvotes = filteredVotes.filter(vote => vote.value === 1);
   const downvotes = filteredVotes.filter(vote => vote.value === -1);
 
+  // Check for post moderation
   const modMsg = messageManager.messageCache.moderations[postMessage.id];
-  const isModerated = !!modMsg && modMsg.targetType === 'post';
+  const isPostModerated = !!modMsg && modMsg.targetType === 'post';
+
+  // Check for user moderation in this cell
+  const userModMsg = Object.values(messageManager.messageCache.moderations).find(
+    m => m.targetType === 'user' && m.cellId === postMessage.cellId && m.targetId === postMessage.author
+  );
+  const isUserModerated = !!userModMsg;
 
   return {
     id: postMessage.id,
@@ -61,10 +68,10 @@ export const transformPost = (
     downvotes: downvotes,
     signature: postMessage.signature,
     browserPubKey: postMessage.browserPubKey,
-    moderated: isModerated,
-    moderatedBy: isModerated ? modMsg.author : undefined,
-    moderationReason: isModerated ? modMsg.reason : undefined,
-    moderationTimestamp: isModerated ? modMsg.timestamp : undefined,
+    moderated: isPostModerated || isUserModerated,
+    moderatedBy: isPostModerated ? modMsg.author : isUserModerated ? userModMsg!.author : undefined,
+    moderationReason: isPostModerated ? modMsg.reason : isUserModerated ? userModMsg!.reason : undefined,
+    moderationTimestamp: isPostModerated ? modMsg.timestamp : isUserModerated ? userModMsg!.timestamp : undefined,
   };
 };
 
@@ -92,9 +99,15 @@ export const transformComment = (
   const upvotes = filteredVotes.filter(vote => vote.value === 1);
   const downvotes = filteredVotes.filter(vote => vote.value === -1);
 
-  // Check for moderation
+  // Check for comment moderation
   const modMsg = messageManager.messageCache.moderations[commentMessage.id];
-  const isModerated = !!modMsg && modMsg.targetType === 'comment';
+  const isCommentModerated = !!modMsg && modMsg.targetType === 'comment';
+
+  // Check for user moderation in this cell
+  const userModMsg = Object.values(messageManager.messageCache.moderations).find(
+    m => m.targetType === 'user' && m.cellId === commentMessage.postId.split('-')[0] && m.targetId === commentMessage.author
+  );
+  const isUserModerated = !!userModMsg;
 
   return {
     id: commentMessage.id,
@@ -106,10 +119,10 @@ export const transformComment = (
     downvotes: downvotes,
     signature: commentMessage.signature,
     browserPubKey: commentMessage.browserPubKey,
-    moderated: isModerated,
-    moderatedBy: isModerated ? modMsg.author : undefined,
-    moderationReason: isModerated ? modMsg.reason : undefined,
-    moderationTimestamp: isModerated ? modMsg.timestamp : undefined,
+    moderated: isCommentModerated || isUserModerated,
+    moderatedBy: isCommentModerated ? modMsg.author : isUserModerated ? userModMsg!.author : undefined,
+    moderationReason: isCommentModerated ? modMsg.reason : isUserModerated ? userModMsg!.reason : undefined,
+    moderationTimestamp: isCommentModerated ? modMsg.timestamp : isUserModerated ? userModMsg!.timestamp : undefined,
   };
 };
 

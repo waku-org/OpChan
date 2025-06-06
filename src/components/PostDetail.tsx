@@ -25,7 +25,9 @@ const PostDetail = () => {
     isPostingComment,
     isVoting,
     isRefreshing,
-    moderateComment
+    refreshData,
+    moderateComment,
+    moderateUser
   } = useForum();
   const { currentUser, isAuthenticated, verificationStatus } = useAuth();
   const [newComment, setNewComment] = useState('');
@@ -105,6 +107,12 @@ const PostDetail = () => {
     const reason = window.prompt('Enter a reason for moderation (optional):') || undefined;
     if (!cell) return;
     await moderateComment(cell.id, commentId, reason, cell.signature);
+  };
+  
+  const handleModerateUser = async (userAddress: string) => {
+    if (!cell) return;
+    const reason = window.prompt('Reason for moderating this user? (optional)') || undefined;
+    await moderateUser(cell.id, userAddress, reason, cell.signature);
   };
   
   return (
@@ -252,6 +260,11 @@ const PostDetail = () => {
                   {isCellAdmin && !comment.moderated && (
                     <Button size="sm" variant="destructive" className="ml-2" onClick={() => handleModerateComment(comment.id)}>
                       Moderate
+                    </Button>
+                  )}
+                  {isCellAdmin && comment.authorAddress !== cell.signature && (
+                    <Button size="sm" variant="destructive" className="ml-2" onClick={() => handleModerateUser(comment.authorAddress)}>
+                      Moderate User
                     </Button>
                   )}
                   {comment.moderated && (

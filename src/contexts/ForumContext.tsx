@@ -8,7 +8,8 @@ import {
   vote, 
   createCell, 
   moderatePost, 
-  moderateComment 
+  moderateComment, 
+  moderateUser 
 } from './forum/actions';
 import { 
   setupPeriodicQueries, 
@@ -50,6 +51,12 @@ interface ForumContextType {
   moderateComment: (
     cellId: string,
     commentId: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => Promise<boolean>;
+  moderateUser: (
+    cellId: string,
+    userAddress: string,
     reason: string | undefined,
     cellOwner: string
   ) => Promise<boolean>;
@@ -232,6 +239,63 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     return result;
   };
 
+  const handleModeratePost = async (
+    cellId: string,
+    postId: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => {
+    return moderatePost(
+      cellId,
+      postId,
+      reason,
+      currentUser,
+      isAuthenticated,
+      cellOwner,
+      toast,
+      updateStateFromCache,
+      messageSigning
+    );
+  };
+
+  const handleModerateComment = async (
+    cellId: string,
+    commentId: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => {
+    return moderateComment(
+      cellId,
+      commentId,
+      reason,
+      currentUser,
+      isAuthenticated,
+      cellOwner,
+      toast,
+      updateStateFromCache,
+      messageSigning
+    );
+  };
+
+  const handleModerateUser = async (
+    cellId: string,
+    userAddress: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => {
+    return moderateUser(
+      cellId,
+      userAddress,
+      reason,
+      currentUser,
+      isAuthenticated,
+      cellOwner,
+      toast,
+      updateStateFromCache,
+      messageSigning
+    );
+  };
+
   return (
     <ForumContext.Provider
       value={{
@@ -254,7 +318,10 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         votePost: handleVotePost,
         voteComment: handleVoteComment,
         createCell: handleCreateCell,
-        refreshData: handleRefreshData
+        refreshData: handleRefreshData,
+        moderatePost: handleModeratePost,
+        moderateComment: handleModerateComment,
+        moderateUser: handleModerateUser
       }}
     >
       {children}
