@@ -1,6 +1,5 @@
 import { LightNode } from "@waku/sdk";
-import { CellMessage, CommentMessage, MessageType, PostMessage, VoteMessage } from "./types";
-import { CONTENT_TOPICS } from "./constants";
+import { CellMessage, CommentMessage, MessageType, PostMessage, VoteMessage, ModerateMessage } from "./types";
 import { OpchanMessage } from "@/types";
 import { encodeMessage, encoders, decoders, decodeMessage } from "./codec";
 
@@ -20,7 +19,7 @@ export class EphemeralProtocolsManager {
     }
 
     public async subscribeToMessages(types: MessageType[]) {
-        const result: (CellMessage | PostMessage | CommentMessage | VoteMessage)[] = [];
+        const result: (CellMessage | PostMessage | CommentMessage | VoteMessage | ModerateMessage)[] = [];
 
         const subscription = await this.node.filter.subscribe(Object.values(decoders), async (message) => {
             const {payload} = message;

@@ -1,6 +1,6 @@
-import { CellMessage, CommentMessage, PostMessage, VoteMessage } from "@/lib/waku/types";
+import { CellMessage, CommentMessage, PostMessage, VoteMessage, ModerateMessage } from "@/lib/waku/types";
 
-export type OpchanMessage = CellMessage | PostMessage | CommentMessage | VoteMessage;
+export type OpchanMessage = CellMessage | PostMessage | CommentMessage | VoteMessage | ModerateMessage;
 
 export interface User {
   address: string;
@@ -32,6 +32,10 @@ export interface Post {
   downvotes: VoteMessage[];
   signature?: string; // Message signature
   browserPubKey?: string; // Public key that signed the message
+  moderated?: boolean;
+  moderatedBy?: string;
+  moderationReason?: string;
+  moderationTimestamp?: number;
 }
 
 export interface Comment {
@@ -44,6 +48,10 @@ export interface Comment {
   downvotes: VoteMessage[];
   signature?: string; // Message signature
   browserPubKey?: string; // Public key that signed the message
+  moderated?: boolean;
+  moderatedBy?: string;
+  moderationReason?: string;
+  moderationTimestamp?: number;
 }
 
 // Extended message types for verification

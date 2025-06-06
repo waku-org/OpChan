@@ -24,7 +24,8 @@ const PostList = () => {
     refreshData,
     votePost,
     isVoting,
-    posts
+    posts,
+    moderatePost
   } = useForum();
   const { isAuthenticated, currentUser, verificationStatus } = useAuth();
   const [newPostTitle, setNewPostTitle] = useState('');
@@ -106,6 +107,18 @@ const PostList = () => {
     if (!post) return false;
     const votes = isUpvote ? post.upvotes : post.downvotes;
     return votes.some(vote => vote.author === currentUser.address);
+  };
+  
+  // Only show unmoderated posts, or all if admin
+  const isCellAdmin = currentUser && cell && currentUser.address === cell.signature;
+  const visiblePosts = isCellAdmin
+    ? cellPosts
+    : cellPosts.filter(post => !post.moderated);
+  
+  const handleModerate = async (postId: string) => {
+    const reason = window.prompt('Enter a reason for moderation (optional):') || undefined;
+    if (!cell) return;
+    await moderatePost(cell.id, postId, reason, cell.signature);
   };
   
   return (
@@ -209,7 +222,7 @@ const PostList = () => {
             </p>
           </div>
         ) : (
-          cellPosts.map(post => (
+          visiblePosts.map(post => (
             <div key={post.id} className="post-card p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 hover:bg-cyber-muted/30 transition duration-200">
               <div className="flex gap-4">
                 <div className="flex flex-col items-center">
@@ -241,6 +254,14 @@ const PostList = () => {
                       <span>by {post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}</span>
                     </div>
                   </Link>
+                  {isCellAdmin && !post.moderated && (
+                    <Button size="xs" variant="destructive" className="ml-2" onClick={() => handleModerate(post.id)}>
+                      Moderate
+                    </Button>
+                  )}
+                  {post.moderated && (
+                    <span className="ml-2 text-xs text-red-500">[Moderated]</span>
+                  )}
                 </div>
               </div>
             </div>

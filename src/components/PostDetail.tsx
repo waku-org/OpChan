@@ -25,7 +25,7 @@ const PostDetail = () => {
     isPostingComment,
     isVoting,
     isRefreshing,
-    refreshData
+    moderateComment
   } = useForum();
   const { currentUser, isAuthenticated, verificationStatus } = useAuth();
   const [newComment, setNewComment] = useState('');
@@ -57,6 +57,11 @@ const PostDetail = () => {
   
   const cell = getCellById(post.cellId);
   const postComments = getCommentsByPost(post.id);
+  
+  const isCellAdmin = currentUser && cell && currentUser.address === cell.signature;
+  const visibleComments = isCellAdmin
+    ? postComments
+    : postComments.filter(comment => !comment.moderated);
   
   const handleCreateComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +99,12 @@ const PostDetail = () => {
   
   const getIdentityImageUrl = (address: string) => {
     return `https://api.dicebear.com/7.x/identicon/svg?seed=${address}`;
+  };
+  
+  const handleModerateComment = async (commentId: string) => {
+    const reason = window.prompt('Enter a reason for moderation (optional):') || undefined;
+    if (!cell) return;
+    await moderateComment(cell.id, commentId, reason, cell.signature);
   };
   
   return (
@@ -199,7 +210,7 @@ const PostDetail = () => {
             <p>No comments yet</p>
           </div>
         ) : (
-          postComments.map(comment => (
+          visibleComments.map(comment => (
             <div key={comment.id} className="comment-card" id={`comment-${comment.id}`}>
               <div className="flex gap-2 items-start">
                 <div className="flex flex-col items-center w-5 pt-0.5">
@@ -238,6 +249,14 @@ const PostDetail = () => {
                     </span>
                   </div>
                   <p className="text-sm break-words">{comment.content}</p>
+                  {isCellAdmin && !comment.moderated && (
+                    <Button size="sm" variant="destructive" className="ml-2" onClick={() => handleModerateComment(comment.id)}>
+                      Moderate
+                    </Button>
+                  )}
+                  {comment.moderated && (
+                    <span className="ml-2 text-xs text-red-500">[Moderated]</span>
+                  )}
                 </div>
               </div>
             </div>

@@ -4,7 +4,7 @@
 import { createDecoder, createLightNode, HealthStatus, HealthStatusChangeEvents, LightNode } from "@waku/sdk";
 import { BOOTSTRAP_NODES } from "./constants";
 import StoreManager from "./store";
-import { CommentCache, MessageType, VoteCache } from "./types";
+import { CommentCache, MessageType, VoteCache, ModerateMessage } from "./types";
 import { PostCache } from "./types";
 import { CellCache } from "./types";
 import { OpchanMessage } from "@/types";
@@ -28,11 +28,13 @@ class MessageManager {
         posts: PostCache;
         comments: CommentCache;
         votes: VoteCache;
+        moderations: { [targetId: string]: ModerateMessage };
     } = {
         cells: {},
         posts: {},
         comments: {},
-        votes: {}
+        votes: {},
+        moderations: {}
     }
 
     public static async create(): Promise<MessageManager> {
@@ -169,7 +171,7 @@ class MessageManager {
         this.updateCache(message);
     }
 
-    public async subscribeToMessages(types: MessageType[] = [MessageType.CELL, MessageType.POST, MessageType.COMMENT, MessageType.VOTE]) {
+    public async subscribeToMessages(types: MessageType[] = [MessageType.CELL, MessageType.POST, MessageType.COMMENT, MessageType.VOTE, MessageType.MODERATE]) {
         const { result, subscription } = await this.ephemeralProtocolsManager.subscribeToMessages(types);
         
         for (const message of result) {
@@ -194,6 +196,12 @@ class MessageManager {
                 // For votes, we use a composite key of targetId + author to handle multiple votes from same user
                 const voteKey = `${message.targetId}:${message.author}`;
                 this.messageCache.votes[voteKey] = message;
+                break;
+            }
+            case MessageType.MODERATE: {
+                // Type guard for ModerateMessage
+                const modMsg = message as ModerateMessage;
+                this.messageCache.moderations[modMsg.targetId] = modMsg;
                 break;
             }
             default:

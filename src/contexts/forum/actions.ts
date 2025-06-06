@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { CellMessage, CommentMessage, MessageType, PostMessage, VoteMessage } from '@/lib/waku/types';
+import { CellMessage, CommentMessage, MessageType, PostMessage, VoteMessage, ModerateMessage } from '@/lib/waku/types';
 import messageManager from '@/lib/waku';
 import { Cell, Comment, Post, User } from '@/types';
 import { transformCell, transformComment, transformPost } from './transformers';
@@ -11,7 +11,9 @@ type ToastFunction = (props: {
   variant?: "default" | "destructive"; 
 }) => void;
 
-async function signAndSendMessage<T extends PostMessage | CommentMessage | VoteMessage | CellMessage>(
+type AllowedMessages = PostMessage | CommentMessage | VoteMessage | CellMessage | ModerateMessage;
+
+async function signAndSendMessage<T extends AllowedMessages>(
   message: T,
   currentUser: User | null,
   messageSigning: MessageSigning,
@@ -332,6 +334,136 @@ export const vote = async (
     toast({
       title: "Vote Failed",
       description: "Failed to register your vote. Please try again.",
+      variant: "destructive",
+    });
+    return false;
+  }
+};
+
+export const moderatePost = async (
+  cellId: string,
+  postId: string,
+  reason: string | undefined,
+  currentUser: User | null,
+  isAuthenticated: boolean,
+  cellOwner: string,
+  toast: ToastFunction,
+  updateStateFromCache: () => void,
+  messageSigning?: MessageSigning
+): Promise<boolean> => {
+  if (!isAuthenticated || !currentUser) {
+    toast({
+      title: "Authentication Required",
+      description: "You need to verify Ordinal ownership to moderate posts.",
+      variant: "destructive",
+    });
+    return false;
+  }
+  if (currentUser.address !== cellOwner) {
+    toast({
+      title: "Not Authorized",
+      description: "Only the cell admin can moderate posts.",
+      variant: "destructive",
+    });
+    return false;
+  }
+  try {
+    toast({
+      title: "Moderating Post",
+      description: "Sending moderation message to the network...",
+    });
+    const modMsg: ModerateMessage = {
+      type: MessageType.MODERATE,
+      cellId,
+      targetType: 'post',
+      targetId: postId,
+      reason,
+      timestamp: Date.now(),
+      author: currentUser.address,
+    };
+    const sentMessage = await signAndSendMessage(
+      modMsg,
+      currentUser,
+      messageSigning!,
+      toast
+    );
+    if (!sentMessage) return false;
+    updateStateFromCache();
+    toast({
+      title: "Post Moderated",
+      description: "The post has been marked as moderated.",
+    });
+    return true;
+  } catch (error) {
+    console.error("Error moderating post:", error);
+    toast({
+      title: "Moderation Failed",
+      description: "Failed to moderate post. Please try again.",
+      variant: "destructive",
+    });
+    return false;
+  }
+};
+
+export const moderateComment = async (
+  cellId: string,
+  commentId: string,
+  reason: string | undefined,
+  currentUser: User | null,
+  isAuthenticated: boolean,
+  cellOwner: string,
+  toast: ToastFunction,
+  updateStateFromCache: () => void,
+  messageSigning?: MessageSigning
+): Promise<boolean> => {
+  if (!isAuthenticated || !currentUser) {
+    toast({
+      title: "Authentication Required",
+      description: "You need to verify Ordinal ownership to moderate comments.",
+      variant: "destructive",
+    });
+    return false;
+  }
+  if (currentUser.address !== cellOwner) {
+    toast({
+      title: "Not Authorized",
+      description: "Only the cell admin can moderate comments.",
+      variant: "destructive",
+    });
+    return false;
+  }
+  try {
+    toast({
+      title: "Moderating Comment",
+      description: "Sending moderation message to the network...",
+    });
+    const modMsg: ModerateMessage = {
+      type: MessageType.MODERATE,
+      cellId,
+      targetType: 'comment',
+      targetId: commentId,
+      reason,
+      timestamp: Date.now(),
+      author: currentUser.address,
+    };
+    const sentMessage = await signAndSendMessage(
+      modMsg,
+      currentUser,
+      messageSigning!,
+      toast
+    );
+    if (!sentMessage) return false;
+    updateStateFromCache();
+    toast({
+      title: "Comment Moderated",
+      description: "The comment has been marked as moderated.",
+    });
+    return true;
+  } catch (error) {
+    console.error("Error moderating comment:", error);
+    toast({
+      title: "Moderation Failed",
+      description: "Failed to moderate comment. Please try again.",
       variant: "destructive",
     });
     return false;

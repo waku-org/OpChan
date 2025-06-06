@@ -5,7 +5,8 @@ export enum MessageType {
   CELL = 'cell',
   POST = 'post',
   COMMENT = 'comment',
-  VOTE = 'vote'
+  VOTE = 'vote',
+  MODERATE = 'moderate',
 }
 
 /**
@@ -59,6 +60,17 @@ export interface VoteMessage extends BaseMessage {
   id: string;
   targetId: string; // ID of the post or comment being voted on
   value: 1 | -1; 
+}
+
+/**
+ * Represents a moderate message
+ */
+export interface ModerateMessage extends BaseMessage {
+  type: MessageType.MODERATE;
+  cellId: string;
+  targetType: 'post' | 'comment';
+  targetId: string;
+  reason?: string;
 }
 
 /**

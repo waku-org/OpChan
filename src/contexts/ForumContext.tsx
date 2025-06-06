@@ -6,7 +6,9 @@ import {
   createPost, 
   createComment, 
   vote, 
-  createCell 
+  createCell, 
+  moderatePost, 
+  moderateComment 
 } from './forum/actions';
 import { 
   setupPeriodicQueries, 
@@ -39,6 +41,18 @@ interface ForumContextType {
   voteComment: (commentId: string, isUpvote: boolean) => Promise<boolean>;
   createCell: (name: string, description: string, icon: string) => Promise<Cell | null>;
   refreshData: () => Promise<void>;
+  moderatePost: (
+    cellId: string,
+    postId: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => Promise<boolean>;
+  moderateComment: (
+    cellId: string,
+    commentId: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => Promise<boolean>;
 }
 
 const ForumContext = createContext<ForumContextType | undefined>(undefined);

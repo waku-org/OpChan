@@ -2,15 +2,12 @@ import { Cell, Post, Comment, OpchanMessage } from '@/types';
 import { CellMessage, CommentMessage, MessageType, PostMessage, VoteMessage } from '@/lib/waku/types';
 import messageManager from '@/lib/waku';
 
-// Type for the verification function
 type VerifyFunction = (message: OpchanMessage) => boolean;
 
-// Helper function to transform CellMessage to Cell
 export const transformCell = (
   cellMessage: CellMessage, 
   verifyMessage?: VerifyFunction
 ): Cell | null => {
-  // Verify the message if a verification function is provided
   if (verifyMessage && !verifyMessage(cellMessage)) {
     console.warn(`Cell message ${cellMessage.id} failed verification`);
     return null;
@@ -21,7 +18,6 @@ export const transformCell = (
     name: cellMessage.name,
     description: cellMessage.description,
     icon: cellMessage.icon,
-    // Include signature information for future verification if needed
     signature: cellMessage.signature,
     browserPubKey: cellMessage.browserPubKey
   };
@@ -51,6 +47,9 @@ export const transformPost = (
   const upvotes = filteredVotes.filter(vote => vote.value === 1);
   const downvotes = filteredVotes.filter(vote => vote.value === -1);
 
+  const modMsg = messageManager.messageCache.moderations[postMessage.id];
+  const isModerated = !!modMsg && modMsg.targetType === 'post';
+
   return {
     id: postMessage.id,
     cellId: postMessage.cellId,
@@ -60,9 +59,12 @@ export const transformPost = (
     timestamp: postMessage.timestamp,
     upvotes: upvotes,
     downvotes: downvotes,
-    // Include signature information for future verification if needed
     signature: postMessage.signature,
-    browserPubKey: postMessage.browserPubKey
+    browserPubKey: postMessage.browserPubKey,
+    moderated: isModerated,
+    moderatedBy: isModerated ? modMsg.author : undefined,
+    moderationReason: isModerated ? modMsg.reason : undefined,
+    moderationTimestamp: isModerated ? modMsg.timestamp : undefined,
   };
 };
 
@@ -90,6 +92,10 @@ export const transformComment = (
   const upvotes = filteredVotes.filter(vote => vote.value === 1);
   const downvotes = filteredVotes.filter(vote => vote.value === -1);
 
+  // Check for moderation
+  const modMsg = messageManager.messageCache.moderations[commentMessage.id];
+  const isModerated = !!modMsg && modMsg.targetType === 'comment';
+
   return {
     id: commentMessage.id,
     postId: commentMessage.postId,
@@ -98,9 +104,12 @@ export const transformComment = (
     timestamp: commentMessage.timestamp,
     upvotes: upvotes,
     downvotes: downvotes,
-    // Include signature information for future verification if needed
     signature: commentMessage.signature,
-    browserPubKey: commentMessage.browserPubKey
+    browserPubKey: commentMessage.browserPubKey,
+    moderated: isModerated,
+    moderatedBy: isModerated ? modMsg.author : undefined,
+    moderationReason: isModerated ? modMsg.reason : undefined,
+    moderationTimestamp: isModerated ? modMsg.timestamp : undefined,
   };
 };
 
