@@ -255,7 +255,7 @@ const PostList = () => {
                     </div>
                   </Link>
                   {isCellAdmin && !post.moderated && (
-                    <Button size="xs" variant="destructive" className="ml-2" onClick={() => handleModerate(post.id)}>
+                    <Button size="sm" variant="destructive" className="ml-2" onClick={() => handleModerate(post.id)}>
                       Moderate
                     </Button>
                   )}
