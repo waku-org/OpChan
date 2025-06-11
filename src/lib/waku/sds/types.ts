@@ -1,4 +1,4 @@
-import { OpchanMessage } from "../../types";
+import { CellMessage, CommentMessage, PostMessage, VoteMessage, ModerateMessage } from "@/lib/waku/types";
 
 export interface SDSMetadata {
   channelId: string;
@@ -7,9 +7,12 @@ export interface SDSMetadata {
   bloomFilter?: Uint8Array;
 }
 
-export interface SDSEnhancedMessage extends OpchanMessage {
-  sds?: SDSMetadata;
-}
+export type SDSEnhancedMessage = 
+  | CellMessage
+  | PostMessage
+  | CommentMessage
+  | (VoteMessage & { sds?: SDSMetadata })
+  | ModerateMessage;
 
 export interface SDSChannelState {
   channelId: string;

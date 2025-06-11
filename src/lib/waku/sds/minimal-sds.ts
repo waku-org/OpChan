@@ -1,6 +1,6 @@
 import { createEncoder, createDecoder } from "@waku/sdk";
-import { SDSEnhancedMessage, SDSChannelState } from "./types";
-import { OpchanMessage } from "../../types";
+import { SDSEnhancedMessage, SDSChannelState, SDSMetadata } from "./types";
+import { CellMessage, CommentMessage, PostMessage, VoteMessage, ModerateMessage } from "@/lib/waku/types";
 
 // For now, use a single channel for all votes to test SDS
 const VOTE_CHANNEL_ID = "opchan:votes:all";
@@ -22,7 +22,7 @@ export class MinimalSDSWrapper {
   }
 
   // Enhance a message with SDS metadata
-  enhanceMessage(message: OpchanMessage): SDSEnhancedMessage {
+  enhanceMessage(message: CellMessage | PostMessage | CommentMessage | VoteMessage | ModerateMessage): SDSEnhancedMessage {
     // Only enhance vote messages for minimal implementation
     if (message.type !== 'vote') {
       return message;
@@ -42,8 +42,10 @@ export class MinimalSDSWrapper {
       state.messageHistory = state.messageHistory.slice(-100);
     }
 
+    // Return vote message with SDS metadata
+    const voteMessage = message as VoteMessage;
     return {
-      ...message,
+      ...voteMessage,
       sds: {
         channelId: VOTE_CHANNEL_ID,
         lamportTimestamp: state.lamportTimestamp,
@@ -54,7 +56,7 @@ export class MinimalSDSWrapper {
 
   // Process incoming message with SDS metadata
   processIncomingMessage(message: SDSEnhancedMessage): void {
-    if (!message.sds || message.type !== 'vote') {
+    if (message.type !== 'vote' || !('sds' in message) || !message.sds) {
       return;
     }
 
@@ -77,7 +79,12 @@ export class MinimalSDSWrapper {
 
   // Check if message A is causally newer than B
   isCausallyNewer(a: SDSEnhancedMessage, b: SDSEnhancedMessage): boolean {
-    if (!a.sds || !b.sds) {
+    // Type guard to check if message has SDS metadata
+    const hasSDSMetadata = (msg: SDSEnhancedMessage): msg is VoteMessage & { sds: SDSMetadata } => {
+      return msg.type === 'vote' && 'sds' in msg && msg.sds !== undefined;
+    };
+
+    if (!hasSDSMetadata(a) || !hasSDSMetadata(b)) {
       return a.timestamp > b.timestamp;
     }
     

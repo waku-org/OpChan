@@ -244,3 +244,4 @@ class MessageManager {
 
 const messageManager = await MessageManager.create();
 export default messageManager;
+export { MessageManager };
