@@ -18,7 +18,7 @@ export class EphemeralProtocolsManager {
         return result;
     }
 
-    public async subscribeToMessages(types: MessageType[]) {
+    public async subscribeToMessages(types: MessageType[], onMessage?: (message: OpchanMessage) => void) {
         const result: (CellMessage | PostMessage | CommentMessage | VoteMessage | ModerateMessage)[] = [];
 
         const subscription = await this.node.filter.subscribe(Object.values(decoders), async (message) => {
@@ -27,6 +27,10 @@ export class EphemeralProtocolsManager {
             const decodedMessage = decodeMessage(payload);
             if (types.includes(decodedMessage.type)) {
                 result.push(decodedMessage);
+                // Call the callback if provided
+                if (onMessage) {
+                    onMessage(decodedMessage);
+                }
             }
         });
 

@@ -10,6 +10,9 @@ import { CellCache } from "./types";
 import { OpchanMessage } from "@/types";
 import { EphemeralProtocolsManager } from "./lightpush_filter";
 import { NETWORK_CONFIG } from "./constants";
+import { MinimalSDSWrapper } from "./sds/minimal-sds";
+import { SDSEnhancedMessage } from "./sds/types";
+import { SDSDebug } from "./sds/debug";
 
 export type HealthChangeCallback = (isReady: boolean) => void;
 
@@ -59,6 +62,7 @@ class MessageManager {
 
     private constructor(node: LightNode) {
         this.node = node;
+        this.sds = new MinimalSDSWrapper();
         this.ephemeralProtocolsManager = new EphemeralProtocolsManager(node);
         this.storeManager = new StoreManager(node);
         
@@ -166,13 +170,22 @@ class MessageManager {
     }
 
     public async sendMessage(message: OpchanMessage) {
-        await this.ephemeralProtocolsManager.sendMessage(message);
+        // Enhance vote messages with SDS metadata
+        const enhancedMessage = this.sds.enhanceMessage(message);
+        
+        await this.ephemeralProtocolsManager.sendMessage(enhancedMessage);
         //TODO: should we update the cache here? or just from store/filter?
-        this.updateCache(message);
+        this.updateCache(enhancedMessage);
     }
 
     public async subscribeToMessages(types: MessageType[] = [MessageType.CELL, MessageType.POST, MessageType.COMMENT, MessageType.VOTE, MessageType.MODERATE]) {
-        const { result, subscription } = await this.ephemeralProtocolsManager.subscribeToMessages(types);
+        const { result, subscription } = await this.ephemeralProtocolsManager.subscribeToMessages(types, (message) => {
+            // Process incoming messages with SDS
+            if ('sds' in message) {
+                this.sds.processIncomingMessage(message as SDSEnhancedMessage);
+            }
+            this.updateCache(message);
+        });
         
         for (const message of result) {
             this.updateCache(message);
@@ -181,7 +194,7 @@ class MessageManager {
         return { messages: result, subscription };
     }
 
-    private updateCache(message: OpchanMessage) {
+    private updateCache(message: OpchanMessage | SDSEnhancedMessage) {
         switch (message.type) {
             case MessageType.CELL:
                 this.messageCache.cells[message.id] = message;
@@ -195,7 +208,24 @@ class MessageManager {
             case MessageType.VOTE: {
                 // For votes, we use a composite key of targetId + author to handle multiple votes from same user
                 const voteKey = `${message.targetId}:${message.author}`;
-                this.messageCache.votes[voteKey] = message;
+                const existingVote = this.messageCache.votes[voteKey];
+                
+                // Use SDS causal ordering if available
+                if (existingVote && 'sds' in message) {
+                    const enhancedMessage = message as SDSEnhancedMessage;
+                    const existingEnhanced = existingVote as SDSEnhancedMessage;
+                    
+                    // Only update if causally newer
+                    if (this.sds.isCausallyNewer(enhancedMessage, existingEnhanced)) {
+                        this.messageCache.votes[voteKey] = message;
+                        console.log(`[SDS] Updated vote for ${voteKey} with causally newer message`);
+                    } else {
+                        console.log(`[SDS] Ignored older vote for ${voteKey}`);
+                    }
+                } else {
+                    // No existing vote or no SDS metadata, just update
+                    this.messageCache.votes[voteKey] = message;
+                }
                 break;
             }
             case MessageType.MODERATE: {
