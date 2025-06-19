@@ -10,16 +10,14 @@ export class OrdinalAPI {
    */
   async getOperatorDetails(address: string): Promise<OrdinalApiResponse> {
 
-    // Optionally Uncomment to bypass verification in development mode
-
-    // if (process.env.NODE_ENV === 'development') {
-    //   console.log(`[DEV] Bypassing ordinal verification for address: ${address}`);
-    //   return {
-    //     has_operators: true,
-    //     error_message: '',
-    //     data: []
-    //   };
-    // }
+    if (import.meta.env.VITE_OPCHAN_MOCK_ORDINAL_CHECK === 'true') {
+      console.log(`[DEV] Bypassing ordinal verification for address: ${address}`);
+      return {
+        has_operators: true,
+        error_message: '',
+        data: []
+      };
+    }
 
     const url = `${BASE_URL}/${address}/detail/`;
     
