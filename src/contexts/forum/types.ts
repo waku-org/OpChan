@@ -21,6 +21,6 @@ export interface ForumContextType {
   createComment: (postId: string, content: string) => Promise<Comment | null>;
   votePost: (postId: string, isUpvote: boolean) => Promise<boolean>;
   voteComment: (commentId: string, isUpvote: boolean) => Promise<boolean>;
-  createCell: (name: string, description: string, icon: string) => Promise<Cell | null>;
+  createCell: (name: string, description: string, icon?: string) => Promise<Cell | null>;
   refreshData: () => Promise<void>;
 } 

@@ -23,16 +23,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { urlLoads } from "@/lib/utils/urlLoads";
 
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(50, "Title must be less than 50 characters"),
   description: z.string().min(10, "Description must be at least 10 characters").max(200, "Description must be less than 200 characters"),
-  icon: z.string().url("Please enter a valid URL for the icon"),
+  icon: z
+    .string()
+    .optional()
+    .refine((val) => !val || val.length === 0 || URL.canParse(val), {
+      message: "Must be a valid URL"
+    }),
 });
 
 export function CreateCellDialog() {
   const { createCell, isPostingCell } = useForum();
   const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -40,12 +48,25 @@ export function CreateCellDialog() {
     defaultValues: {
       title: "",
       description: "",
-      icon: "",
+      icon: undefined,
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const cell = await createCell(values.title, values.description, values.icon);
+    // Validate icon URL if provided
+    if (values.icon && values.icon.trim()) {
+      const ok = await urlLoads(values.icon, 5000);
+      if (!ok) {
+        toast({
+          title: "Icon URL Error",
+          description: "Icon URL could not be loaded. Please check the URL and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const cell = await createCell(values.title, values.description, values.icon || undefined);
     if (cell) {
       setOpen(false);
       form.reset();
@@ -100,12 +121,13 @@ export function CreateCellDialog() {
               name="icon"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Icon URL</FormLabel>
+                  <FormLabel>Icon URL (optional)</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="Enter icon URL"
+                      placeholder="Enter icon URL (optional)"
                       type="url"
                       {...field}
+                      value={field.value || ""}
                       disabled={isPostingCell}
                     />
                   </FormControl>

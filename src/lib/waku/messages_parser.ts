@@ -11,7 +11,7 @@ export function cellToMessage(cell: Cell, sender: string): CellMessage {
     id: cell.id,
     name: cell.name,
     description: cell.description,
-    icon: cell.icon
+    ...(cell.icon && { icon: cell.icon })
   };
 }
 
@@ -20,7 +20,7 @@ export function messageToCell(message: CellMessage): Cell {
     id: message.id,
     name: message.name,
     description: message.description,
-    icon: message.icon
+    icon: message.icon || ''
   };
 }
 
