@@ -28,7 +28,7 @@ export interface CellMessage extends BaseMessage {
   id: string;
   name: string;
   description: string;
-  icon: string;
+  icon?: string;
 }
 
 /**
