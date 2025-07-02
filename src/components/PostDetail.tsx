@@ -9,6 +9,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Comment } from '@/types';
 import { CypherImage } from './ui/CypherImage';
 import { Badge } from '@/components/ui/badge';
+import { PendingIndicator } from './ui/pending-indicator';
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -27,7 +28,8 @@ const PostDetail = () => {
     isRefreshing,
     refreshData,
     moderateComment,
-    moderateUser
+    moderateUser,
+    isMessagePending
   } = useForum();
   const { currentUser, isAuthenticated, verificationStatus } = useAuth();
   const [newComment, setNewComment] = useState('');
@@ -165,6 +167,7 @@ const PostDetail = () => {
                 <span className="truncate max-w-[150px]">
                   {post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}
                 </span>
+                {isMessagePending(post.id) && <PendingIndicator />}
               </div>
             </div>
           </div>
@@ -252,9 +255,12 @@ const PostDetail = () => {
                         {comment.authorAddress.slice(0, 6)}...{comment.authorAddress.slice(-4)}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
+                      </span>
+                      {isMessagePending(comment.id) && <PendingIndicator />}
+                    </div>
                   </div>
                   <p className="text-sm break-words">{comment.content}</p>
                   {isCellAdmin && !comment.moderated && (

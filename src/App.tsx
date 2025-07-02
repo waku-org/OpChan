@@ -17,7 +17,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ForumProvider } from "@/contexts/ForumContext";
+import { ForumProvider, useForum } from "@/contexts/ForumContext";
+import { OfflineIndicator } from "@/components/ui/offline-indicator";
 import CellPage from "./pages/CellPage";
 import PostPage from "./pages/PostPage";
 import NotFound from "./pages/NotFound";
@@ -25,6 +26,27 @@ import Dashboard from "./pages/Dashboard";
 
 // Create a client
 const queryClient = new QueryClient();
+
+// Inner component that uses the Forum context
+const AppContent = () => {
+  const { isNetworkConnected, isSyncing, outboxCount } = useForum();
+  
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/cell/:cellId" element={<CellPage />} />
+        <Route path="/post/:postId" element={<PostPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <OfflineIndicator 
+        isNetworkConnected={isNetworkConnected}
+        isSyncing={isSyncing}
+        outboxCount={outboxCount}
+      />
+    </>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -34,12 +56,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/cell/:cellId" element={<CellPage />} />
-              <Route path="/post/:postId" element={<PostPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AppContent />
           </TooltipProvider>
         </ForumProvider>
       </AuthProvider>

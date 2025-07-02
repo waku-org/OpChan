@@ -32,7 +32,11 @@ interface ForumContextType {
   isRefreshing: boolean;
   // Network status
   isNetworkConnected: boolean;
+  isSyncing: boolean;
+  outboxCount: number;
+  pendingMessageIds: string[];
   error: string | null;
+  isMessagePending: (messageId: string) => boolean;
   getCellById: (id: string) => Cell | undefined;
   getPostsByCell: (cellId: string) => Post[];
   getCommentsByPost: (postId: string) => Comment[];
@@ -75,10 +79,33 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const [isVoting, setIsVoting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isNetworkConnected, setIsNetworkConnected] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [outboxCount, setOutboxCount] = useState(0);
+  const [pendingMessageIds, setPendingMessageIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
   const { currentUser, isAuthenticated, messageSigning } = useAuth();
+  
+  // Function to update outbox count and pending message IDs
+  const updateOutboxCount = async () => {
+    try {
+      const count = await messageManager.getOutboxCount();
+      setOutboxCount(count);
+      
+      // Also update pending message IDs
+      const { db } = await import('@/lib/storage/db');
+      const pendingIds = await db.getPendingMessageIds();
+      setPendingMessageIds(pendingIds);
+    } catch (err) {
+      console.warn("Failed to get outbox count:", err);
+    }
+  };
+
+  // Helper function to check if a message is pending
+  const isMessagePending = (messageId: string) => {
+    return pendingMessageIds.includes(messageId);
+  };
   
   // Transform message cache data to the expected types
   const updateStateFromCache = () => {
@@ -129,13 +156,31 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
 
   // Monitor network connection status
   useEffect(() => {
-    const { unsubscribe } = monitorNetworkHealth(setIsNetworkConnected, toast);
+    const { unsubscribe } = monitorNetworkHealth(
+      (isConnected) => {
+        setIsNetworkConnected(isConnected);
+        if (isConnected) {
+          // When coming back online, sync will happen automatically
+          // but we should update the outbox count
+          updateOutboxCount();
+          setIsSyncing(true);
+          // Reset syncing state after a short delay and update outbox again
+          setTimeout(async () => {
+            setIsSyncing(false);
+            await updateOutboxCount();
+          }, 3000);
+        }
+      }, 
+      toast
+    );
     return unsubscribe;
   }, [toast]);
 
   useEffect(() => {
     const loadData = async () => {
       setIsInitialLoading(true);
+      // Load initial outbox count
+      await updateOutboxCount();
       await initializeNetwork(toast, updateStateFromCache, setError);
       setIsInitialLoading(false);
     };
@@ -175,6 +220,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       messageSigning
     );
     setIsPostingPost(false);
+    // Update outbox count in case the message was queued offline
+    await updateOutboxCount();
     return result;
   };
 
@@ -190,6 +237,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       messageSigning
     );
     setIsPostingComment(false);
+    // Update outbox count in case the message was queued offline
+    await updateOutboxCount();
     return result;
   };
 
@@ -309,7 +358,11 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         isVoting,
         isRefreshing,
         isNetworkConnected,
+        isSyncing,
+        outboxCount,
+        pendingMessageIds,
         error,
+        isMessagePending,
         getCellById,
         getPostsByCell,
         getCommentsByPost,
