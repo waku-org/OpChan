@@ -150,8 +150,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Checking your wallet for Ordinal Operators..." 
       });
       
-      const response = await ordinalApi.getOperatorDetails(currentUser.address);
-      const hasOperators = response.has_operators;
+      //TODO: revert when the API is ready
+      // const response = await ordinalApi.getOperatorDetails(currentUser.address);
+      // const hasOperators = response.has_operators;
+      const hasOperators = true;
 
       const updatedUser = {
         ...currentUser,

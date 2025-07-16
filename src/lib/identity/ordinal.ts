@@ -1,6 +1,6 @@
 import { OrdinalApiResponse } from './types';
 
-const BASE_URL = 'https://exit-test-567058b69f45.herokuapp.com/api/operators/wallet';
+const BASE_URL = 'https://dashboard.logos.co/api/operators/wallet';
 
 export class OrdinalAPI {
   /**

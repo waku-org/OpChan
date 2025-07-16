@@ -8,13 +8,14 @@ export const CONTENT_TOPICS: Record<MessageType, string> = {
   [MessageType.CELL]: '/opchan/1/cell/proto',
   [MessageType.POST]: '/opchan/1/post/proto',
   [MessageType.COMMENT]: '/opchan/1/comment/proto',
-  [MessageType.VOTE]: '/opchan/1/vote/proto'
+  [MessageType.VOTE]: '/opchan/1/vote/proto',
+  [MessageType.MODERATE]: '/opchan/1/moderate/proto'
 };
 
 export const NETWORK_CONFIG: NetworkConfig = {
   // contentTopics: Object.values(CONTENT_TOPICS),
-  clusterId: 42,
-  shards: [0]
+  clusterId: 1,
+  shards: [0,1,2,3,4,5,6,7]
 }
 
 /**

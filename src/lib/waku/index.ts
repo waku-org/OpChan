@@ -39,10 +39,10 @@ class MessageManager {
 
     public static async create(): Promise<MessageManager> {
         const node = await createLightNode({
-            defaultBootstrap: false,
+            defaultBootstrap: true,
             networkConfig: NETWORK_CONFIG,
             autoStart: true,
-            bootstrapPeers: BOOTSTRAP_NODES[42],
+            // bootstrapPeers: BOOTSTRAP_NODES[42],
         });
         
         return new MessageManager(node);
