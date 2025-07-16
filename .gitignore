@@ -33,6 +33,8 @@ dist-ssr
 
 # Added by Claude Task Master
 dev-debug.log
+# PWA support development distribution files
+dev-dist
 # Dependency directories
 node_modules/
 # Environment variables

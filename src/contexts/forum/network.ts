@@ -56,6 +56,10 @@ export const initializeNetwork = async (
   setError: (error: string | null) => void
 ): Promise<void> => {
   try {
+    // First hydrate from IndexedDB for instant UI
+    await messageManager.hydrateFromStorage();
+    updateStateFromCache();
+    
     toast({
       title: "Loading data",
       description: "Connecting to the Waku network...",
