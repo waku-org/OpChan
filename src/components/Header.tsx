@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheck, LogOut, Terminal, Wifi, WifiOff, AlertTriangle, CheckCircle, Key, RefreshCw, CircleSlash } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { SDSStatus } from './SDSStatus';
 
 const Header = () => {
   const { 
@@ -196,6 +197,8 @@ const Header = () => {
               {isRefreshing && <p>Refreshing data...</p>}
             </TooltipContent>
           </Tooltip>
+          
+          <SDSStatus />
           
           {!currentUser ? (
             <Button 
