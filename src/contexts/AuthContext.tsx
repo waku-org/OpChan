@@ -5,6 +5,7 @@ import { OrdinalAPI } from '@/lib/identity/ordinal';
 import { KeyDelegation } from '@/lib/identity/signatures/key-delegation';
 import { PhantomWalletAdapter } from '@/lib/identity/wallets/phantom';
 import { MessageSigning } from '@/lib/identity/signatures/message-signing';
+import { WalletConnectionStatus } from '@/lib/identity/wallets/types';
 
 export type VerificationStatus = 'unverified' | 'verified-none' | 'verified-owner' | 'verifying';
 
@@ -52,6 +53,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else {
             setVerificationStatus('unverified');
           }
+          restoreWalletConnection(user).catch(error => {
+            console.warn('Background wallet reconnection failed:', error);
+          });
         } else {
           localStorage.removeItem('opchan-user');
           setVerificationStatus('unverified');
@@ -63,6 +67,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, []);
+
+  /**
+   * Attempts to restore the wallet connection when user data is loaded from localStorage
+   */
+  const restoreWalletConnection = async (user?: User) => {
+    try {
+      const userToCheck = user || currentUser;
+      if (!phantomWalletRef.current.isInstalled() || !userToCheck?.address) {
+        return;
+      }
+      
+      const address = await phantomWalletRef.current.connect();
+      
+      if (address === userToCheck.address) {
+        console.log('Wallet connection restored successfully');
+      } else {
+        console.warn('Stored address does not match connected address, clearing stored data');
+        localStorage.removeItem('opchan-user');
+        setCurrentUser(null);
+        setVerificationStatus('unverified');
+      }
+    } catch (error) {
+      console.warn('Failed to restore wallet connection:', error);
+    }
+  };
 
   const connectWallet = async () => {
     setIsAuthenticating(true);
@@ -77,16 +106,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error("Phantom wallet not installed");
       }
       
-      // Connect to wallet
       const address = await phantomWalletRef.current.connect();
       
-      // Create a new user object
       const newUser: User = {
         address,
         lastChecked: Date.now(),
       };
       
-      // Store user data
       setCurrentUser(newUser);
       localStorage.setItem('opchan-user', JSON.stringify(newUser));
       setVerificationStatus('unverified');
@@ -96,7 +122,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: `Connected with address ${address.slice(0, 6)}...${address.slice(-4)}`,
       });
       
-      // Prompt the user to verify ordinal ownership and delegate key
       toast({
         title: "Action Required",
         description: "Please verify your Ordinal ownership and delegate a signing key for better UX.",
@@ -116,10 +141,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const disconnectWallet = () => {
-    // Disconnect from Phantom wallet
     phantomWalletRef.current.disconnect();
     
-    // Clear user data and delegation
     setCurrentUser(null);
     localStorage.removeItem('opchan-user');
     keyDelegationRef.current.clearDelegation();
@@ -219,6 +242,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticating(true);
     
     try {
+      const walletStatus = phantomWalletRef.current.getStatus();
+      console.log('Current wallet status:', walletStatus);
+      
+      if (walletStatus !== WalletConnectionStatus.Connected) {
+        console.log('Wallet not connected, attempting to reconnect...');
+        try {
+          await phantomWalletRef.current.connect();
+          console.log('Wallet reconnection successful');
+        } catch (reconnectError) {
+          console.error('Failed to reconnect wallet:', reconnectError);
+          toast({
+            title: "Wallet Connection Required",
+            description: "Please reconnect your wallet to delegate a key.",
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+      
       toast({
         title: "Starting Key Delegation",
         description: "This will let you post, comment, and vote without approving each action for 24 hours.",
