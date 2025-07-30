@@ -17,6 +17,7 @@ interface AuthContextType {
   delegateKey: () => Promise<boolean>;
   isDelegationValid: () => boolean;
   delegationTimeRemaining: () => number;
+  isWalletAvailable: () => boolean;
   messageSigning: {
     signMessage: (message: OpchanMessage) => Promise<OpchanMessage | null>;
     verifyMessage: (message: OpchanMessage) => boolean;
@@ -220,6 +221,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           errorMessage = "You declined the signature request. Key delegation is optional but improves your experience.";
         } else if (error.message.includes("timeout")) {
           errorMessage = "Wallet request timed out. Please try again and approve the signature promptly.";
+        } else if (error.message.includes("Failed to connect wallet")) {
+          errorMessage = "Unable to connect to Phantom wallet. Please ensure it's installed and unlocked, then try again.";
+        } else if (error.message.includes("Wallet is not connected")) {
+          errorMessage = "Wallet connection was lost. Please reconnect your wallet and try again.";
         } else {
           errorMessage = error.message;
         }
@@ -245,6 +250,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return authServiceRef.current.getDelegationTimeRemaining();
   };
 
+  const isWalletAvailable = (): boolean => {
+    return authServiceRef.current.getWalletInfo()?.type === 'phantom';
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -258,6 +267,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         delegateKey,
         isDelegationValid,
         delegationTimeRemaining,
+        isWalletAvailable,
         messageSigning: {
           signMessage: (message: OpchanMessage) => authServiceRef.current.signMessage(message),
           verifyMessage: (message: OpchanMessage) => authServiceRef.current.verifyMessage(message),

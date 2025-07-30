@@ -32,6 +32,23 @@ export class WalletService {
   public isWalletAvailable(type: WalletType): boolean {
     return this.phantomAdapter.isInstalled();
   }
+
+  /**
+   * Check if wallet is available and can be connected
+   */
+  public async canConnectWallet(type: WalletType = 'phantom'): Promise<boolean> {
+    if (!this.isWalletAvailable(type)) {
+      return false;
+    }
+
+    try {
+      const isConnected = await this.phantomAdapter.isConnected();
+      return isConnected;
+    } catch (error) {
+      console.debug('WalletService: Cannot connect wallet:', error);
+      return false;
+    }
+  }
   
   /**
    * Connect to a specific wallet type
@@ -87,8 +104,31 @@ export class WalletService {
     walletType: WalletType,
     validityPeriod: number = WalletService.DEFAULT_DELEGATION_PERIOD
   ): Promise<Omit<DelegationInfo, 'browserPrivateKey'>> {
+    console.debug('WalletService: Starting key delegation for address:', bitcoinAddress);
+    
+    let isConnected = await this.phantomAdapter.isConnected();
+    console.debug('WalletService: Initial wallet connection check result:', isConnected);
+    
+    if (!isConnected) {
+      console.debug('WalletService: Wallet not connected, attempting to connect automatically');
+      try {
+        await this.phantomAdapter.connect();
+        isConnected = await this.phantomAdapter.isConnected();
+        console.debug('WalletService: Auto-connection result:', isConnected);
+      } catch (error) {
+        console.error('WalletService: Failed to auto-connect wallet:', error);
+        throw new Error('Failed to connect wallet. Please ensure Phantom wallet is installed and try again.');
+      }
+    }
+    
+    if (!isConnected) {
+      console.error('WalletService: Wallet is still not connected after auto-connection attempt');
+      throw new Error('Wallet is not connected. Please connect your wallet first.');
+    }
+
     // Generate browser keypair
     const keypair = this.keyDelegation.generateKeypair();
+    console.debug('WalletService: Generated browser keypair');
     
     // Calculate expiry in hours
     const expiryHours = validityPeriod / (60 * 60 * 1000);
@@ -99,9 +139,12 @@ export class WalletService {
       bitcoinAddress,
       Date.now() + validityPeriod
     );
+    console.debug('WalletService: Created delegation message');
     
     // Sign the delegation message with the Bitcoin wallet
+    console.debug('WalletService: Requesting signature from wallet');
     const signature = await this.phantomAdapter.signMessage(delegationMessage);
+    console.debug('WalletService: Received signature from wallet');
     
     // Create and store the delegation
     const delegationInfo = this.keyDelegation.createDelegation(
@@ -113,6 +156,7 @@ export class WalletService {
     );
     
     this.keyDelegation.storeDelegation(delegationInfo);
+    console.debug('WalletService: Stored delegation info');
     
     // Return delegation info (excluding private key)
     return {

@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/useAuth';
 import { useForum } from '@/contexts/useForum';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, LogOut, Terminal, Wifi, WifiOff, AlertTriangle, CheckCircle, Key, RefreshCw, CircleSlash } from 'lucide-react';
+import {  LogOut, Terminal, Wifi, WifiOff, AlertTriangle, CheckCircle, Key, RefreshCw, CircleSlash } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useToast } from '@/components/ui/use-toast';
 
 const Header = () => {
   const { 
@@ -17,9 +18,11 @@ const Header = () => {
     verifyOrdinal, 
     delegateKey, 
     isDelegationValid,
-    delegationTimeRemaining 
+    delegationTimeRemaining,
+    isWalletAvailable
   } = useAuth();
   const { isNetworkConnected, isRefreshing } = useForum();
+  const { toast } = useToast();
   
   const handleConnect = async () => {
     await connectWallet();
@@ -34,7 +37,20 @@ const Header = () => {
   };
 
   const handleDelegateKey = async () => {
-    await delegateKey();
+    try {
+      if (!isWalletAvailable()) {
+        toast({
+          title: "Wallet Not Available",
+          description: "Phantom wallet is not installed or not available. Please install Phantom wallet and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await delegateKey();
+    } catch (error) {
+      console.error('Error in handleDelegateKey:', error);
+    }
   };
 
   const formatDelegationTime = () => {
@@ -72,7 +88,7 @@ const Header = () => {
           {hasValidDelegation ? (
             <p>Browser key active for ~{timeRemaining}. Wallet signatures not needed for most actions.</p>
           ) : (
-            <p>Delegate a browser key for 24h to avoid constant wallet signing.</p>
+            <p>Delegate a browser key for 24h to avoid constant wallet signing. If your wallet is disconnected, it will be reconnected automatically.</p>
           )}
         </TooltipContent>
       </Tooltip>

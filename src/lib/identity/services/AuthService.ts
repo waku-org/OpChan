@@ -92,6 +92,14 @@ export class AuthService {
    */
   async delegateKey(user: User): Promise<AuthResult> {
     try {
+      const canConnect = await this.walletService.canConnectWallet('phantom');
+      if (!canConnect) {
+        return {
+          success: false,
+          error: 'Phantom wallet is not available or cannot be connected. Please ensure it is installed and unlocked.'
+        };
+      }
+
       const delegationInfo = await this.walletService.setupKeyDelegation(
         user.address,
         'phantom'
