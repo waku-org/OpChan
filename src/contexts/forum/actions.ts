@@ -214,7 +214,7 @@ export const createComment = async (
 export const createCell = async (
   name: string,
   description: string,
-  icon: string, 
+  icon: string | undefined, 
   currentUser: User | null, 
   isAuthenticated: boolean,
   toast: ToastFunction,
@@ -243,7 +243,7 @@ export const createCell = async (
       id: cellId,
       name,
       description,
-      icon,
+      ...(icon && { icon }),
       timestamp: Date.now(),
       author: currentUser.address
     };

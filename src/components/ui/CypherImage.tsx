@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 type CypherImageProps = {
-  src: string;
+  src?: string;
   alt: string;
   className?: string;
   fallbackClassName?: string;
@@ -25,14 +25,14 @@ export function CypherImage({
   
   // Generate a seed based on the alt text or src to create consistent fallbacks for the same resource
   const seed = generateUniqueFallback ? 
-    (alt || src).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : 0;
+    (alt || src || 'fallback').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : 0;
   
   // Handle image load error
   const handleError = () => {
     setImageError(true);
   };
 
-  if (imageError) {
+  if (imageError || !src || src.trim() === '') {
     // Generate some values based on the seed for variety
     const hue = (seed % 60) + 140; // Cyan-ish colors (140-200)
     const gridSize = (seed % 8) + 8; // 8-16px

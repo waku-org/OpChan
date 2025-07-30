@@ -17,7 +17,7 @@ export const transformCell = (
     id: cellMessage.id,
     name: cellMessage.name,
     description: cellMessage.description,
-    icon: cellMessage.icon,
+    icon: cellMessage.icon || '',
     signature: cellMessage.signature,
     browserPubKey: cellMessage.browserPubKey
   };

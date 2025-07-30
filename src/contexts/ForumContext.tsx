@@ -40,7 +40,7 @@ interface ForumContextType {
   createComment: (postId: string, content: string) => Promise<Comment | null>;
   votePost: (postId: string, isUpvote: boolean) => Promise<boolean>;
   voteComment: (commentId: string, isUpvote: boolean) => Promise<boolean>;
-  createCell: (name: string, description: string, icon: string) => Promise<Cell | null>;
+  createCell: (name: string, description: string, icon?: string) => Promise<Cell | null>;
   refreshData: () => Promise<void>;
   moderatePost: (
     cellId: string,
@@ -223,7 +223,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     return result;
   };
 
-  const handleCreateCell = async (name: string, description: string, icon: string): Promise<Cell | null> => {
+  const handleCreateCell = async (name: string, description: string, icon?: string): Promise<Cell | null> => {
     setIsPostingCell(true);
     const result = await createCell(
       name, 
