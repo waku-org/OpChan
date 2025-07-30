@@ -1,5 +1,6 @@
 
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
 	darkMode: ["class"],
@@ -106,8 +107,8 @@ export default {
 					}
 				},
 				'pulse-slow': {
-					'0%, 100%': { opacity: 1 },
-					'50%': { opacity: 0.6 },
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.6' },
 				},
 			},
 			animation: {
@@ -122,5 +123,5 @@ export default {
 			},
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [tailwindcssAnimate],
 } satisfies Config;

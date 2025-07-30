@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForum } from '@/contexts/ForumContext';
+import { useForum } from '@/contexts/useForum';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';

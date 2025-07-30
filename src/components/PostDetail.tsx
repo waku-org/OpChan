@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useForum } from '@/contexts/ForumContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useForum } from '@/contexts/useForum';
+import { useAuth } from '@/contexts/useAuth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send, RefreshCw, Eye, Loader2 } from 'lucide-react';

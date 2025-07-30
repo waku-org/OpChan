@@ -113,7 +113,7 @@ export class PhantomWalletAdapter {
         return btoa(binString);
       }
       
-      return signature as unknown as string;
+      return String(signature);
     } catch (error) {
       console.error('Error signing message:', error);
       throw error;

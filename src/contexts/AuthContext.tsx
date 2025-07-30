@@ -1,11 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { User } from '@/types';
-import { OrdinalAPI } from '@/lib/identity/ordinal';
-import { KeyDelegation } from '@/lib/identity/signatures/key-delegation';
-import { PhantomWalletAdapter } from '@/lib/identity/wallets/phantom';
-import { MessageSigning } from '@/lib/identity/signatures/message-signing';
-import { WalletConnectionStatus } from '@/lib/identity/wallets/types';
+import { AuthService, AuthResult } from '@/lib/identity/services/AuthService';
+import { OpchanMessage } from '@/types';
 
 export type VerificationStatus = 'unverified' | 'verified-none' | 'verified-owner' | 'verifying';
 
@@ -20,106 +17,60 @@ interface AuthContextType {
   delegateKey: () => Promise<boolean>;
   isDelegationValid: () => boolean;
   delegationTimeRemaining: () => number;
-  messageSigning: MessageSigning;
+  messageSigning: {
+    signMessage: (message: OpchanMessage) => Promise<OpchanMessage | null>;
+    verifyMessage: (message: OpchanMessage) => boolean;
+  };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export { AuthContext };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('unverified');
   const { toast } = useToast();
-  const ordinalApi = new OrdinalAPI();
   
-  // Create refs for our services so they persist between renders
-  const phantomWalletRef = useRef(new PhantomWalletAdapter());
-  const keyDelegationRef = useRef(new KeyDelegation());
-  const messageSigningRef = useRef(new MessageSigning(keyDelegationRef.current));
+  // Create ref for AuthService so it persists between renders
+  const authServiceRef = useRef(new AuthService());
   
   useEffect(() => {
-    const storedUser = localStorage.getItem('opchan-user');
+    const storedUser = authServiceRef.current.loadStoredUser();
     if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        const lastChecked = user.lastChecked || 0;
-        const expiryTime = 24 * 60 * 60 * 1000; 
-        
-        if (Date.now() - lastChecked < expiryTime) {
-          setCurrentUser(user);
-          
-          if ('ordinalOwnership' in user) {
-            setVerificationStatus(user.ordinalOwnership ? 'verified-owner' : 'verified-none');
-          } else {
-            setVerificationStatus('unverified');
-          }
-          restoreWalletConnection(user).catch(error => {
-            console.warn('Background wallet reconnection failed:', error);
-          });
-        } else {
-          localStorage.removeItem('opchan-user');
-          setVerificationStatus('unverified');
-        }
-      } catch (e) {
-        console.error("Failed to parse stored user data", e);
-        localStorage.removeItem('opchan-user');
+      setCurrentUser(storedUser);
+      
+      if ('ordinalOwnership' in storedUser) {
+        setVerificationStatus(storedUser.ordinalOwnership ? 'verified-owner' : 'verified-none');
+      } else {
         setVerificationStatus('unverified');
       }
     }
   }, []);
 
-  /**
-   * Attempts to restore the wallet connection when user data is loaded from localStorage
-   */
-  const restoreWalletConnection = async (user?: User) => {
-    try {
-      const userToCheck = user || currentUser;
-      if (!phantomWalletRef.current.isInstalled() || !userToCheck?.address) {
-        return;
-      }
-      
-      const address = await phantomWalletRef.current.connect();
-      
-      if (address === userToCheck.address) {
-        console.log('Wallet connection restored successfully');
-      } else {
-        console.warn('Stored address does not match connected address, clearing stored data');
-        localStorage.removeItem('opchan-user');
-        setCurrentUser(null);
-        setVerificationStatus('unverified');
-      }
-    } catch (error) {
-      console.warn('Failed to restore wallet connection:', error);
-    }
-  };
-
   const connectWallet = async () => {
     setIsAuthenticating(true);
     try {
-      // Check if Phantom wallet is installed
-      if (!phantomWalletRef.current.isInstalled()) {
+      const result: AuthResult = await authServiceRef.current.connectWallet();
+      
+      if (!result.success) {
         toast({
-          title: "Wallet Not Found",
-          description: "Please install Phantom wallet to continue.",
+          title: "Connection Failed",
+          description: result.error || "Failed to connect to wallet. Please try again.",
           variant: "destructive",
         });
-        throw new Error("Phantom wallet not installed");
+        throw new Error(result.error);
       }
       
-      const address = await phantomWalletRef.current.connect();
-      
-      const newUser: User = {
-        address,
-        lastChecked: Date.now(),
-      };
-      
+      const newUser = result.user!;
       setCurrentUser(newUser);
-      localStorage.setItem('opchan-user', JSON.stringify(newUser));
+      authServiceRef.current.saveUser(newUser);
       setVerificationStatus('unverified');
       
       toast({
         title: "Wallet Connected",
-        description: `Connected with address ${address.slice(0, 6)}...${address.slice(-4)}`,
+        description: `Connected with address ${newUser.address.slice(0, 6)}...${newUser.address.slice(-4)}`,
       });
       
       toast({
@@ -141,11 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const disconnectWallet = () => {
-    phantomWalletRef.current.disconnect();
+    authServiceRef.current.disconnectWallet();
+    authServiceRef.current.clearStoredUser();
     
     setCurrentUser(null);
-    localStorage.removeItem('opchan-user');
-    keyDelegationRef.current.clearDelegation();
     setVerificationStatus('unverified');
     
     toast({
@@ -154,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const verifyOrdinal = async () => {
+  const verifyOrdinal = async (): Promise<boolean> => {
     if (!currentUser || !currentUser.address) {
       toast({
         title: "Not Connected",
@@ -173,24 +123,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Checking your wallet for Ordinal Operators..." 
       });
       
-      //TODO: revert when the API is ready
-      // const response = await ordinalApi.getOperatorDetails(currentUser.address);
-      // const hasOperators = response.has_operators;
-      const hasOperators = true;
-
-      const updatedUser = {
-        ...currentUser,
-        ordinalOwnership: hasOperators,
-        lastChecked: Date.now(),
-      };
+      const result: AuthResult = await authServiceRef.current.verifyOrdinal(currentUser);
       
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      const updatedUser = result.user!;
       setCurrentUser(updatedUser);
-      localStorage.setItem('opchan-user', JSON.stringify(updatedUser));
+      authServiceRef.current.saveUser(updatedUser);
       
       // Update verification status
-      setVerificationStatus(hasOperators ? 'verified-owner' : 'verified-none');
+      setVerificationStatus(updatedUser.ordinalOwnership ? 'verified-owner' : 'verified-none');
       
-      if (hasOperators) {
+      if (updatedUser.ordinalOwnership) {
         toast({
           title: "Ordinal Verified",
           description: "You now have full access. We recommend delegating a key for better UX.",
@@ -203,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
       
-      return hasOperators;
+      return Boolean(updatedUser.ordinalOwnership);
     } catch (error) {
       console.error("Error verifying Ordinal:", error);
       setVerificationStatus('unverified');
@@ -225,10 +171,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  /**
-   * Creates a key delegation by generating a browser keypair, having the
-   * wallet sign a delegation message, and storing the delegation
-   */
   const delegateKey = async (): Promise<boolean> => {
     if (!currentUser || !currentUser.address) {
       toast({
@@ -242,74 +184,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticating(true);
     
     try {
-      const walletStatus = phantomWalletRef.current.getStatus();
-      console.log('Current wallet status:', walletStatus);
-      
-      if (walletStatus !== WalletConnectionStatus.Connected) {
-        console.log('Wallet not connected, attempting to reconnect...');
-        try {
-          await phantomWalletRef.current.connect();
-          console.log('Wallet reconnection successful');
-        } catch (reconnectError) {
-          console.error('Failed to reconnect wallet:', reconnectError);
-          toast({
-            title: "Wallet Connection Required",
-            description: "Please reconnect your wallet to delegate a key.",
-            variant: "destructive",
-          });
-          return false;
-        }
-      }
-      
       toast({
         title: "Starting Key Delegation",
         description: "This will let you post, comment, and vote without approving each action for 24 hours.",
       });
       
-      // Generate a browser keypair
-      const keypair = await keyDelegationRef.current.generateKeypair();
+      const result: AuthResult = await authServiceRef.current.delegateKey(currentUser);
       
-      // Calculate expiry time (24 hours from now)
-      const expiryHours = 24;
-      const expiryTimestamp = Date.now() + (expiryHours * 60 * 60 * 1000);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
       
-      // Create delegation message
-      const delegationMessage = keyDelegationRef.current.createDelegationMessage(
-        keypair.publicKey,
-        currentUser.address,
-        expiryTimestamp
-      );
+      const updatedUser = result.user!;
+      setCurrentUser(updatedUser);
+      authServiceRef.current.saveUser(updatedUser);
       
       // Format date for user-friendly display
-      const expiryDate = new Date(expiryTimestamp);
+      const expiryDate = new Date(updatedUser.delegationExpiry!);
       const formattedExpiry = expiryDate.toLocaleString();
-      
-      toast({
-        title: "Wallet Signature Required",
-        description: `Please sign with your wallet to authorize a temporary key valid until ${formattedExpiry}. This improves UX by reducing wallet prompts.`,
-      });
-      
-      const signature = await phantomWalletRef.current.signMessage(delegationMessage);
-      
-      const delegationInfo = keyDelegationRef.current.createDelegation(
-        currentUser.address,
-        signature,
-        keypair.publicKey,
-        keypair.privateKey,
-        expiryHours
-      );
-      
-      keyDelegationRef.current.storeDelegation(delegationInfo);
-      
-      const updatedUser = {
-        ...currentUser,
-        browserPubKey: keypair.publicKey,
-        delegationSignature: signature,
-        delegationExpiry: expiryTimestamp,
-      };
-      
-      setCurrentUser(updatedUser);
-      localStorage.setItem('opchan-user', JSON.stringify(updatedUser));
       
       toast({
         title: "Key Delegation Successful",
@@ -345,18 +237,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
-  /**
-   * Checks if the current delegation is valid
-   */
   const isDelegationValid = (): boolean => {
-    return keyDelegationRef.current.isDelegationValid();
+    return authServiceRef.current.isDelegationValid();
   };
   
-  /**
-   * Returns the time remaining on the current delegation in milliseconds
-   */
   const delegationTimeRemaining = (): number => {
-    return keyDelegationRef.current.getDelegationTimeRemaining();
+    return authServiceRef.current.getDelegationTimeRemaining();
   };
 
   return (
@@ -372,7 +258,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         delegateKey,
         isDelegationValid,
         delegationTimeRemaining,
-        messageSigning: messageSigningRef.current,
+        messageSigning: {
+          signMessage: (message: OpchanMessage) => authServiceRef.current.signMessage(message),
+          verifyMessage: (message: OpchanMessage) => authServiceRef.current.verifyMessage(message),
+        },
       }}
     >
       {children}
@@ -380,10 +269,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+

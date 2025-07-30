@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Cell, Post, Comment, OpchanMessage } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
 import { 
   createPost, 
   createComment, 
@@ -10,14 +10,15 @@ import {
   moderatePost, 
   moderateComment, 
   moderateUser 
-} from './forum/actions';
+} from '@/lib/forum/actions';
 import { 
   setupPeriodicQueries, 
   monitorNetworkHealth, 
   initializeNetwork 
-} from './forum/network';
+} from '@/lib/waku/network';
 import messageManager from '@/lib/waku';
-import { transformCell, transformComment, transformPost } from './forum/transformers';
+import { transformCell, transformComment, transformPost } from '@/lib/forum/transformers';
+import { AuthService } from '@/lib/identity/services/AuthService';
 
 interface ForumContextType {
   cells: Cell[];
@@ -64,6 +65,8 @@ interface ForumContextType {
 
 const ForumContext = createContext<ForumContextType | undefined>(undefined);
 
+export { ForumContext };
+
 export function ForumProvider({ children }: { children: React.ReactNode }) {
   const [cells, setCells] = useState<Cell[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -78,13 +81,15 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
-  const { currentUser, isAuthenticated, messageSigning } = useAuth();
+  const { currentUser, isAuthenticated } = useAuth();
+  
+  const authService = useMemo(() => new AuthService(), []);
   
   // Transform message cache data to the expected types
-  const updateStateFromCache = () => {
-    // Use the verifyMessage function from messageSigning if available
-    const verifyFn = isAuthenticated && messageSigning ? 
-      (message: OpchanMessage) => messageSigning.verifyMessage(message) : 
+  const updateStateFromCache = useCallback(() => {
+    // Use the verifyMessage function from authService if available
+    const verifyFn = isAuthenticated ? 
+      (message: OpchanMessage) => authService.verifyMessage(message) : 
       undefined;
     
     // Transform cells with verification
@@ -107,7 +112,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         .map(comment => transformComment(comment, verifyFn))
         .filter(comment => comment !== null) as Comment[]
     );
-  };
+  }, [authService, isAuthenticated]);
   
   const handleRefreshData = async () => {
     setIsRefreshing(true);
@@ -146,7 +151,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     const { cleanup } = setupPeriodicQueries(isNetworkConnected, updateStateFromCache);
 
     return cleanup;
-  }, [toast]);
+  }, [isNetworkConnected, toast, updateStateFromCache]);
 
   const getCellById = (id: string): Cell | undefined => {
     return cells.find(cell => cell.id === id);
@@ -172,7 +177,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated, 
       toast, 
       updateStateFromCache,
-      messageSigning
+      authService
     );
     setIsPostingPost(false);
     return result;
@@ -187,7 +192,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated, 
       toast, 
       updateStateFromCache,
-      messageSigning
+      authService
     );
     setIsPostingComment(false);
     return result;
@@ -202,7 +207,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated, 
       toast, 
       updateStateFromCache,
-      messageSigning
+      authService
     );
     setIsVoting(false);
     return result;
@@ -217,7 +222,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated, 
       toast, 
       updateStateFromCache,
-      messageSigning
+      authService
     );
     setIsVoting(false);
     return result;
@@ -233,7 +238,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated, 
       toast, 
       updateStateFromCache,
-      messageSigning
+      authService
     );
     setIsPostingCell(false);
     return result;
@@ -254,7 +259,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       cellOwner,
       toast,
       updateStateFromCache,
-      messageSigning
+      authService
     );
   };
 
@@ -273,7 +278,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       cellOwner,
       toast,
       updateStateFromCache,
-      messageSigning
+      authService
     );
   };
 
@@ -292,7 +297,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       cellOwner,
       toast,
       updateStateFromCache,
-      messageSigning
+      authService
     );
   };
 
@@ -329,10 +334,4 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useForum = () => {
-  const context = useContext(ForumContext);
-  if (context === undefined) {
-    throw new Error("useForum must be used within a ForumProvider");
-  }
-  return context;
-};
+

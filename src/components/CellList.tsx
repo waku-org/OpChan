@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useForum } from '@/contexts/ForumContext';
+import { useForum } from '@/contexts/useForum';
 import { Layout, MessageSquare, RefreshCw, Loader2 } from 'lucide-react';
 import { CreateCellDialog } from './CreateCellDialog';
 import { Button } from '@/components/ui/button';

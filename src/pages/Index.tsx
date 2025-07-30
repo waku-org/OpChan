@@ -1,7 +1,7 @@
 import React from 'react';
 import Header from '@/components/Header';
 import CellList from '@/components/CellList';
-import { useForum } from '@/contexts/ForumContext';
+import { useForum } from '@/contexts/useForum';
 import { Button } from '@/components/ui/button';
 import { Wifi } from 'lucide-react';
 

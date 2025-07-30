@@ -4,7 +4,7 @@ import { CypherImage } from './ui/CypherImage'
 
 // Mock external dependencies
 vi.mock('@/lib/utils', () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(' ')
+  cn: (...classes: (string | undefined | null)[]) => classes.filter(Boolean).join(' ')
 }))
 
 describe('Create Cell Without Icon - CypherImage Fallback', () => {
