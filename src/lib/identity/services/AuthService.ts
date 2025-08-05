@@ -1,5 +1,5 @@
 import { User } from '@/types';
-import { WalletService } from '../wallets';
+import { WalletService, AppKitAccount } from '../wallets/index';
 import { OrdinalAPI } from '../ordinal';
 import { MessageSigning } from '../signatures/message-signing';
 import { OpchanMessage } from '@/types';
@@ -18,7 +18,14 @@ export class AuthService {
   constructor() {
     this.walletService = new WalletService();
     this.ordinalApi = new OrdinalAPI();
-    this.messageSigning = new MessageSigning(this.walletService['keyDelegation']);
+    this.messageSigning = new MessageSigning(this.walletService.getKeyDelegation());
+  }
+
+  /**
+   * Set AppKit accounts for wallet service
+   */
+  setAccounts(bitcoinAccount: AppKitAccount, ethereumAccount: AppKitAccount) {
+    this.walletService.setAccounts(bitcoinAccount, ethereumAccount);
   }
 
   /**
@@ -26,19 +33,26 @@ export class AuthService {
    */
   async connectWallet(): Promise<AuthResult> {
     try {
-      if (!this.walletService.isWalletAvailable('phantom')) {
+      const walletInfo = await this.walletService.getWalletInfo();
+      if (!walletInfo) {
         return {
           success: false,
-          error: 'Phantom wallet not installed'
+          error: 'No wallet connected'
         };
       }
 
-      const address = await this.walletService.connectWallet('phantom');
-      
       const user: User = {
-        address,
+        address: walletInfo.address,
+        walletType: walletInfo.walletType,
+        verificationStatus: 'unverified',
         lastChecked: Date.now(),
       };
+
+      // Add ENS info for Ethereum wallets
+      if (walletInfo.walletType === 'ethereum' && walletInfo.ensName) {
+        user.ensName = walletInfo.ensName;
+        user.ensOwnership = true;
+      }
 
       return {
         success: true,
@@ -56,35 +70,74 @@ export class AuthService {
    * Disconnect wallet and clear user data
    */
   async disconnectWallet(): Promise<void> {
-    await this.walletService.disconnectWallet('phantom');
+    const walletType = this.walletService.getActiveWalletType();
+    if (walletType) {
+      await this.walletService.disconnectWallet(walletType);
+    }
   }
 
   /**
-   * Verify ordinal ownership for a user
+   * Verify ordinal ownership for Bitcoin users or ENS ownership for Ethereum users
    */
-  async verifyOrdinal(user: User): Promise<AuthResult> {
+  async verifyOwnership(user: User): Promise<AuthResult> {
     try {
-      // TODO: revert when the API is ready
-      // const response = await this.ordinalApi.getOperatorDetails(user.address);
-      // const hasOperators = response.has_operators;
-      const hasOperators = true;
-
-      const updatedUser = {
-        ...user,
-        ordinalOwnership: hasOperators,
-        lastChecked: Date.now(),
-      };
-
-      return {
-        success: true,
-        user: updatedUser
-      };
+      if (user.walletType === 'bitcoin') {
+        return await this.verifyBitcoinOrdinal(user);
+      } else if (user.walletType === 'ethereum') {
+        return await this.verifyEthereumENS(user);
+      } else {
+        return {
+          success: false,
+          error: 'Unknown wallet type'
+        };
+      }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to verify ordinal'
+        error: error instanceof Error ? error.message : 'Failed to verify ownership'
       };
     }
+  }
+
+  /**
+   * Verify Bitcoin Ordinal ownership
+   */
+  private async verifyBitcoinOrdinal(user: User): Promise<AuthResult> {
+    // TODO: revert when the API is ready
+    // const response = await this.ordinalApi.getOperatorDetails(user.address);
+    // const hasOperators = response.has_operators;
+    const hasOperators = true;
+
+    const updatedUser = {
+      ...user,
+      ordinalOwnership: hasOperators,
+      lastChecked: Date.now(),
+    };
+
+    return {
+      success: true,
+      user: updatedUser
+    };
+  }
+
+  /**
+   * Verify Ethereum ENS ownership
+   */
+  private async verifyEthereumENS(user: User): Promise<AuthResult> {
+    const walletInfo = await this.walletService.getWalletInfo();
+    const hasENS = walletInfo?.ensName && walletInfo.ensName.length > 0;
+
+    const updatedUser = {
+      ...user,
+      ensOwnership: hasENS,
+      ensName: walletInfo?.ensName,
+      lastChecked: Date.now(),
+    };
+
+    return {
+      success: true,
+      user: updatedUser
+    };
   }
 
   /**
@@ -92,17 +145,18 @@ export class AuthService {
    */
   async delegateKey(user: User): Promise<AuthResult> {
     try {
-      const canConnect = await this.walletService.canConnectWallet('phantom');
+      const walletType = user.walletType;
+      const canConnect = await this.walletService.canConnectWallet(walletType);
       if (!canConnect) {
         return {
           success: false,
-          error: 'Phantom wallet is not available or cannot be connected. Please ensure it is installed and unlocked.'
+          error: `${walletType} wallet is not available or cannot be connected. Please ensure it is installed and unlocked.`
         };
       }
 
       const delegationInfo = await this.walletService.setupKeyDelegation(
         user.address,
-        'phantom'
+        walletType
       );
 
       const updatedUser = {
@@ -155,8 +209,8 @@ export class AuthService {
   /**
    * Get current wallet info
    */
-  getWalletInfo() {
-    return this.walletService.getWalletInfo();
+  async getWalletInfo() {
+    return await this.walletService.getWalletInfo();
   }
 
   /**

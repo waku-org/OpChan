@@ -22,29 +22,40 @@ import CellPage from "./pages/CellPage";
 import PostPage from "./pages/PostPage";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
+import { appkitConfig } from "./lib/identity/wallets/appkit";
+import { createAppKit } from "@reown/appkit";
+import { WagmiProvider } from "wagmi";
+import { config } from "./lib/identity/wallets/appkit";
+import { AppKitProvider } from "@reown/appkit/react";
 
 // Create a client
 const queryClient = new QueryClient();
 
+createAppKit(appkitConfig);
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <Router>
-      <AuthProvider>
-        <ForumProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/cell/:cellId" element={<CellPage />} />
-              <Route path="/post/:postId" element={<PostPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
-        </ForumProvider>
-      </AuthProvider>
-    </Router>
-  </QueryClientProvider>
+  <WagmiProvider config={config}>
+    <QueryClientProvider client={queryClient}>
+      <AppKitProvider {...appkitConfig}>
+        <Router>
+          <AuthProvider>
+            <ForumProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/cell/:cellId" element={<CellPage />} />
+                  <Route path="/post/:postId" element={<PostPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </TooltipProvider>
+            </ForumProvider>
+          </AuthProvider>
+        </Router>
+      </AppKitProvider>
+    </QueryClientProvider>
+  </WagmiProvider>
 );
 
 export default App;
