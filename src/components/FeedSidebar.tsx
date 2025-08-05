@@ -198,7 +198,7 @@ const FeedSidebar: React.FC = () => {
         <CardContent className="p-4 text-center">
           <div className="text-xs text-cyber-neutral space-y-1">
             <p>OpChan v1.0</p>
-            <p>Decentralized forum on Bitcoin Ordinals</p>
+            <p>A Decentralized Forum Prototype</p>
             <div className="flex items-center justify-center space-x-1 mt-2">
               <Eye className="w-3 h-3" />
               <span>Powered by Waku</span>
