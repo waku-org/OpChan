@@ -3,6 +3,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { User } from '@/types';
 import { AuthService, AuthResult } from '@/lib/identity/services/AuthService';
 import { OpchanMessage } from '@/types';
+import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 
 export type VerificationStatus = 'unverified' | 'verified-none' | 'verified-owner' | 'verifying';
 
@@ -11,8 +12,6 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAuthenticating: boolean;
   verificationStatus: VerificationStatus;
-  connectWallet: () => Promise<void>;
-  disconnectWallet: () => void;
   verifyOrdinal: () => Promise<boolean>;
   delegateKey: () => Promise<boolean>;
   isDelegationValid: () => boolean;
@@ -34,76 +33,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('unverified');
   const { toast } = useToast();
   
+  // Use AppKit hooks for multi-chain support
+  const bitcoinAccount = useAppKitAccount({ namespace: "bip122" });
+  const ethereumAccount = useAppKitAccount({ namespace: "eip155" });
+  
+  // Determine which account is connected
+  const isBitcoinConnected = bitcoinAccount.isConnected;
+  const isEthereumConnected = ethereumAccount.isConnected;
+  const isConnected = isBitcoinConnected || isEthereumConnected;
+  
+  // Get the active account info
+  const activeAccount = isBitcoinConnected ? bitcoinAccount : ethereumAccount;
+  const address = activeAccount.address;
+  
   // Create ref for AuthService so it persists between renders
   const authServiceRef = useRef(new AuthService());
   
+  // Sync with AppKit wallet state
   useEffect(() => {
-    const storedUser = authServiceRef.current.loadStoredUser();
-    if (storedUser) {
-      setCurrentUser(storedUser);
+    if (isConnected && address) {
+      // Check if we have a stored user for this address
+      const storedUser = authServiceRef.current.loadStoredUser();
       
-      if ('ordinalOwnership' in storedUser) {
-        setVerificationStatus(storedUser.ordinalOwnership ? 'verified-owner' : 'verified-none');
+      if (storedUser && storedUser.address === address) {
+        // Use stored user data
+        setCurrentUser(storedUser);
+        if ('ordinalOwnership' in storedUser) {
+          setVerificationStatus(storedUser.ordinalOwnership ? 'verified-owner' : 'verified-none');
+        } else {
+          setVerificationStatus('unverified');
+        }
       } else {
+        // Create new user from AppKit wallet
+        const newUser: User = {
+          address,
+          walletType: isBitcoinConnected ? 'bitcoin' : 'ethereum',
+          ordinalOwnership: false,
+          delegationExpiry: null,
+          verificationStatus: 'unverified',
+        };
+        setCurrentUser(newUser);
         setVerificationStatus('unverified');
-      }
-    }
-  }, []);
-
-  const connectWallet = async () => {
-    setIsAuthenticating(true);
-    try {
-      const result: AuthResult = await authServiceRef.current.connectWallet();
-      
-      if (!result.success) {
+        authServiceRef.current.saveUser(newUser);
+        
+        const chainName = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
         toast({
-          title: "Connection Failed",
-          description: result.error || "Failed to connect to wallet. Please try again.",
-          variant: "destructive",
+          title: "Wallet Connected",
+          description: `Connected to ${chainName} with address ${address.slice(0, 6)}...${address.slice(-4)}`,
         });
-        throw new Error(result.error);
+        
+        toast({
+          title: "Action Required",
+          description: "Please verify your Ordinal ownership and delegate a signing key for better UX.",
+        });
       }
-      
-      const newUser = result.user!;
-      setCurrentUser(newUser);
-      authServiceRef.current.saveUser(newUser);
+    } else {
+      // Wallet disconnected
+      setCurrentUser(null);
       setVerificationStatus('unverified');
-      
-      toast({
-        title: "Wallet Connected",
-        description: `Connected with address ${newUser.address.slice(0, 6)}...${newUser.address.slice(-4)}`,
-      });
-      
-      toast({
-        title: "Action Required",
-        description: "Please verify your Ordinal ownership and delegate a signing key for better UX.",
-      });
-      
-    } catch (error) {
-      console.error("Error connecting wallet:", error);
-      toast({
-        title: "Connection Failed",
-        description: "Failed to connect to wallet. Please try again.",
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setIsAuthenticating(false);
     }
-  };
-
-  const disconnectWallet = () => {
-    authServiceRef.current.disconnectWallet();
-    authServiceRef.current.clearStoredUser();
-    
-    setCurrentUser(null);
-    setVerificationStatus('unverified');
-    
-    toast({
-      title: "Disconnected",
-      description: "Your wallet has been disconnected.",
-    });
-  };
+  }, [isConnected, address, isBitcoinConnected, toast]);
 
   const verifyOrdinal = async (): Promise<boolean> => {
     if (!currentUser || !currentUser.address) {
@@ -222,7 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (error.message.includes("timeout")) {
           errorMessage = "Wallet request timed out. Please try again and approve the signature promptly.";
         } else if (error.message.includes("Failed to connect wallet")) {
-          errorMessage = "Unable to connect to Phantom wallet. Please ensure it's installed and unlocked, then try again.";
+          errorMessage = "Unable to connect to wallet. Please ensure it's installed and unlocked, then try again.";
         } else if (error.message.includes("Wallet is not connected")) {
           errorMessage = "Wallet connection was lost. Please reconnect your wallet and try again.";
         } else {
@@ -251,7 +240,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isWalletAvailable = (): boolean => {
-    return authServiceRef.current.getWalletInfo()?.type === 'phantom';
+    return isConnected && !!address;
   };
 
   return (
@@ -261,8 +250,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!currentUser?.ordinalOwnership,
         isAuthenticating,
         verificationStatus,
-        connectWallet,
-        disconnectWallet,
         verifyOrdinal,
         delegateKey,
         isDelegationValid,

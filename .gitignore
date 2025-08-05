@@ -44,3 +44,5 @@ node_modules/
 # Task files
 tasks.json
 tasks/ 
+
+IMPLEMENTATION_PLAN.md

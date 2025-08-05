@@ -1,4 +1,4 @@
-import React from 'react';
+import  { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import { useForum } from '@/contexts/useForum';
@@ -7,14 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import {  LogOut, Terminal, Wifi, WifiOff, AlertTriangle, CheckCircle, Key, RefreshCw, CircleSlash } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
+import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
+import { WalletConnectionDialog } from '@/components/ui/wallet-dialog';
 
 const Header = () => {
   const { 
     currentUser, 
     isAuthenticated, 
     verificationStatus, 
-    connectWallet, 
-    disconnectWallet, 
     verifyOrdinal, 
     delegateKey, 
     isDelegationValid,
@@ -23,13 +23,29 @@ const Header = () => {
   } = useAuth();
   const { isNetworkConnected, isRefreshing } = useForum();
   const { toast } = useToast();
+  // Use AppKit hooks for multi-chain support
+  const bitcoinAccount = useAppKitAccount({ namespace: "bip122" });
+  const ethereumAccount = useAppKitAccount({ namespace: "eip155" });
+  const { disconnect } = useDisconnect();
+  
+  // Determine which account is connected
+  const isBitcoinConnected = bitcoinAccount.isConnected;
+  const isEthereumConnected = ethereumAccount.isConnected;
+  const isConnected = isBitcoinConnected || isEthereumConnected;
+  const address = isConnected ? (isBitcoinConnected ? bitcoinAccount.address : ethereumAccount.address) : undefined;
+  
+  const [walletDialogOpen, setWalletDialogOpen] = useState(false);
   
   const handleConnect = async () => {
-    await connectWallet();
+    setWalletDialogOpen(true);
   };
   
-  const handleDisconnect = () => {
-    disconnectWallet();
+  const handleDisconnect = async () => {
+    await disconnect();
+    toast({
+      title: "Wallet Disconnected",
+      description: "Your wallet has been disconnected successfully.",
+    });
   };
   
   const handleVerify = async () => {
@@ -41,7 +57,7 @@ const Header = () => {
       if (!isWalletAvailable()) {
         toast({
           title: "Wallet Not Available",
-          description: "Phantom wallet is not installed or not available. Please install Phantom wallet and try again.",
+          description: "Wallet is not installed or not available. Please install a compatible wallet and try again.",
           variant: "destructive",
         });
         return;
@@ -177,83 +193,91 @@ const Header = () => {
   };
   
   return (
-    <header className="border-b border-cyber-muted bg-cyber-dark fixed top-0 left-0 right-0 z-50 h-16"> 
-      <div className="container mx-auto px-4 h-full flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <Terminal className="text-cyber-accent w-6 h-6" />
-          <Link to="/" className="text-xl font-bold text-glow text-cyber-accent">
-            OpChan
-          </Link>
-         
-        </div>
-        
-        <div className="flex gap-3 items-center"> 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge 
-                variant={isNetworkConnected ? "default" : "destructive"}
-                className="flex items-center gap-1 text-xs px-2 h-7 cursor-help" 
-              >
-                {isNetworkConnected ? (
-                  <>
-                    <Wifi className="w-3 h-3" />
-                    <span>WAKU: Connected</span>
-                  </>
-                ) : (
-                  <>
-                    <WifiOff className="w-3 h-3" />
-                    <span>WAKU: Offline</span>
-                  </>
-                )}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent className="text-sm">
-              <p>{isNetworkConnected ? "Waku network connection active." : "Waku network connection lost."}</p>
-              {isRefreshing && <p>Refreshing data...</p>}
-            </TooltipContent>
-          </Tooltip>
+    <>
+      <header className="border-b border-cyber-muted bg-cyber-dark fixed top-0 left-0 right-0 z-50 h-16"> 
+        <div className="container mx-auto px-4 h-full flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Terminal className="text-cyber-accent w-6 h-6" />
+            <Link to="/" className="text-xl font-bold text-glow text-cyber-accent">
+              OpChan
+            </Link>
+           
+          </div>
           
-          {!currentUser ? (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleConnect}
-              className="text-xs px-2 h-7" 
-            >
-              Connect Wallet
-            </Button>
-          ) : (
-            <div className="flex gap-2 items-center"> 
-              {renderAccessBadge()}
-              {renderDelegationButton()}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="hidden md:flex items-center text-xs text-muted-foreground cursor-default px-2 h-7"> 
-                    {currentUser.address.slice(0, 5)}...{currentUser.address.slice(-4)}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent className="text-sm">
-                  <p>{currentUser.address}</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleDisconnect}
-                    className="w-7 h-7" 
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                 </TooltipTrigger>
-                 <TooltipContent className="text-sm">Disconnect Wallet</TooltipContent>
-              </Tooltip>
-            </div>
-          )}
+          <div className="flex gap-3 items-center"> 
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge 
+                  variant={isNetworkConnected ? "default" : "destructive"}
+                  className="flex items-center gap-1 text-xs px-2 h-7 cursor-help" 
+                >
+                  {isNetworkConnected ? (
+                    <>
+                      <Wifi className="w-3 h-3" />
+                      <span>WAKU: Connected</span>
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="w-3 h-3" />
+                      <span>WAKU: Offline</span>
+                    </>
+                  )}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent className="text-sm">
+                <p>{isNetworkConnected ? "Waku network connection active." : "Waku network connection lost."}</p>
+                {isRefreshing && <p>Refreshing data...</p>}
+              </TooltipContent>
+            </Tooltip>
+            
+            {!isConnected ? (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleConnect}
+                className="text-xs px-2 h-7" 
+              >
+                Connect Wallet
+              </Button>
+            ) : (
+              <div className="flex gap-2 items-center"> 
+                {renderAccessBadge()}
+                {renderDelegationButton()}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="hidden md:flex items-center text-xs text-muted-foreground cursor-default px-2 h-7"> 
+                      {address?.slice(0, 5)}...{address?.slice(-4)}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-sm">
+                    <p>{address}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                   <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleDisconnect}
+                      className="w-7 h-7" 
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </Button>
+                   </TooltipTrigger>
+                   <TooltipContent className="text-sm">Disconnect Wallet</TooltipContent>
+                </Tooltip>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      
+      <WalletConnectionDialog
+        open={walletDialogOpen}
+        onOpenChange={setWalletDialogOpen}
+        onConnect={handleConnect}
+      />
+    </>
   );
 };
 

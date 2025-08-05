@@ -3,12 +3,23 @@ import { CellMessage, CommentMessage, PostMessage, VoteMessage, ModerateMessage 
 export type OpchanMessage = CellMessage | PostMessage | CommentMessage | VoteMessage | ModerateMessage;
 
 export interface User {
-  address: string;
+  address: string; 
+  walletType: 'bitcoin' | 'ethereum'; 
+
+  // Bitcoin-specific
   ordinalOwnership?: boolean | { id: string; details: string };
+  
+  // Ethereum-specific
+  ensName?: string;
+  ensAvatar?: string;
+  ensOwnership?: boolean;
+  
+  verificationStatus: 'verified' | 'unverified';
+  
   signature?: string;
   lastChecked?: number;
   browserPubKey?: string; // Browser-generated public key for key delegation
-  delegationSignature?: string; // Signature from Bitcoin wallet for delegation
+  delegationSignature?: string; // Signature from Bitcoin/Ethereum wallet for delegation
   delegationExpiry?: number; // When the delegation expires
 }
 
