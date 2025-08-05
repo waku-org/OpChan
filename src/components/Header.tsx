@@ -1,4 +1,4 @@
-import  { useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import { useForum } from '@/contexts/useForum';
@@ -8,7 +8,7 @@ import {  LogOut, Terminal, Wifi, WifiOff, AlertTriangle, CheckCircle, Key, Refr
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
-import { WalletConnectionDialog } from '@/components/ui/wallet-dialog';
+import { WalletWizard } from '@/components/ui/wallet-wizard';
 
 const Header = () => {
   const { 
@@ -34,162 +34,75 @@ const Header = () => {
   const isConnected = isBitcoinConnected || isEthereumConnected;
   const address = isConnected ? (isBitcoinConnected ? bitcoinAccount.address : ethereumAccount.address) : undefined;
   
-  const [walletDialogOpen, setWalletDialogOpen] = useState(false);
+  const [walletWizardOpen, setWalletWizardOpen] = useState(false);
+  const [hasShownWizard, setHasShownWizard] = useState(false);
+  
+  // Auto-open wizard when wallet connects for the first time
+  React.useEffect(() => {
+    if (isConnected && !hasShownWizard) {
+      setWalletWizardOpen(true);
+      setHasShownWizard(true);
+    }
+  }, [isConnected, hasShownWizard]);
   
   const handleConnect = async () => {
-    setWalletDialogOpen(true);
+    setWalletWizardOpen(true);
   };
   
   const handleDisconnect = async () => {
     await disconnect();
+    setHasShownWizard(false); // Reset so wizard can show again on next connection
     toast({
       title: "Wallet Disconnected",
       description: "Your wallet has been disconnected successfully.",
     });
   };
   
-  const handleVerify = async () => {
-    await verifyOwnership();
-  };
 
-  const handleDelegateKey = async () => {
-    try {
-      if (!isWalletAvailable()) {
-        toast({
-          title: "Wallet Not Available",
-          description: "Wallet is not installed or not available. Please install a compatible wallet and try again.",
-          variant: "destructive",
-        });
-        return;
-      }
 
-      await delegateKey();
-    } catch (error) {
-      console.error('Error in handleDelegateKey:', error);
+  const getAccountStatusText = () => {
+    switch (verificationStatus) {
+      case 'unverified':
+        return 'Setup Required';
+      case 'verifying':
+        return 'Verifying...';
+      case 'verified-none':
+        return 'Read-Only Access';
+      case 'verified-owner':
+        return isDelegationValid() ? 'Full Access' : 'Setup Key';
+      default:
+        return 'Setup Account';
     }
   };
 
-  const formatDelegationTime = () => {
-    if (!isDelegationValid()) return null;
-    
-    const timeRemaining = delegationTimeRemaining();
-    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
-    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-
-    return `${hours}h ${minutes}m`; 
+  const getAccountStatusIcon = () => {
+    switch (verificationStatus) {
+      case 'unverified':
+        return <AlertTriangle className="w-3 h-3" />;
+      case 'verifying':
+        return <RefreshCw className="w-3 h-3 animate-spin" />;
+      case 'verified-none':
+        return <CircleSlash className="w-3 h-3" />;
+      case 'verified-owner':
+        return isDelegationValid() ? <CheckCircle className="w-3 h-3" /> : <Key className="w-3 h-3" />;
+      default:
+        return <AlertTriangle className="w-3 h-3" />;
+    }
   };
 
-  const renderDelegationButton = () => {
-    if (verificationStatus !== 'verified-owner') return null; 
-    
-    const hasValidDelegation = isDelegationValid();
-    const timeRemaining = formatDelegationTime();
-    
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant={hasValidDelegation ? "outline" : "default"}
-            size="sm"
-            className="flex items-center gap-1 text-xs px-2 h-7" 
-            onClick={handleDelegateKey}
-          >
-            <Key className="w-3 h-3" /> 
-            {hasValidDelegation 
-              ? <span>KEY ACTIVE ({timeRemaining})</span> 
-              : <span>DELEGATE KEY</span>}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-[260px] text-sm">
-          {hasValidDelegation ? (
-            <p>Browser key active for ~{timeRemaining}. Wallet signatures not needed for most actions.</p>
-          ) : (
-            <p>Delegate a browser key for 24h to avoid constant wallet signing. If your wallet is disconnected, it will be reconnected automatically.</p>
-          )}
-        </TooltipContent>
-      </Tooltip>
-    );
-  };
-
-  const renderAccessBadge = () => {
-    if (verificationStatus === 'unverified') {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleVerify}
-              className="flex items-center gap-1 text-xs px-2 h-7 border-destructive text-destructive hover:bg-destructive/10" 
-            >
-              <AlertTriangle className="w-3 h-3" /> 
-              <span>[UNVERIFIED] Verify</span>
-            </Button>
-          </TooltipTrigger>
-           <TooltipContent className="max-w-[260px] text-sm">
-             <p className="font-semibold mb-1">Action Required</p>
-             <p>Verify your Ordinal ownership to enable posting, commenting, and voting.</p>
-           </TooltipContent>
-        </Tooltip>
-      );
+  const getAccountStatusVariant = () => {
+    switch (verificationStatus) {
+      case 'unverified':
+        return 'destructive';
+      case 'verifying':
+        return 'outline';
+      case 'verified-none':
+        return 'secondary';
+      case 'verified-owner':
+        return isDelegationValid() ? 'default' : 'outline';
+      default:
+        return 'outline';
     }
-    
-    if (verificationStatus === 'verifying') {
-      return (
-        <Badge 
-          variant="outline" 
-          className="flex items-center gap-1 text-xs px-2 h-7"
-        >
-          <RefreshCw className="w-3 h-3 animate-spin" />
-          <span>[VERIFYING...]</span>
-        </Badge>
-      );
-    }
-    
-    if (verificationStatus === 'verified-none') {
-      return (
-        <Tooltip>
-           <TooltipTrigger asChild>
-             <Badge 
-               variant="secondary" 
-               className="flex items-center gap-1 cursor-help text-xs px-2 h-7"
-             >
-               <CircleSlash className="w-3 h-3" /> 
-               <span>[VERIFIED | READ-ONLY]</span>
-             </Badge>
-           </TooltipTrigger>
-           <TooltipContent className="max-w-[260px] text-sm">
-             <p className="font-semibold mb-1">Wallet Verified - No Ordinals</p>
-             <p>No Ordinal Operators found. Read-only access granted.</p>
-             <Button size="sm" variant="link" onClick={handleVerify} className="p-0 h-auto mt-1 text-xs">Verify Again?</Button>
-           </TooltipContent>
-        </Tooltip>
-      );
-    }
-    
-    // Verified - Ordinal Owner
-    if (verificationStatus === 'verified-owner') {
-      return (
-         <Tooltip>
-           <TooltipTrigger asChild>
-             <Badge 
-               variant="default" 
-               className="flex items-center gap-1 cursor-help text-xs px-2 h-7 bg-primary text-primary-foreground" 
-             >
-               <CheckCircle className="w-3 h-3" /> 
-               <span>[OWNER ✔]</span>
-             </Badge>
-           </TooltipTrigger>
-           <TooltipContent className="max-w-[260px] text-sm">
-              <p className="font-semibold mb-1">Ordinal Owner Verified!</p>
-              <p>Full forum access granted.</p>
-              <Button size="sm" variant="link" onClick={handleVerify} className="p-0 h-auto mt-1 text-xs">Verify Again?</Button>
-           </TooltipContent>
-        </Tooltip>
-      );
-    }
-    
-    return null;
   };
   
   return (
@@ -241,8 +154,23 @@ const Header = () => {
               </Button>
             ) : (
               <div className="flex gap-2 items-center"> 
-                {renderAccessBadge()}
-                {renderDelegationButton()}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={getAccountStatusVariant()}
+                      size="sm"
+                      onClick={() => setWalletWizardOpen(true)}
+                      className="flex items-center gap-1 text-xs px-2 h-7" 
+                    >
+                      {getAccountStatusIcon()}
+                      <span>{getAccountStatusText()}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[260px] text-sm">
+                    <p className="font-semibold mb-1">Account Setup</p>
+                    <p>Click to view and manage your wallet connection, verification status, and key delegation.</p>
+                  </TooltipContent>
+                </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="hidden md:flex items-center text-xs text-muted-foreground cursor-default px-2 h-7"> 
@@ -272,10 +200,15 @@ const Header = () => {
         </div>
       </header>
       
-      <WalletConnectionDialog
-        open={walletDialogOpen}
-        onOpenChange={setWalletDialogOpen}
-        onConnect={handleConnect}
+      <WalletWizard
+        open={walletWizardOpen}
+        onOpenChange={setWalletWizardOpen}
+        onComplete={() => {
+          toast({
+            title: "Setup Complete",
+            description: "You can now use all OpChan features!",
+          });
+        }}
       />
     </>
   );
