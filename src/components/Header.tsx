@@ -35,15 +35,31 @@ const Header = () => {
   const address = isConnected ? (isBitcoinConnected ? bitcoinAccount.address : ethereumAccount.address) : undefined;
   
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
-  const [hasShownWizard, setHasShownWizard] = useState(false);
+  
+  // Use sessionStorage to persist wizard state across navigation
+  const getHasShownWizard = () => {
+    try {
+      return sessionStorage.getItem('hasShownWalletWizard') === 'true';
+    } catch {
+      return false;
+    }
+  };
+  
+  const setHasShownWizard = (value: boolean) => {
+    try {
+      sessionStorage.setItem('hasShownWalletWizard', value.toString());
+    } catch {
+      // Fallback if sessionStorage is not available
+    }
+  };
   
   // Auto-open wizard when wallet connects for the first time
   React.useEffect(() => {
-    if (isConnected && !hasShownWizard) {
+    if (isConnected && !getHasShownWizard()) {
       setWalletWizardOpen(true);
       setHasShownWizard(true);
     }
-  }, [isConnected, hasShownWizard]);
+  }, [isConnected]);
   
   const handleConnect = async () => {
     setWalletWizardOpen(true);

@@ -28,7 +28,7 @@ export function WalletWizard({
 }: WalletWizardProps) {
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1);
   const [isLoading, setIsLoading] = React.useState(false);
-  const { currentUser, isAuthenticated, verificationStatus } = useAuth();
+  const { currentUser, isAuthenticated, verificationStatus, isDelegationValid } = useAuth();
 
   // Reset wizard when opened and determine starting step
   React.useEffect(() => {
@@ -44,7 +44,7 @@ export function WalletWizard({
       }
       setIsLoading(false);
     }
-    }, [open, isAuthenticated, verificationStatus]);
+    }, [open, isAuthenticated, verificationStatus, isDelegationValid]);
 
   // Auto-advance from step 1 to 2 only when wallet connects during the session
   React.useEffect(() => {
@@ -68,8 +68,27 @@ export function WalletWizard({
   };
 
   const getStepStatus = (step: WizardStep) => {
-    if (currentStep > step) return "completed";
-    if (currentStep === step) return "current";
+    // Step 1: Wallet connection - completed when authenticated
+    if (step === 1) {
+      if (isAuthenticated) return "completed";
+      if (currentStep === step) return "current";
+      return "pending";
+    }
+    
+    // Step 2: Verification - completed when verified (either owner or none)
+    if (step === 2) {
+      if (verificationStatus === 'verified-owner' || verificationStatus === 'verified-none') return "completed";
+      if (currentStep === step) return "current";
+      return "pending";
+    }
+    
+    // Step 3: Key delegation - completed when delegation is valid
+    if (step === 3) {
+      if (isDelegationValid()) return "completed";
+      if (currentStep === step) return "current";
+      return "pending";
+    }
+    
     return "pending";
   };
 
