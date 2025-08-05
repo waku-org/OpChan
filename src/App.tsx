@@ -22,6 +22,7 @@ import CellPage from "./pages/CellPage";
 import PostPage from "./pages/PostPage";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
+import Index from "./pages/Index";
 import { appkitConfig } from "./lib/identity/wallets/appkit";
 import { createAppKit } from "@reown/appkit";
 import { WagmiProvider } from "wagmi";
@@ -45,6 +46,7 @@ const App = () => (
                 <Sonner />
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
+                  <Route path="/cells" element={<Index />} />
                   <Route path="/cell/:cellId" element={<CellPage />} />
                   <Route path="/post/:postId" element={<PostPage />} />
                   <Route path="*" element={<NotFound />} />

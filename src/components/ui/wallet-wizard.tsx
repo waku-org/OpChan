@@ -82,9 +82,9 @@ export function WalletWizard({
       return "pending";
     }
     
-    // Step 3: Key delegation - completed when delegation is valid
+    // Step 3: Key delegation - completed when delegation is valid AND authenticated
     if (step === 3) {
-      if (isDelegationValid()) return "completed";
+      if (isAuthenticated && isDelegationValid()) return "completed";
       if (currentStep === step) return "current";
       return "pending";
     }

@@ -37,11 +37,19 @@ const formSchema = z.object({
     }),
 });
 
-export function CreateCellDialog() {
+interface CreateCellDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function CreateCellDialog({ open: externalOpen, onOpenChange }: CreateCellDialogProps = {}) {
   const { createCell, isPostingCell } = useForum();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  
+  const open = externalOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,9 +85,11 @@ export function CreateCellDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">Create New Cell</Button>
-      </DialogTrigger>
+      {!onOpenChange && (
+        <DialogTrigger asChild>
+          <Button variant="outline" className="w-full">Create New Cell</Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create a New Cell</DialogTitle>
@@ -151,3 +161,5 @@ export function CreateCellDialog() {
     </Dialog>
   );
 }
+
+export default CreateCellDialog;
