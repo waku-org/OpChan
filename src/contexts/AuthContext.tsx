@@ -12,7 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAuthenticating: boolean;
   verificationStatus: VerificationStatus;
-  verifyOrdinal: () => Promise<boolean>;
+  verifyOwnership: () => Promise<boolean>;
   delegateKey: () => Promise<boolean>;
   isDelegationValid: () => boolean;
   delegationTimeRemaining: () => number;
@@ -49,6 +49,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Create ref for AuthService so it persists between renders
   const authServiceRef = useRef(new AuthService());
   
+  // Set AppKit accounts in AuthService
+  useEffect(() => {
+    authServiceRef.current.setAccounts(bitcoinAccount, ethereumAccount);
+  }, [bitcoinAccount, ethereumAccount]);
+  
   // Sync with AppKit wallet state
   useEffect(() => {
     if (isConnected && address) {
@@ -58,33 +63,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storedUser && storedUser.address === address) {
         // Use stored user data
         setCurrentUser(storedUser);
-        if ('ordinalOwnership' in storedUser) {
-          setVerificationStatus(storedUser.ordinalOwnership ? 'verified-owner' : 'verified-none');
-        } else {
-          setVerificationStatus('unverified');
-        }
+        setVerificationStatus(getVerificationStatus(storedUser));
       } else {
         // Create new user from AppKit wallet
         const newUser: User = {
           address,
           walletType: isBitcoinConnected ? 'bitcoin' : 'ethereum',
-          ordinalOwnership: false,
-          delegationExpiry: null,
           verificationStatus: 'unverified',
+          lastChecked: Date.now(),
         };
+
         setCurrentUser(newUser);
         setVerificationStatus('unverified');
         authServiceRef.current.saveUser(newUser);
         
         const chainName = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
-        toast({
-          title: "Wallet Connected",
-          description: `Connected to ${chainName} with address ${address.slice(0, 6)}...${address.slice(-4)}`,
-        });
+        const displayName = `${address.slice(0, 6)}...${address.slice(-4)}`;
         
         toast({
+          title: "Wallet Connected",
+          description: `Connected to ${chainName} with ${displayName}`,
+        });
+        
+        const verificationType = isBitcoinConnected ? 'Ordinal ownership' : 'ENS ownership';
+        toast({
           title: "Action Required",
-          description: "Please verify your Ordinal ownership and delegate a signing key for better UX.",
+          description: `Please verify your ${verificationType} and delegate a signing key for better UX.`,
         });
       }
     } else {
@@ -92,9 +96,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser(null);
       setVerificationStatus('unverified');
     }
-  }, [isConnected, address, isBitcoinConnected, toast]);
+  }, [isConnected, address, isBitcoinConnected, isEthereumConnected, toast]);
 
-  const verifyOrdinal = async (): Promise<boolean> => {
+  const getVerificationStatus = (user: User): VerificationStatus => {
+    if (user.walletType === 'bitcoin') {
+      return user.ordinalOwnership ? 'verified-owner' : 'verified-none';
+    } else if (user.walletType === 'ethereum') {
+      return user.ensOwnership ? 'verified-owner' : 'verified-none';
+    }
+    return 'unverified';
+  };
+
+  const verifyOwnership = async (): Promise<boolean> => {
     if (!currentUser || !currentUser.address) {
       toast({
         title: "Not Connected",
@@ -108,12 +121,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setVerificationStatus('verifying');
     
     try {
+      const verificationType = currentUser.walletType === 'bitcoin' ? 'Ordinal' : 'ENS';
       toast({ 
-        title: "Verifying Ordinal", 
-        description: "Checking your wallet for Ordinal Operators..." 
+        title: `Verifying ${verificationType}`, 
+        description: `Checking your wallet for ${verificationType} ownership...` 
       });
       
-      const result: AuthResult = await authServiceRef.current.verifyOrdinal(currentUser);
+      const result: AuthResult = await authServiceRef.current.verifyOwnership(currentUser);
       
       if (!result.success) {
         throw new Error(result.error);
@@ -124,27 +138,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authServiceRef.current.saveUser(updatedUser);
       
       // Update verification status
-      setVerificationStatus(updatedUser.ordinalOwnership ? 'verified-owner' : 'verified-none');
+      setVerificationStatus(getVerificationStatus(updatedUser));
       
-      if (updatedUser.ordinalOwnership) {
+      if (updatedUser.walletType === 'bitcoin' && updatedUser.ordinalOwnership) {
         toast({
           title: "Ordinal Verified",
           description: "You now have full access. We recommend delegating a key for better UX.",
         });
+      } else if (updatedUser.walletType === 'ethereum' && updatedUser.ensOwnership) {
+        toast({
+          title: "ENS Verified",
+          description: "You now have full access. We recommend delegating a key for better UX.",
+        });
       } else {
+        const verificationType = updatedUser.walletType === 'bitcoin' ? 'Ordinal Operators' : 'ENS domain';
         toast({
           title: "Read-Only Access",
-          description: "No Ordinal Operators found. You have read-only access.",
+          description: `No ${verificationType} found. You have read-only access.`,
           variant: "default",
         });
       }
       
-      return Boolean(updatedUser.ordinalOwnership);
+      return Boolean(
+        (updatedUser.walletType === 'bitcoin' && updatedUser.ordinalOwnership) ||
+        (updatedUser.walletType === 'ethereum' && updatedUser.ensOwnership)
+      );
     } catch (error) {
-      console.error("Error verifying Ordinal:", error);
+      console.error("Error verifying ownership:", error);
       setVerificationStatus('unverified');
       
-      let errorMessage = "Failed to verify Ordinal ownership. Please try again.";
+      let errorMessage = "Failed to verify ownership. Please try again.";
       if (error instanceof Error) {
         errorMessage = error.message;
       }
@@ -203,24 +226,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Error delegating key:", error);
       
       let errorMessage = "Failed to delegate key. Please try again.";
-      
       if (error instanceof Error) {
-        // Provide specific guidance based on error type
-        if (error.message.includes("rejected") || error.message.includes("declined") || error.message.includes("denied")) {
-          errorMessage = "You declined the signature request. Key delegation is optional but improves your experience.";
-        } else if (error.message.includes("timeout")) {
-          errorMessage = "Wallet request timed out. Please try again and approve the signature promptly.";
-        } else if (error.message.includes("Failed to connect wallet")) {
-          errorMessage = "Unable to connect to wallet. Please ensure it's installed and unlocked, then try again.";
-        } else if (error.message.includes("Wallet is not connected")) {
-          errorMessage = "Wallet connection was lost. Please reconnect your wallet and try again.";
-        } else {
-          errorMessage = error.message;
-        }
+        errorMessage = error.message;
       }
       
       toast({
-        title: "Delegation Failed",
+        title: "Delegation Error",
         description: errorMessage,
         variant: "destructive",
       });
@@ -230,37 +241,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticating(false);
     }
   };
-  
+
   const isDelegationValid = (): boolean => {
     return authServiceRef.current.isDelegationValid();
   };
-  
+
   const delegationTimeRemaining = (): number => {
     return authServiceRef.current.getDelegationTimeRemaining();
   };
 
   const isWalletAvailable = (): boolean => {
-    return isConnected && !!address;
+    return isConnected;
+  };
+
+  const messageSigning = {
+    signMessage: async (message: OpchanMessage): Promise<OpchanMessage | null> => {
+      return authServiceRef.current.signMessage(message);
+    },
+    verifyMessage: (message: OpchanMessage): boolean => {
+      return authServiceRef.current.verifyMessage(message);
+    }
+  };
+
+  const value: AuthContextType = {
+    currentUser,
+    isAuthenticated: Boolean(currentUser && isConnected),
+    isAuthenticating,
+    verificationStatus,
+    verifyOwnership,
+    delegateKey,
+    isDelegationValid,
+    delegationTimeRemaining,
+    isWalletAvailable,
+    messageSigning
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        currentUser,
-        isAuthenticated: !!currentUser?.ordinalOwnership,
-        isAuthenticating,
-        verificationStatus,
-        verifyOrdinal,
-        delegateKey,
-        isDelegationValid,
-        delegationTimeRemaining,
-        isWalletAvailable,
-        messageSigning: {
-          signMessage: (message: OpchanMessage) => authServiceRef.current.signMessage(message),
-          verifyMessage: (message: OpchanMessage) => authServiceRef.current.verifyMessage(message),
-        },
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

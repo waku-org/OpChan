@@ -15,7 +15,7 @@ const Header = () => {
     currentUser, 
     isAuthenticated, 
     verificationStatus, 
-    verifyOrdinal, 
+    verifyOwnership, 
     delegateKey, 
     isDelegationValid,
     delegationTimeRemaining,
@@ -49,7 +49,7 @@ const Header = () => {
   };
   
   const handleVerify = async () => {
-    await verifyOrdinal();
+    await verifyOwnership();
   };
 
   const handleDelegateKey = async () => {
@@ -246,11 +246,11 @@ const Header = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="hidden md:flex items-center text-xs text-muted-foreground cursor-default px-2 h-7"> 
-                      {address?.slice(0, 5)}...{address?.slice(-4)}
+                      {currentUser?.ensName || `${address?.slice(0, 5)}...${address?.slice(-4)}`}
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="text-sm">
-                    <p>{address}</p>
+                    <p>{currentUser?.ensName ? `${currentUser.ensName} (${address})` : address}</p>
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
