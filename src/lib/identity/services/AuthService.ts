@@ -104,10 +104,15 @@ export class AuthService {
 
       // Add ENS info for Ethereum wallets (if available)
       if (walletType === 'ethereum') {
-        // Note: ENS resolution would need to be implemented separately
-        // For now, we'll leave it as undefined
-        user.ensName = undefined;
-        user.ensOwnership = false;
+        try {
+          const walletInfo = await this.walletService.getWalletInfo();
+          user.ensName = walletInfo?.ensName;
+          user.ensOwnership = !!(walletInfo?.ensName);
+        } catch (error) {
+          console.warn('Failed to resolve ENS during wallet connection:', error);
+          user.ensName = undefined;
+          user.ensOwnership = false;
+        }
       }
 
       return {
@@ -190,21 +195,40 @@ export class AuthService {
    * Verify Ethereum ENS ownership
    */
   private async verifyEthereumENS(user: User): Promise<AuthResult> {
-    // Note: ENS resolution would need to be implemented separately
-    // For now, we'll assume no ENS ownership
-    const hasENS = false;
+    try {
+      // Get wallet info with ENS resolution
+      const walletInfo = await this.walletService.getWalletInfo();
+      
+      const hasENS = !!(walletInfo?.ensName);
+      const ensName = walletInfo?.ensName;
 
-    const updatedUser = {
-      ...user,
-      ensOwnership: hasENS,
-      ensName: undefined,
-      lastChecked: Date.now(),
-    };
+      const updatedUser = {
+        ...user,
+        ensOwnership: hasENS,
+        ensName: ensName,
+        lastChecked: Date.now(),
+      };
 
-    return {
-      success: true,
-      user: updatedUser
-    };
+      return {
+        success: true,
+        user: updatedUser
+      };
+    } catch (error) {
+      console.error('Error verifying ENS ownership:', error);
+      
+      // Fall back to no ENS ownership on error
+      const updatedUser = {
+        ...user,
+        ensOwnership: false,
+        ensName: undefined,
+        lastChecked: Date.now(),
+      };
+
+      return {
+        success: true,
+        user: updatedUser
+      };
+    }
   }
 
   /**
@@ -298,25 +322,8 @@ export class AuthService {
    * Get current wallet info
    */
   async getWalletInfo() {
-    // Return basic wallet info based on what's available
-    const isBitcoinConnected = this.walletService.isWalletAvailable('bitcoin');
-    const isEthereumConnected = this.walletService.isWalletAvailable('ethereum');
-    
-    if (isBitcoinConnected) {
-      return {
-        address: this.getActiveAddress(),
-        walletType: 'bitcoin' as const,
-        isConnected: true
-      };
-    } else if (isEthereumConnected) {
-      return {
-        address: this.getActiveAddress(),
-        walletType: 'ethereum' as const,
-        isConnected: true
-      };
-    }
-    
-    return null;
+    // Use the wallet service to get detailed wallet info including ENS
+    return await this.walletService.getWalletInfo();
   }
 
   /**

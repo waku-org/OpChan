@@ -1,8 +1,17 @@
 import { UseAppKitAccountReturn } from '@reown/appkit/react';
 import { KeyDelegation } from '../signatures/key-delegation';
 import { AppKit } from '@reown/appkit';
+import { getEnsName } from '@wagmi/core';
 import { ChainNamespace } from '@reown/appkit-common';
+import { config } from './appkit';
 import { Provider} from '@reown/appkit-controllers';
+
+export interface WalletInfo {
+  address: string;
+  walletType: 'bitcoin' | 'ethereum';
+  ensName?: string;
+  isConnected: boolean;
+}
 
 export class ReOwnWalletService {
   private keyDelegation: KeyDelegation;
@@ -207,4 +216,40 @@ export class ReOwnWalletService {
   clearDelegation(walletType: 'bitcoin' | 'ethereum'): void {
     this.keyDelegation.clearDelegation();
   }
+
+  /**
+   * Get wallet connection info with ENS resolution for Ethereum
+   */
+  async getWalletInfo(): Promise<WalletInfo | null> {
+    if (this.bitcoinAccount?.isConnected) {
+      return {
+        address: this.bitcoinAccount.address,
+        walletType: 'bitcoin',
+        isConnected: true
+      };
+    } else if (this.ethereumAccount?.isConnected) {
+      // Use Wagmi to resolve ENS name
+      let ensName: string | undefined;
+      try {
+        const resolvedName = await getEnsName(config, {
+          address: this.ethereumAccount.address as `0x${string}`
+        });
+        ensName = resolvedName || undefined;
+      } catch (error) {
+        console.warn('Failed to resolve ENS name:', error);
+        // Continue without ENS name
+      }
+
+      return {
+        address: this.ethereumAccount.address,
+        walletType: 'ethereum',
+        ensName,
+        isConnected: true
+      };
+    }
+
+    return null;
+  }
+
+
 }
