@@ -103,52 +103,50 @@ export function VerificationStep({
   // Show verification result
   if (verificationResult) {
     return (
-      <div className="space-y-4">
-        <div className={`p-4 rounded-lg border ${
-          verificationResult.success 
-            ? 'bg-green-900/20 border-green-500/30' 
-            : 'bg-yellow-900/20 border-yellow-500/30'
-        }`}>
-          <div className="flex items-center gap-2 mb-2">
-            {verificationResult.success ? (
-              <ShieldCheck className="h-5 w-5 text-green-500" />
-            ) : (
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-            )}
-            <span className={`font-medium ${
-              verificationResult.success ? 'text-green-400' : 'text-yellow-400'
-            }`}>
-              {verificationResult.success ? 'Verification Complete' : 'Verification Result'}
-            </span>
-          </div>
-          <p className="text-sm text-neutral-300 mb-2">
-            {verificationResult.message}
-          </p>
-          {verificationResult.details && (
-            <div className="text-xs text-neutral-400">
-              {walletType === 'bitcoin' ? (
-                <p>Ordinal ID: {verificationResult.details.id}</p>
+      <div className="flex flex-col h-full">
+        <div className="flex-1 space-y-4">
+          <div className={`p-4 rounded-lg border ${
+            verificationResult.success 
+              ? 'bg-green-900/20 border-green-500/30' 
+              : 'bg-yellow-900/20 border-yellow-500/30'
+          }`}>
+            <div className="flex items-center gap-2 mb-2">
+              {verificationResult.success ? (
+                <ShieldCheck className="h-5 w-5 text-green-500" />
               ) : (
-                <p>ENS Name: {verificationResult.details.ensName}</p>
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
               )}
+              <span className={`font-medium ${
+                verificationResult.success ? 'text-green-400' : 'text-yellow-400'
+              }`}>
+                {verificationResult.success ? 'Verification Complete' : 'Verification Result'}
+              </span>
             </div>
-          )}
+            <p className="text-sm text-neutral-300 mb-2">
+              {verificationResult.message}
+            </p>
+            {verificationResult.details && (
+              <div className="text-xs text-neutral-400">
+                {walletType === 'bitcoin' ? (
+                  <p>Ordinal ID: {verificationResult.details.id}</p>
+                ) : (
+                  <p>ENS Name: {verificationResult.details.ensName}</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         
-        <Button
-          onClick={handleNext}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            "Continue to Key Delegation"
-          )}
-        </Button>
+        {/* Action Button */}
+        <div className="mt-auto">
+          <Button
+            onClick={handleNext}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={isLoading}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     );
   }
@@ -156,78 +154,90 @@ export function VerificationStep({
   // Show verification status
   if (verificationStatus === 'verified-owner') {
     return (
-      <div className="space-y-4">
-        <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <ShieldCheck className="h-5 w-5 text-green-500" />
-            <span className="text-green-400 font-medium">Already Verified</span>
-          </div>
-          <p className="text-sm text-neutral-300 mb-2">
-            Your {getVerificationType()} ownership has been verified.
-          </p>
-          {currentUser && (
-            <div className="text-xs text-neutral-400">
-              {walletType === 'bitcoin' && currentUser.ordinalOwnership && (
-                <p>Ordinal ID: {typeof currentUser.ordinalOwnership === 'object' ? currentUser.ordinalOwnership.id : 'Verified'}</p>
-              )}
-              {walletType === 'ethereum' && currentUser.ensName && (
-                <p>ENS Name: {currentUser.ensName}</p>
-              )}
+      <div className="flex flex-col h-full">
+        <div className="flex-1 space-y-4">
+          <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldCheck className="h-5 w-5 text-green-500" />
+              <span className="text-green-400 font-medium">Already Verified</span>
             </div>
-          )}
+            <p className="text-sm text-neutral-300 mb-2">
+              Your {getVerificationType()} ownership has been verified.
+            </p>
+            {currentUser && (
+              <div className="text-xs text-neutral-400">
+                {walletType === 'bitcoin' && currentUser.ordinalOwnership && (
+                  <p>Ordinal ID: {typeof currentUser.ordinalOwnership === 'object' ? currentUser.ordinalOwnership.id : 'Verified'}</p>
+                )}
+                {walletType === 'ethereum' && currentUser.ensName && (
+                  <p>ENS Name: {currentUser.ensName}</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         
-        <Button
-          onClick={handleNext}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-          disabled={isLoading}
-        >
-          Continue to Key Delegation
-        </Button>
+        {/* Action Button */}
+        <div className="mt-auto">
+          <Button
+            onClick={handleNext}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={isLoading}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     );
   }
 
   // Show verification form
   return (
-    <div className="space-y-4">
-      <div className="text-center space-y-2">
-        <div className="flex justify-center">
-          {React.createElement(getVerificationIcon(), { 
-            className: `h-8 w-8 ${getVerificationColor()}` 
-          })}
+    <div className="flex flex-col h-full">
+      <div className="flex-1 space-y-4">
+        <div className="text-center space-y-2">
+          <div className="flex justify-center">
+            {React.createElement(getVerificationIcon(), { 
+              className: `h-8 w-8 ${getVerificationColor()}` 
+            })}
+          </div>
+          <h3 className="text-lg font-semibold text-white">
+            Verify {getVerificationType()} Ownership
+          </h3>
+          <p className="text-sm text-neutral-400">
+            {getVerificationDescription()}
+          </p>
         </div>
-        <h3 className="text-lg font-semibold text-white">
-          Verify {getVerificationType()} Ownership
-        </h3>
-        <p className="text-sm text-neutral-400">
-          {getVerificationDescription()}
-        </p>
+
+        <div className="p-4 bg-neutral-900/50 border border-neutral-700 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="h-4 w-4 text-blue-500" />
+            <span className="text-sm font-medium text-white">What happens during verification?</span>
+          </div>
+          <ul className="text-xs text-neutral-400 space-y-1">
+            {walletType === 'bitcoin' ? (
+              <>
+                <li>• We'll check your wallet for Bitcoin Ordinal ownership</li>
+                <li>• If found, you'll get full posting and voting access</li>
+                <li>• If not found, you'll have read-only access</li>
+              </>
+            ) : (
+              <>
+                <li>• We'll check your wallet for ENS domain ownership</li>
+                <li>• If found, you'll get full posting and voting access</li>
+                <li>• If not found, you'll have read-only access</li>
+              </>
+            )}
+          </ul>
+        </div>
+
+        <div className="text-xs text-neutral-500 text-center">
+          Verification is required to access posting and voting features
+        </div>
       </div>
 
-      <div className="p-4 bg-neutral-900/50 border border-neutral-700 rounded-lg">
-        <div className="flex items-center gap-2 mb-2">
-          <Shield className="h-4 w-4 text-blue-500" />
-          <span className="text-sm font-medium text-white">What happens during verification?</span>
-        </div>
-        <ul className="text-xs text-neutral-400 space-y-1">
-          {walletType === 'bitcoin' ? (
-            <>
-              <li>• We'll check your wallet for Bitcoin Ordinal ownership</li>
-              <li>• If found, you'll get full posting and voting access</li>
-              <li>• If not found, you'll have read-only access</li>
-            </>
-          ) : (
-            <>
-              <li>• We'll check your wallet for ENS domain ownership</li>
-              <li>• If found, you'll get full posting and voting access</li>
-              <li>• If not found, you'll have read-only access</li>
-            </>
-          )}
-        </ul>
-      </div>
-
-      <div className="space-y-3">
+      {/* Action Buttons */}
+      <div className="mt-auto space-y-3">
         <Button
           onClick={handleVerify}
           disabled={isLoading || isAuthenticating}
@@ -249,12 +259,8 @@ export function VerificationStep({
           className="w-full border-neutral-600 text-neutral-400 hover:bg-neutral-800"
           disabled={isLoading || isAuthenticating}
         >
-          Back to Wallet Connection
+          Back
         </Button>
-      </div>
-
-      <div className="text-xs text-neutral-500 text-center">
-        Verification is required to access posting and voting features
       </div>
     </div>
   );

@@ -1,7 +1,10 @@
 import { User } from '@/types';
-import { WalletService, AppKitAccount } from '../wallets/index';
+import { WalletService } from '../wallets/index';
+import { UseAppKitAccountReturn } from '@reown/appkit/react';
+import { AppKit } from '@reown/appkit';
 import { OrdinalAPI } from '../ordinal';
 import { MessageSigning } from '../signatures/message-signing';
+import { KeyDelegation } from '../signatures/key-delegation';
 import { OpchanMessage } from '@/types';
 
 export interface AuthResult {
@@ -14,18 +17,55 @@ export class AuthService {
   private walletService: WalletService;
   private ordinalApi: OrdinalAPI;
   private messageSigning: MessageSigning;
+  private keyDelegation: KeyDelegation;
 
   constructor() {
     this.walletService = new WalletService();
     this.ordinalApi = new OrdinalAPI();
-    this.messageSigning = new MessageSigning(this.walletService.getKeyDelegation());
+    this.keyDelegation = new KeyDelegation();
+    this.messageSigning = new MessageSigning(this.keyDelegation);
   }
 
   /**
    * Set AppKit accounts for wallet service
    */
-  setAccounts(bitcoinAccount: AppKitAccount, ethereumAccount: AppKitAccount) {
+  setAccounts(bitcoinAccount: UseAppKitAccountReturn, ethereumAccount: UseAppKitAccountReturn) {
     this.walletService.setAccounts(bitcoinAccount, ethereumAccount);
+  }
+
+  /**
+   * Set AppKit instance for wallet service
+   */
+  setAppKit(appKit: AppKit) {
+    this.walletService.setAppKit(appKit);
+  }
+
+  /**
+   * Get the active wallet address
+   */
+  private getActiveAddress(): string | null {
+    const isBitcoinConnected = this.walletService.isWalletAvailable('bitcoin');
+    const isEthereumConnected = this.walletService.isWalletAvailable('ethereum');
+    
+    if (isBitcoinConnected) {
+      return this.walletService.getActiveAddress('bitcoin') || null;
+    } else if (isEthereumConnected) {
+      return this.walletService.getActiveAddress('ethereum') || null;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Get the active wallet type
+   */
+  private getActiveWalletType(): 'bitcoin' | 'ethereum' | null {
+    if (this.walletService.isWalletAvailable('bitcoin')) {
+      return 'bitcoin';
+    } else if (this.walletService.isWalletAvailable('ethereum')) {
+      return 'ethereum';
+    }
+    return null;
   }
 
   /**
@@ -33,25 +73,41 @@ export class AuthService {
    */
   async connectWallet(): Promise<AuthResult> {
     try {
-      const walletInfo = await this.walletService.getWalletInfo();
-      if (!walletInfo) {
+      // Check which wallet is connected
+      const isBitcoinConnected = this.walletService.isWalletAvailable('bitcoin');
+      const isEthereumConnected = this.walletService.isWalletAvailable('ethereum');
+      
+      if (!isBitcoinConnected && !isEthereumConnected) {
         return {
           success: false,
           error: 'No wallet connected'
         };
       }
 
+      // Determine which wallet is active
+      const walletType = isBitcoinConnected ? 'bitcoin' : 'ethereum';
+      const address = this.getActiveAddress();
+
+      if (!address) {
+        return {
+          success: false,
+          error: 'No wallet address available'
+        };
+      }
+
       const user: User = {
-        address: walletInfo.address,
-        walletType: walletInfo.walletType,
+        address: address,
+        walletType: walletType,
         verificationStatus: 'unverified',
         lastChecked: Date.now(),
       };
 
-      // Add ENS info for Ethereum wallets
-      if (walletInfo.walletType === 'ethereum' && walletInfo.ensName) {
-        user.ensName = walletInfo.ensName;
-        user.ensOwnership = true;
+      // Add ENS info for Ethereum wallets (if available)
+      if (walletType === 'ethereum') {
+        // Note: ENS resolution would need to be implemented separately
+        // For now, we'll leave it as undefined
+        user.ensName = undefined;
+        user.ensOwnership = false;
       }
 
       return {
@@ -67,13 +123,23 @@ export class AuthService {
   }
 
   /**
-   * Disconnect wallet and clear user data
+   * Disconnect wallet and clear stored data
    */
   async disconnectWallet(): Promise<void> {
-    const walletType = this.walletService.getActiveWalletType();
-    if (walletType) {
-      await this.walletService.disconnectWallet(walletType);
-    }
+    // Clear any existing delegations when disconnecting
+    this.keyDelegation.clearDelegation();
+    this.walletService.clearDelegation('bitcoin');
+    this.walletService.clearDelegation('ethereum');
+    
+    // Clear stored user data
+    this.clearStoredUser();
+  }
+
+  /**
+   * Clear delegation for current wallet
+   */
+  clearDelegation(): void {
+    this.keyDelegation.clearDelegation();
   }
 
   /**
@@ -124,13 +190,14 @@ export class AuthService {
    * Verify Ethereum ENS ownership
    */
   private async verifyEthereumENS(user: User): Promise<AuthResult> {
-    const walletInfo = await this.walletService.getWalletInfo();
-    const hasENS = walletInfo?.ensName && walletInfo.ensName.length > 0;
+    // Note: ENS resolution would need to be implemented separately
+    // For now, we'll assume no ENS ownership
+    const hasENS = false;
 
     const updatedUser = {
       ...user,
       ensOwnership: hasENS,
-      ensName: walletInfo?.ensName,
+      ensName: undefined,
       lastChecked: Date.now(),
     };
 
@@ -146,24 +213,35 @@ export class AuthService {
   async delegateKey(user: User): Promise<AuthResult> {
     try {
       const walletType = user.walletType;
-      const canConnect = await this.walletService.canConnectWallet(walletType);
-      if (!canConnect) {
+      const isAvailable = this.walletService.isWalletAvailable(walletType);
+      
+      if (!isAvailable) {
         return {
           success: false,
-          error: `${walletType} wallet is not available or cannot be connected. Please ensure it is installed and unlocked.`
+          error: `${walletType} wallet is not available or connected. Please ensure it is connected.`
         };
       }
 
-      const delegationInfo = await this.walletService.setupKeyDelegation(
-        user.address,
-        walletType
-      );
+      const success = await this.walletService.createKeyDelegation(walletType);
+      
+      if (!success) {
+        return {
+          success: false,
+          error: 'Failed to create key delegation'
+        };
+      }
 
+      // Get delegation status to update user
+      const delegationStatus = this.walletService.getDelegationStatus(walletType);
+      
+      // Get the actual browser public key from the delegation
+      const browserPublicKey = this.keyDelegation.getBrowserPublicKey();
+      
       const updatedUser = {
         ...user,
-        browserPubKey: delegationInfo.browserPublicKey,
-        delegationSignature: delegationInfo.signature,
-        delegationExpiry: delegationInfo.expiryTimestamp,
+        browserPubKey: browserPublicKey || undefined,
+        delegationSignature: delegationStatus.isValid ? 'valid' : undefined,
+        delegationExpiry: delegationStatus.timeRemaining ? Date.now() + delegationStatus.timeRemaining : undefined,
       };
 
       return {
@@ -196,21 +274,49 @@ export class AuthService {
    * Check if delegation is valid
    */
   isDelegationValid(): boolean {
-    return this.walletService.isDelegationValid();
+    // Only check the currently connected wallet type
+    const activeWalletType = this.getActiveWalletType();
+    if (!activeWalletType) return false;
+    
+    const status = this.walletService.getDelegationStatus(activeWalletType);
+    return status.isValid;
   }
 
   /**
    * Get delegation time remaining
    */
   getDelegationTimeRemaining(): number {
-    return this.walletService.getDelegationTimeRemaining();
+    // Only check the currently connected wallet type
+    const activeWalletType = this.getActiveWalletType();
+    if (!activeWalletType) return 0;
+    
+    const status = this.walletService.getDelegationStatus(activeWalletType);
+    return status.timeRemaining || 0;
   }
 
   /**
    * Get current wallet info
    */
   async getWalletInfo() {
-    return await this.walletService.getWalletInfo();
+    // Return basic wallet info based on what's available
+    const isBitcoinConnected = this.walletService.isWalletAvailable('bitcoin');
+    const isEthereumConnected = this.walletService.isWalletAvailable('ethereum');
+    
+    if (isBitcoinConnected) {
+      return {
+        address: this.getActiveAddress(),
+        walletType: 'bitcoin' as const,
+        isConnected: true
+      };
+    } else if (isEthereumConnected) {
+      return {
+        address: this.getActiveAddress(),
+        walletType: 'ethereum' as const,
+        isConnected: true
+      };
+    }
+    
+    return null;
   }
 
   /**

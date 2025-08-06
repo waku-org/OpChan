@@ -36,45 +36,47 @@ export class KeyDelegation {
   }
   
   /**
-   * Creates a delegation message to be signed by the Bitcoin wallet
+   * Creates a delegation message to be signed by the wallet
    * @param browserPublicKey The browser-generated public key
-   * @param bitcoinAddress The user's Bitcoin address
+   * @param walletAddress The user's wallet address
    * @param expiryTimestamp When the delegation will expire
    * @returns The message to be signed
    */
   createDelegationMessage(
     browserPublicKey: string,
-    bitcoinAddress: string,
+    walletAddress: string,
     expiryTimestamp: number
   ): string {
-    return `I, ${bitcoinAddress}, delegate authority to this pubkey: ${browserPublicKey} until ${expiryTimestamp}`;
+    return `I, ${walletAddress}, delegate authority to this pubkey: ${browserPublicKey} until ${expiryTimestamp}`;
   }
-  
+
   /**
-   * Creates a delegation with the specified expiry time in hours
-   * @param bitcoinAddress The Bitcoin wallet address
-   * @param signature The signature from the Bitcoin wallet 
-   * @param browserPublicKey The browser public key
-   * @param browserPrivateKey The browser private key
-   * @param expiryHours How many hours the delegation should be valid (default: 24)
-   * @returns The created delegation info
+   * Creates a delegation object from the signed message
+   * @param walletAddress The wallet address that signed the delegation
+   * @param signature The signature from the wallet
+   * @param browserPublicKey The browser-generated public key
+   * @param browserPrivateKey The browser-generated private key
+   * @param expiryHours How many hours the delegation should last
+   * @param walletType The type of wallet (bitcoin or ethereum)
+   * @returns DelegationInfo object
    */
   createDelegation(
-    bitcoinAddress: string,
+    walletAddress: string,
     signature: string,
     browserPublicKey: string,
     browserPrivateKey: string,
-    expiryHours: number = KeyDelegation.DEFAULT_EXPIRY_HOURS
+    expiryHours: number = KeyDelegation.DEFAULT_EXPIRY_HOURS,
+    walletType: 'bitcoin' | 'ethereum'
   ): DelegationInfo {
-    const now = Date.now();
-    const expiryTimestamp = now + (expiryHours * 60 * 60 * 1000);
+    const expiryTimestamp = Date.now() + (expiryHours * 60 * 60 * 1000);
     
     return {
       signature,
       expiryTimestamp,
       browserPublicKey,
       browserPrivateKey,
-      bitcoinAddress
+      walletAddress,
+      walletType
     };
   }
   
@@ -103,15 +105,30 @@ export class KeyDelegation {
   }
   
   /**
-   * Checks if a delegation is valid (exists and not expired)
+   * Checks if a delegation is valid (exists, not expired, and matches current wallet)
+   * @param currentAddress Optional current wallet address to validate against
+   * @param currentWalletType Optional current wallet type to validate against
    * @returns boolean indicating if the delegation is valid
    */
-  isDelegationValid(): boolean {
+  isDelegationValid(currentAddress?: string, currentWalletType?: 'bitcoin' | 'ethereum'): boolean {
     const delegation = this.retrieveDelegation();
     if (!delegation) return false;
     
+    // Check if delegation has expired
     const now = Date.now();
-    return now < delegation.expiryTimestamp;
+    if (now >= delegation.expiryTimestamp) return false;
+    
+    // If a current address is provided, validate it matches the delegation
+    if (currentAddress && delegation.walletAddress !== currentAddress) {
+      return false;
+    }
+    
+    // If a current wallet type is provided, validate it matches the delegation
+    if (currentWalletType && delegation.walletType !== currentWalletType) {
+      return false;
+    }
+    
+    return true;
   }
   
   /**
@@ -166,7 +183,7 @@ export class KeyDelegation {
   getDelegatingAddress(): string | null {
     const delegation = this.retrieveDelegation();
     if (!delegation || !this.isDelegationValid()) return null;
-    return delegation.bitcoinAddress;
+    return delegation.walletAddress;
   }
   
   /**

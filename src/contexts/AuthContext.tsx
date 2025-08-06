@@ -3,7 +3,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { User } from '@/types';
 import { AuthService, AuthResult } from '@/lib/identity/services/AuthService';
 import { OpchanMessage } from '@/types';
-import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
+import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 
 export type VerificationStatus = 'unverified' | 'verified-none' | 'verified-owner' | 'verifying';
 
@@ -14,6 +14,7 @@ interface AuthContextType {
   verificationStatus: VerificationStatus;
   verifyOwnership: () => Promise<boolean>;
   delegateKey: () => Promise<boolean>;
+  clearDelegation: () => void;
   isDelegationValid: () => boolean;
   delegationTimeRemaining: () => number;
   isWalletAvailable: () => boolean;
@@ -49,7 +50,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Create ref for AuthService so it persists between renders
   const authServiceRef = useRef(new AuthService());
   
-  // Set AppKit accounts in AuthService
+  // Set AppKit instance and accounts in AuthService
+  useEffect(() => {
+    if (modal) {
+      authServiceRef.current.setAppKit(modal);
+    }
+  }, []);
+  
   useEffect(() => {
     authServiceRef.current.setAccounts(bitcoinAccount, ethereumAccount);
   }, [bitcoinAccount, ethereumAccount]);
@@ -250,6 +257,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return authServiceRef.current.getDelegationTimeRemaining();
   };
 
+  const clearDelegation = (): void => {
+    authServiceRef.current.clearDelegation();
+    
+    // Update the current user to remove delegation info
+    if (currentUser) {
+      const updatedUser = {
+        ...currentUser,
+        delegationExpiry: undefined,
+        browserPublicKey: undefined
+      };
+      setCurrentUser(updatedUser);
+      authServiceRef.current.saveUser(updatedUser);
+    }
+    
+    toast({
+      title: "Delegation Cleared",
+      description: "Your delegated signing key has been removed. You'll need to delegate a new key to continue posting and voting.",
+    });
+  };
+
   const isWalletAvailable = (): boolean => {
     return isConnected;
   };
@@ -270,6 +297,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     verificationStatus,
     verifyOwnership,
     delegateKey,
+    clearDelegation,
     isDelegationValid,
     delegationTimeRemaining,
     isWalletAvailable,

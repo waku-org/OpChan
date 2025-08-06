@@ -33,25 +33,19 @@ export function WalletWizard({
   // Reset wizard when opened and determine starting step
   React.useEffect(() => {
     if (open) {
-      // Only auto-advance from step 1 to 2 when wallet connects during the session
-      // Don't auto-advance to step 3 to allow manual navigation
-      if (isAuthenticated && verificationStatus !== 'verified-owner') {
-        setCurrentStep(2); // Start at verification step if authenticated but not verified
-      } else if (!isAuthenticated) {
+      // Determine the appropriate starting step based on current state
+      if (!isAuthenticated) {
         setCurrentStep(1); // Start at connection step if not authenticated
+      } else if (isAuthenticated && (verificationStatus === 'unverified' || verificationStatus === 'verifying')) {
+        setCurrentStep(2); // Start at verification step if authenticated but not verified
+      } else if (isAuthenticated && (verificationStatus === 'verified-owner' || verificationStatus === 'verified-none') && !isDelegationValid()) {
+        setCurrentStep(3); // Start at delegation step if verified but no valid delegation
       } else {
-        setCurrentStep(1); // Default to step 1, let user navigate manually
+        setCurrentStep(3); // Default to step 3 if everything is complete
       }
       setIsLoading(false);
     }
-    }, [open, isAuthenticated, verificationStatus, isDelegationValid]);
-
-  // Auto-advance from step 1 to 2 only when wallet connects during the session
-  React.useEffect(() => {
-    if (open && currentStep === 1 && isAuthenticated) {
-      setCurrentStep(2);
-    }
-  }, [open, currentStep, isAuthenticated]);
+  }, [open, isAuthenticated, verificationStatus, isDelegationValid]); // Include all dependencies to properly determine step
 
   const handleStepComplete = (step: WizardStep) => {
     if (step < 3) {
@@ -150,8 +144,8 @@ export function WalletWizard({
           ))}
         </div>
 
-        {/* Step Content */}
-        <div className="min-h-[300px]">
+        {/* Step Content - Fixed height container */}
+        <div className="h-[400px] flex flex-col">
           {currentStep === 1 && (
             <WalletConnectionStep
               onComplete={() => handleStepComplete(1)}

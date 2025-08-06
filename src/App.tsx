@@ -24,15 +24,12 @@ import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
 import { appkitConfig } from "./lib/identity/wallets/appkit";
-import { createAppKit } from "@reown/appkit";
 import { WagmiProvider } from "wagmi";
 import { config } from "./lib/identity/wallets/appkit";
 import { AppKitProvider } from "@reown/appkit/react";
 
 // Create a client
 const queryClient = new QueryClient();
-
-createAppKit(appkitConfig);
 
 const App = () => (
   <WagmiProvider config={config}>
