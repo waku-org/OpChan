@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import { useForum } from '@/contexts/useForum';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {  LogOut, Terminal, Wifi, WifiOff, AlertTriangle, CheckCircle, Key, RefreshCw, CircleSlash } from 'lucide-react';
+import {  LogOut, Terminal, Wifi, WifiOff, AlertTriangle, CheckCircle, Key, RefreshCw, CircleSlash, Home, Grid3X3, Plus } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
@@ -22,6 +22,7 @@ const Header = () => {
     isWalletAvailable
   } = useAuth();
   const { isNetworkConnected, isRefreshing } = useForum();
+  const location = useLocation();
   const { toast } = useToast();
   // Use AppKit hooks for multi-chain support
   const bitcoinAccount = useAppKitAccount({ namespace: "bip122" });
@@ -125,12 +126,39 @@ const Header = () => {
     <>
       <header className="border-b border-cyber-muted bg-cyber-dark fixed top-0 left-0 right-0 z-50 h-16"> 
         <div className="container mx-auto px-4 h-full flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Terminal className="text-cyber-accent w-6 h-6" />
-            <Link to="/" className="text-xl font-bold text-glow text-cyber-accent">
-              OpChan
-            </Link>
-           
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Terminal className="text-cyber-accent w-6 h-6" />
+              <Link to="/" className="text-xl font-bold text-glow text-cyber-accent">
+                OpChan
+              </Link>
+            </div>
+            
+            {/* Navigation Tabs */}
+            <nav className="hidden md:flex items-center space-x-1">
+              <Link
+                to="/"
+                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-sm transition-colors ${
+                  location.pathname === '/' 
+                    ? 'bg-cyber-accent/20 text-cyber-accent' 
+                    : 'text-gray-300 hover:text-cyber-accent hover:bg-cyber-accent/10'
+                }`}
+              >
+                <Home className="w-4 h-4" />
+                <span>Feed</span>
+              </Link>
+              <Link
+                to="/cells"
+                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-sm transition-colors ${
+                  location.pathname === '/cells' 
+                    ? 'bg-cyber-accent/20 text-cyber-accent' 
+                    : 'text-gray-300 hover:text-cyber-accent hover:bg-cyber-accent/10'
+                }`}
+              >
+                <Grid3X3 className="w-4 h-4" />
+                <span>Cells</span>
+              </Link>
+            </nav>
           </div>
           
           <div className="flex gap-3 items-center"> 
