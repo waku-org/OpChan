@@ -1,12 +1,12 @@
 import { RelevanceCalculator } from './relevance';
 import { Post, Comment, Cell, User } from '@/types';
-import { MessageType, VoteMessage } from '@/lib/waku/types';
+import { VoteMessage, MessageType } from '@/lib/waku/types';
 import { expect, describe, beforeEach, it } from 'vitest';
 import { UserVerificationStatus } from './types';
 
 describe('RelevanceCalculator', () => {
   let calculator: RelevanceCalculator;
-  let mockUserVerificationStatus: UserVerificationStatus;
+  let mockUserVerificationStatus: any;
 
   beforeEach(() => {
     calculator = new RelevanceCalculator();
@@ -53,6 +53,46 @@ describe('RelevanceCalculator', () => {
       
       expect(result.details.isVerified).toBe(true);
       expect(result.details.authorVerificationBonus).toBeGreaterThan(0);
+    });
+
+    it('should correctly identify verified users with ENS ownership', () => {
+      const verifiedUser: User = {
+        address: 'user1',
+        walletType: 'ethereum',
+        verificationStatus: 'verified-owner',
+        ensOwnership: true,
+        ensName: 'test.eth',
+        lastChecked: Date.now()
+      };
+
+      const isVerified = calculator.isUserVerified(verifiedUser);
+      expect(isVerified).toBe(true);
+    });
+
+    it('should correctly identify verified users with Ordinal ownership', () => {
+      const verifiedUser: User = {
+        address: 'user3',
+        walletType: 'bitcoin',
+        verificationStatus: 'verified-owner',
+        ordinalOwnership: true,
+        lastChecked: Date.now()
+      };
+
+      const isVerified = calculator.isUserVerified(verifiedUser);
+      expect(isVerified).toBe(true);
+    });
+
+    it('should correctly identify unverified users', () => {
+      const unverifiedUser: User = {
+        address: 'user2',
+        walletType: 'ethereum',
+        verificationStatus: 'unverified',
+        ensOwnership: false,
+        lastChecked: Date.now()
+      };
+
+      const isVerified = calculator.isUserVerified(unverifiedUser);
+      expect(isVerified).toBe(false);
     });
 
     it('should apply moderation penalty', () => {
@@ -136,6 +176,38 @@ describe('RelevanceCalculator', () => {
       const oldResult = calculator.calculatePostScore(oldPost, [], [], mockUserVerificationStatus);
 
       expect(recentResult.score).toBeGreaterThan(oldResult.score);
+    });
+  });
+
+  describe('buildUserVerificationStatus', () => {
+    it('should correctly build verification status map from users array', () => {
+      const users: User[] = [
+        {
+          address: 'user1',
+          walletType: 'ethereum',
+          verificationStatus: 'verified-owner',
+          ensOwnership: true,
+          ensName: 'test.eth',
+          lastChecked: Date.now()
+        },
+        {
+          address: 'user2',
+          walletType: 'bitcoin',
+          verificationStatus: 'unverified',
+          ordinalOwnership: false,
+          lastChecked: Date.now()
+        }
+      ];
+
+      const status = calculator.buildUserVerificationStatus(users);
+      
+      expect(status['user1'].isVerified).toBe(true);
+      expect(status['user1'].hasENS).toBe(true);
+      expect(status['user1'].hasOrdinal).toBe(false);
+      
+      expect(status['user2'].isVerified).toBe(false);
+      expect(status['user2'].hasENS).toBe(false);
+      expect(status['user2'].hasOrdinal).toBe(false);
     });
   });
 });

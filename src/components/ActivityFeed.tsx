@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageSquareText, Newspaper } from 'lucide-react';
+import { AuthorDisplay } from './ui/author-display';
 
 interface FeedItemBase {
   id: string;
@@ -33,7 +34,7 @@ interface CommentFeedItem extends FeedItemBase {
 type FeedItem = PostFeedItem | CommentFeedItem;
 
 const ActivityFeed: React.FC = () => {
-  const { posts, comments, cells, getCellById, isInitialLoading } = useForum();
+  const { posts, comments, cells, getCellById, isInitialLoading, userVerificationStatus } = useForum();
 
   const combinedFeed: FeedItem[] = [
     ...posts.map((post): PostFeedItem => ({
@@ -66,7 +67,6 @@ const ActivityFeed: React.FC = () => {
 
   const renderFeedItem = (item: FeedItem) => {
     const cell = item.cellId ? getCellById(item.cellId) : undefined;
-    const ownerShort = `${item.ownerAddress.slice(0, 5)}...${item.ownerAddress.slice(-4)}`;
     const timeAgo = formatDistanceToNow(new Date(item.timestamp), { addSuffix: true });
 
     const linkTarget = item.type === 'post' ? `/post/${item.postId}` : `/post/${item.postId}#comment-${item.id}`;
@@ -83,7 +83,12 @@ const ActivityFeed: React.FC = () => {
             {item.type === 'post' ? item.title : `Comment on: ${posts.find(p => p.id === item.postId)?.title || 'post'}`}
           </span>
            by
-          <span className="font-medium text-foreground/70 mx-1">{ownerShort}</span>
+          <AuthorDisplay 
+            address={item.ownerAddress}
+            userVerificationStatus={userVerificationStatus}
+            className="font-medium text-foreground/70 mx-1"
+            showBadge={false}
+          />
           {cell && (
             <>
               in

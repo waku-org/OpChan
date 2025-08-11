@@ -18,13 +18,16 @@ import {
 } from '@/lib/waku/network';
 import messageManager from '@/lib/waku';
 import { getDataFromCache } from '@/lib/forum/transformers';
-import { RelevanceCalculator, UserVerificationStatus } from '@/lib/forum/relevance';
+import { RelevanceCalculator } from '@/lib/forum/relevance';
+import { UserVerificationStatus } from '@/lib/forum/types';
 import { AuthService } from '@/lib/identity/services/AuthService';
 
 interface ForumContextType {
   cells: Cell[];
   posts: Post[];
   comments: Comment[];
+  // User verification status for display
+  userVerificationStatus: UserVerificationStatus;
   // Granular loading states
   isInitialLoading: boolean;
   isPostingCell: boolean;
@@ -80,6 +83,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isNetworkConnected, setIsNetworkConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userVerificationStatus, setUserVerificationStatus] = useState<UserVerificationStatus>({});
   
   const { toast } = useToast();
   const { currentUser, isAuthenticated } = useAuth();
@@ -117,11 +121,27 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     
     // Create user objects for verification status
     Array.from(userAddresses).forEach(address => {
-      allUsers.push({
-        address,
-        walletType: 'bitcoin', // Default, will be updated if we have more info
-        verificationStatus: 'unverified'
-      });
+      // Check if this address matches the current user's address
+      if (currentUser && currentUser.address === address) {
+        // Use the current user's actual verification status
+        allUsers.push({
+          address,
+          walletType: currentUser.walletType,
+          verificationStatus: currentUser.verificationStatus,
+          ensOwnership: currentUser.ensOwnership,
+          ensName: currentUser.ensName,
+          ensAvatar: currentUser.ensAvatar,
+          ordinalOwnership: currentUser.ordinalOwnership,
+          lastChecked: currentUser.lastChecked
+        });
+      } else {
+        // Create generic user object for other addresses
+        allUsers.push({
+          address,
+          walletType: 'bitcoin', // Default, will be updated if we have more info
+          verificationStatus: 'unverified'
+        });
+      }
     });
     
     const userVerificationStatus = relevanceCalculator.buildUserVerificationStatus(allUsers);
@@ -132,7 +152,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     setCells(cells);
     setPosts(posts);
     setComments(comments);
-  }, [authService, isAuthenticated]);
+    setUserVerificationStatus(userVerificationStatus);
+  }, [authService, isAuthenticated, currentUser]);
   
   const handleRefreshData = async () => {
     setIsRefreshing(true);
@@ -327,6 +348,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         cells,
         posts,
         comments,
+        userVerificationStatus,
         isInitialLoading,
         isPostingCell,
         isPostingPost,

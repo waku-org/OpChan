@@ -21,5 +21,6 @@ export interface RelevanceScoreDetails {
       isVerified: boolean;
       hasENS: boolean;
       hasOrdinal: boolean;
+      ensName?: string;
     };
   }

@@ -217,7 +217,8 @@ export class RelevanceCalculator {
       status[user.address] = {
         isVerified: this.isUserVerified(user),
         hasENS: !!user.ensOwnership,
-        hasOrdinal: !!user.ordinalOwnership
+        hasOrdinal: !!user.ordinalOwnership,
+        ensName: user.ensName
       };
     });
     

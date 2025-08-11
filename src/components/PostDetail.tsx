@@ -10,6 +10,7 @@ import { Comment } from '@/types';
 import { CypherImage } from './ui/CypherImage';
 import { Badge } from '@/components/ui/badge';
 import { RelevanceIndicator } from './ui/relevance-indicator';
+import { AuthorDisplay } from './ui/author-display';
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -28,7 +29,8 @@ const PostDetail = () => {
     isRefreshing,
     refreshData,
     moderateComment,
-    moderateUser
+    moderateUser,
+    userVerificationStatus
   } = useForum();
   const { currentUser, isAuthenticated, verificationStatus } = useAuth();
   const [newComment, setNewComment] = useState('');
@@ -163,9 +165,11 @@ const PostDetail = () => {
                   <MessageCircle className="w-3 h-3 mr-1" />
                   {postComments.length} {postComments.length === 1 ? 'comment' : 'comments'}
                 </span>
-                <span className="truncate max-w-[150px]">
-                  {post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}
-                </span>
+                <AuthorDisplay 
+                  address={post.authorAddress}
+                  userVerificationStatus={userVerificationStatus}
+                  className="truncate max-w-[150px]"
+                />
                 {post.relevanceScore !== undefined && (
                   <RelevanceIndicator 
                     score={post.relevanceScore} 
@@ -258,9 +262,11 @@ const PostDetail = () => {
                         alt={comment.authorAddress.slice(0, 6)}
                         className="rounded-sm w-5 h-5 bg-secondary"
                       />
-                      <span className="text-xs text-muted-foreground">
-                        {comment.authorAddress.slice(0, 6)}...{comment.authorAddress.slice(-4)}
-                      </span>
+                      <AuthorDisplay 
+                        address={comment.authorAddress}
+                        userVerificationStatus={userVerificationStatus}
+                        className="text-xs"
+                      />
                     </div>
                     <div className="flex items-center gap-2">
                       {comment.relevanceScore !== undefined && (

@@ -10,6 +10,7 @@ import { ArrowLeft, MessageSquare, MessageCircle, ArrowUp, ArrowDown, Clock, Ref
 import { formatDistanceToNow } from 'date-fns';
 import { CypherImage } from './ui/CypherImage';
 import { Badge } from '@/components/ui/badge';
+import { AuthorDisplay } from './ui/author-display';
 
 const PostList = () => {
   const { cellId } = useParams<{ cellId: string }>();
@@ -26,7 +27,8 @@ const PostList = () => {
     isVoting,
     posts,
     moderatePost,
-    moderateUser
+    moderateUser,
+    userVerificationStatus
   } = useForum();
   const { isAuthenticated, currentUser, verificationStatus } = useAuth();
   const [newPostTitle, setNewPostTitle] = useState('');
@@ -258,7 +260,13 @@ const PostList = () => {
                     <p className="line-clamp-2 text-sm mb-3">{post.content}</p>
                     <div className="flex items-center gap-4 text-xs text-cyber-neutral">
                       <span>{formatDistanceToNow(post.timestamp, { addSuffix: true })}</span>
-                      <span>by {post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}</span>
+                      <span>by </span>
+                    <AuthorDisplay 
+                      address={post.authorAddress}
+                      userVerificationStatus={userVerificationStatus}
+                      className="text-xs"
+                      showBadge={false}
+                    />
                     </div>
                   </Link>
                   {isCellAdmin && !post.moderated && (

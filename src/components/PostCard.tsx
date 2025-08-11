@@ -6,6 +6,7 @@ import { Post } from '@/types';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
 import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
+import { AuthorDisplay } from '@/components/ui/author-display';
 
 interface PostCardProps {
   post: Post;
@@ -13,7 +14,7 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
-  const { getCellById, votePost, isVoting } = useForum();
+  const { getCellById, votePost, isVoting, userVerificationStatus } = useForum();
   const { isAuthenticated, currentUser } = useAuth();
   
   const cell = getCellById(post.cellId);
@@ -80,7 +81,13 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
             <div className="flex items-center text-xs text-cyber-neutral mb-2 space-x-2">
               <span className="font-medium text-cyber-accent">r/{cellName}</span>
               <span>•</span>
-              <span>Posted by u/{post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}</span>
+              <span>Posted by u/</span>
+              <AuthorDisplay 
+                address={post.authorAddress}
+                userVerificationStatus={userVerificationStatus}
+                className="text-xs"
+                showBadge={false}
+              />
               <span>•</span>
               <span>{formatDistanceToNow(new Date(post.timestamp), { addSuffix: true })}</span>
               {post.relevanceScore !== undefined && (
