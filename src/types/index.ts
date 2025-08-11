@@ -1,4 +1,5 @@
 import { CellMessage, CommentMessage, PostMessage, VoteMessage, ModerateMessage } from "@/lib/waku/types";
+import { RelevanceScoreDetails } from "@/lib/forum/relevance";
 
 export type OpchanMessage = CellMessage | PostMessage | CommentMessage | VoteMessage | ModerateMessage;
 
@@ -30,6 +31,9 @@ export interface Cell {
   icon?: string;
   signature?: string; // Message signature
   browserPubKey?: string; // Public key that signed the message
+  relevanceScore?: number; // Calculated relevance score
+  activeMemberCount?: number; // Number of active members in the cell
+  relevanceDetails?: RelevanceScoreDetails; // Detailed breakdown of relevance score calculation
 }
 
 export interface Post {
@@ -47,6 +51,10 @@ export interface Post {
   moderatedBy?: string;
   moderationReason?: string;
   moderationTimestamp?: number;
+  relevanceScore?: number; // Calculated relevance score
+  verifiedUpvotes?: number; // Count of upvotes from verified users
+  verifiedCommenters?: string[]; // List of verified users who commented
+  relevanceDetails?: RelevanceScoreDetails; // Detailed breakdown of relevance score calculation
 }
 
 export interface Comment {
@@ -63,6 +71,8 @@ export interface Comment {
   moderatedBy?: string;
   moderationReason?: string;
   moderationTimestamp?: number;
+  relevanceScore?: number; // Calculated relevance score
+  relevanceDetails?: RelevanceScoreDetails; // Detailed breakdown of relevance score calculation
 }
 
 // Extended message types for verification

@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Post } from '@/types';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
+import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
 
 interface PostCardProps {
   post: Post;
@@ -82,6 +83,18 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
               <span>Posted by u/{post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}</span>
               <span>•</span>
               <span>{formatDistanceToNow(new Date(post.timestamp), { addSuffix: true })}</span>
+              {post.relevanceScore !== undefined && (
+                <>
+                  <span>•</span>
+                  <RelevanceIndicator 
+                    score={post.relevanceScore} 
+                    details={post.relevanceDetails}
+                    type="post"
+                    className="text-xs"
+                    showTooltip={true}
+                  />
+                </>
+              )}
             </div>
 
             {/* Post title */}

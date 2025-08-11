@@ -9,6 +9,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Comment } from '@/types';
 import { CypherImage } from './ui/CypherImage';
 import { Badge } from '@/components/ui/badge';
+import { RelevanceIndicator } from './ui/relevance-indicator';
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -165,6 +166,15 @@ const PostDetail = () => {
                 <span className="truncate max-w-[150px]">
                   {post.authorAddress.slice(0, 6)}...{post.authorAddress.slice(-4)}
                 </span>
+                {post.relevanceScore !== undefined && (
+                  <RelevanceIndicator 
+                    score={post.relevanceScore} 
+                    details={post.relevanceDetails}
+                    type="post"
+                    className="text-xs"
+                    showTooltip={true}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -252,9 +262,20 @@ const PostDetail = () => {
                         {comment.authorAddress.slice(0, 6)}...{comment.authorAddress.slice(-4)}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {comment.relevanceScore !== undefined && (
+                        <RelevanceIndicator 
+                          score={comment.relevanceScore} 
+                          details={comment.relevanceDetails}
+                          type="comment"
+                          className="text-xs"
+                          showTooltip={true}
+                        />
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
+                      </span>
+                    </div>
                   </div>
                   <p className="text-sm break-words">{comment.content}</p>
                   {isCellAdmin && !comment.moderated && (

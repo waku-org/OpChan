@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { Cell, Post, Comment, OpchanMessage } from '@/types';
+import { Cell, Post, Comment, OpchanMessage, User } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/useAuth';
 import { 
@@ -17,7 +17,8 @@ import {
   initializeNetwork 
 } from '@/lib/waku/network';
 import messageManager from '@/lib/waku';
-import { transformCell, transformComment, transformPost } from '@/lib/forum/transformers';
+import { getDataFromCache } from '@/lib/forum/transformers';
+import { RelevanceCalculator, UserVerificationStatus } from '@/lib/forum/relevance';
 import { AuthService } from '@/lib/identity/services/AuthService';
 
 interface ForumContextType {
@@ -92,26 +93,45 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       (message: OpchanMessage) => authService.verifyMessage(message) : 
       undefined;
     
-    // Transform cells with verification
-    setCells(
-      Object.values(messageManager.messageCache.cells)
-        .map(cell => transformCell(cell, verifyFn))
-        .filter(cell => cell !== null) as Cell[]
-    );
+    // Build user verification status for relevance calculation
+    const relevanceCalculator = new RelevanceCalculator();
+    const allUsers: User[] = [];
     
-    // Transform posts with verification
-    setPosts(
-      Object.values(messageManager.messageCache.posts)
-        .map(post => transformPost(post, verifyFn))
-        .filter(post => post !== null) as Post[]
-    );
+    // Collect all unique users from posts, comments, and votes
+    const userAddresses = new Set<string>();
     
-    // Transform comments with verification
-    setComments(
-      Object.values(messageManager.messageCache.comments)
-        .map(comment => transformComment(comment, verifyFn))
-        .filter(comment => comment !== null) as Comment[]
-    );
+    // Add users from posts
+    Object.values(messageManager.messageCache.posts).forEach(post => {
+      userAddresses.add(post.author);
+    });
+    
+    // Add users from comments
+    Object.values(messageManager.messageCache.comments).forEach(comment => {
+      userAddresses.add(comment.author);
+    });
+    
+    // Add users from votes
+    Object.values(messageManager.messageCache.votes).forEach(vote => {
+      userAddresses.add(vote.author);
+    });
+    
+    // Create user objects for verification status
+    Array.from(userAddresses).forEach(address => {
+      allUsers.push({
+        address,
+        walletType: 'bitcoin', // Default, will be updated if we have more info
+        verificationStatus: 'unverified'
+      });
+    });
+    
+    const userVerificationStatus = relevanceCalculator.buildUserVerificationStatus(allUsers);
+    
+    // Transform data with relevance calculation
+    const { cells, posts, comments } = getDataFromCache(verifyFn, userVerificationStatus);
+    
+    setCells(cells);
+    setPosts(posts);
+    setComments(comments);
   }, [authService, isAuthenticated]);
   
   const handleRefreshData = async () => {

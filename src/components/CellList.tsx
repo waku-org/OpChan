@@ -1,13 +1,22 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useForum } from '@/contexts/useForum';
-import { Layout, MessageSquare, RefreshCw, Loader2 } from 'lucide-react';
+import { Layout, MessageSquare, RefreshCw, Loader2, TrendingUp, Clock } from 'lucide-react';
 import { CreateCellDialog } from './CreateCellDialog';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CypherImage } from './ui/CypherImage';
+import { RelevanceIndicator } from './ui/relevance-indicator';
+import { sortCells, SortOption } from '@/lib/forum/sorting';
 
 const CellList = () => {
   const { cells, isInitialLoading, posts, refreshData, isRefreshing } = useForum();
+  const [sortOption, setSortOption] = useState<SortOption>('relevance');
+
+  // Apply sorting to cells
+  const sortedCells = useMemo(() => {
+    return sortCells(cells, sortOption);
+  }, [cells, sortOption]);
 
   if (isInitialLoading) {
     return (
@@ -31,6 +40,26 @@ const CellList = () => {
           <h1 className="text-2xl font-bold text-glow">Cells</h1>
         </div>
         <div className="flex gap-2">
+          <Select value={sortOption} onValueChange={(value: SortOption) => setSortOption(value)}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+                          <SelectContent>
+                <SelectItem value="relevance">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    <span>Relevance</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="time">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    <span>Newest</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+          </Select>
+          
           <Button 
             variant="outline" 
             size="icon" 
@@ -52,7 +81,7 @@ const CellList = () => {
             </div>
           </div>
         ) : (
-          cells.map((cell) => (
+          sortedCells.map((cell) => (
             <Link to={`/cell/${cell.id}`} key={cell.id} className="board-card group">
               <div className="flex gap-4 items-start">
                 <CypherImage 
@@ -64,9 +93,20 @@ const CellList = () => {
                 <div className="flex-1">
                   <h2 className="text-xl font-bold mb-1 group-hover:text-cyber-accent transition-colors">{cell.name}</h2>
                   <p className="text-sm text-cyber-neutral mb-2">{cell.description}</p>
-                  <div className="flex items-center text-xs text-cyber-neutral">
-                    <MessageSquare className="w-3 h-3 mr-1" />
-                    <span>{getPostCount(cell.id)} threads</span>
+                  <div className="flex items-center text-xs text-cyber-neutral gap-2">
+                    <div className="flex items-center">
+                      <MessageSquare className="w-3 h-3 mr-1" />
+                      <span>{getPostCount(cell.id)} threads</span>
+                    </div>
+                    {cell.relevanceScore !== undefined && (
+                      <RelevanceIndicator 
+                        score={cell.relevanceScore} 
+                        details={cell.relevanceDetails}
+                        type="cell"
+                        className="text-xs"
+                        showTooltip={true}
+                      />
+                    )}
                   </div>
                 </div>
               </div>

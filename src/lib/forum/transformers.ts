@@ -1,19 +1,22 @@
-import { Cell, Post, Comment, OpchanMessage } from '@/types';
+import { Cell, Post, Comment, OpchanMessage, User } from '@/types';
 import { CellMessage, CommentMessage, MessageType, PostMessage, VoteMessage } from '@/lib/waku/types';
 import messageManager from '@/lib/waku';
+import { RelevanceCalculator, UserVerificationStatus } from './relevance';
 
 type VerifyFunction = (message: OpchanMessage) => boolean;
 
 export const transformCell = (
   cellMessage: CellMessage,
-  verifyMessage?: VerifyFunction
+  verifyMessage?: VerifyFunction,
+  userVerificationStatus?: UserVerificationStatus,
+  posts?: Post[]
 ): Cell | null => {
   if (verifyMessage && !verifyMessage(cellMessage)) {
     console.warn(`Cell message ${cellMessage.id} failed verification`);
     return null;
   }
 
-  return {
+  const transformedCell = {
     id: cellMessage.id,
     name: cellMessage.name,
     description: cellMessage.description,
@@ -21,11 +24,39 @@ export const transformCell = (
     signature: cellMessage.signature,
     browserPubKey: cellMessage.browserPubKey,
   };
+
+  // Calculate relevance score if user verification status and posts are provided
+  if (userVerificationStatus && posts) {
+    const relevanceCalculator = new RelevanceCalculator();
+    
+    const relevanceResult = relevanceCalculator.calculateCellScore(
+      transformedCell,
+      posts,
+      userVerificationStatus
+    );
+
+    // Calculate active member count
+    const cellPosts = posts.filter(post => post.cellId === cellMessage.id);
+    const activeMembers = new Set<string>();
+    cellPosts.forEach(post => {
+      activeMembers.add(post.authorAddress);
+    });
+
+    return {
+      ...transformedCell,
+      relevanceScore: relevanceResult.score,
+      activeMemberCount: activeMembers.size,
+      relevanceDetails: relevanceResult.details
+    };
+  }
+
+  return transformedCell;
 };
 
 export const transformPost = (
   postMessage: PostMessage,
-  verifyMessage?: VerifyFunction
+  verifyMessage?: VerifyFunction,
+  userVerificationStatus?: UserVerificationStatus
 ): Post | null => {
   if (verifyMessage && !verifyMessage(postMessage)) {
     console.warn(`Post message ${postMessage.id} failed verification`);
@@ -48,7 +79,7 @@ export const transformPost = (
   );
   const isUserModerated = !!userModMsg;
 
-  return {
+  const transformedPost = {
     id: postMessage.id,
     cellId: postMessage.cellId,
     authorAddress: postMessage.author,
@@ -64,11 +95,56 @@ export const transformPost = (
     moderationReason: isPostModerated ? modMsg.reason : isUserModerated ? userModMsg!.reason : undefined,
     moderationTimestamp: isPostModerated ? modMsg.timestamp : isUserModerated ? userModMsg!.timestamp : undefined,
   };
+
+  // Calculate relevance score if user verification status is provided
+  if (userVerificationStatus) {
+    const relevanceCalculator = new RelevanceCalculator();
+    
+    // Get comments for this post
+    const comments = Object.values(messageManager.messageCache.comments)
+      .map((comment) => transformComment(comment, verifyMessage, userVerificationStatus))
+      .filter(Boolean) as Comment[];
+    const postComments = comments.filter(comment => comment.postId === postMessage.id);
+    
+    const relevanceResult = relevanceCalculator.calculatePostScore(
+      transformedPost,
+      filteredVotes,
+      postComments,
+      userVerificationStatus
+    );
+    
+    const relevanceScore = relevanceResult.score;
+    
+    // Calculate verified upvotes and commenters
+    const verifiedUpvotes = upvotes.filter(vote => {
+      const voterStatus = userVerificationStatus[vote.author];
+      return voterStatus?.isVerified;
+    }).length;
+    
+    const verifiedCommenters = new Set<string>();
+    postComments.forEach(comment => {
+      const commenterStatus = userVerificationStatus[comment.authorAddress];
+      if (commenterStatus?.isVerified) {
+        verifiedCommenters.add(comment.authorAddress);
+      }
+    });
+
+    return {
+      ...transformedPost,
+      relevanceScore,
+      verifiedUpvotes,
+      verifiedCommenters: Array.from(verifiedCommenters),
+      relevanceDetails: relevanceResult.details
+    };
+  }
+
+  return transformedPost;
 };
 
 export const transformComment = (
   commentMessage: CommentMessage,
   verifyMessage?: VerifyFunction,
+  userVerificationStatus?: UserVerificationStatus
 ): Comment | null => {
   if (verifyMessage && !verifyMessage(commentMessage)) {
     console.warn(`Comment message ${commentMessage.id} failed verification`);
@@ -93,7 +169,7 @@ export const transformComment = (
   );
   const isUserModerated = !!userModMsg;
 
-  return {
+  const transformedComment = {
     id: commentMessage.id,
     postId: commentMessage.postId,
     authorAddress: commentMessage.author,
@@ -108,6 +184,25 @@ export const transformComment = (
     moderationReason: isCommentModerated ? modMsg.reason : isUserModerated ? userModMsg!.reason : undefined,
     moderationTimestamp: isCommentModerated ? modMsg.timestamp : isUserModerated ? userModMsg!.timestamp : undefined,
   };
+
+  // Calculate relevance score if user verification status is provided
+  if (userVerificationStatus) {
+    const relevanceCalculator = new RelevanceCalculator();
+    
+    const relevanceResult = relevanceCalculator.calculateCommentScore(
+      transformedComment,
+      filteredVotes,
+      userVerificationStatus
+    );
+
+    return {
+      ...transformedComment,
+      relevanceScore: relevanceResult.score,
+      relevanceDetails: relevanceResult.details
+    };
+  }
+
+  return transformedComment;
 };
 
 export const transformVote = (
@@ -121,15 +216,23 @@ export const transformVote = (
   return voteMessage;
 };
 
-export const getDataFromCache = (verifyMessage?: VerifyFunction) => {
-  const cells = Object.values(messageManager.messageCache.cells)
-    .map((cell) => transformCell(cell, verifyMessage))
-    .filter(Boolean) as Cell[];
+export const getDataFromCache = (
+  verifyMessage?: VerifyFunction,
+  userVerificationStatus?: UserVerificationStatus
+) => {
+  // First transform posts and comments to get relevance scores
   const posts = Object.values(messageManager.messageCache.posts)
-    .map((post) => transformPost(post, verifyMessage))
+    .map((post) => transformPost(post, verifyMessage, userVerificationStatus))
     .filter(Boolean) as Post[];
+  
   const comments = Object.values(messageManager.messageCache.comments)
-    .map((c) => transformComment(c, verifyMessage))
+    .map((c) => transformComment(c, verifyMessage, userVerificationStatus))
     .filter(Boolean) as Comment[];
+  
+  // Then transform cells with posts for relevance calculation
+  const cells = Object.values(messageManager.messageCache.cells)
+    .map((cell) => transformCell(cell, verifyMessage, userVerificationStatus, posts))
+    .filter(Boolean) as Cell[];
+  
   return { cells, posts, comments };
 };
