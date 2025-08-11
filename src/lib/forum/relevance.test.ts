@@ -1,0 +1,141 @@
+import { RelevanceCalculator } from './relevance';
+import { Post, Comment, Cell, User } from '@/types';
+import { MessageType, VoteMessage } from '@/lib/waku/types';
+import { expect, describe, beforeEach, it } from 'vitest';
+import { UserVerificationStatus } from './types';
+
+describe('RelevanceCalculator', () => {
+  let calculator: RelevanceCalculator;
+  let mockUserVerificationStatus: UserVerificationStatus;
+
+  beforeEach(() => {
+    calculator = new RelevanceCalculator();
+    mockUserVerificationStatus = {
+      'user1': { isVerified: true, hasENS: true, hasOrdinal: false },
+      'user2': { isVerified: false, hasENS: false, hasOrdinal: false },
+      'user3': { isVerified: true, hasENS: false, hasOrdinal: true }
+    };
+  });
+
+  describe('calculatePostScore', () => {
+    it('should calculate base score for a new post', () => {
+      const post: Post = {
+        id: '1',
+        cellId: 'cell1',
+        authorAddress: 'user2',
+        title: 'Test Post',
+        content: 'Test content',
+        timestamp: Date.now(),
+        upvotes: [],
+        downvotes: []
+      };
+
+      const result = calculator.calculatePostScore(post, [], [], mockUserVerificationStatus);
+      
+      expect(result.score).toBeGreaterThan(0);
+      expect(result.details.baseScore).toBe(10);
+      expect(result.details.isVerified).toBe(false);
+    });
+
+    it('should apply verification bonus for verified author', () => {
+      const post: Post = {
+        id: '1',
+        cellId: 'cell1',
+        authorAddress: 'user1',
+        title: 'Test Post',
+        content: 'Test content',
+        timestamp: Date.now(),
+        upvotes: [],
+        downvotes: []
+      };
+
+      const result = calculator.calculatePostScore(post, [], [], mockUserVerificationStatus);
+      
+      expect(result.details.isVerified).toBe(true);
+      expect(result.details.authorVerificationBonus).toBeGreaterThan(0);
+    });
+
+    it('should apply moderation penalty', () => {
+      const post: Post = {
+        id: '1',
+        cellId: 'cell1',
+        authorAddress: 'user2',
+        title: 'Test Post',
+        content: 'Test content',
+        timestamp: Date.now(),
+        upvotes: [],
+        downvotes: [],
+        moderated: true
+      };
+
+      const result = calculator.calculatePostScore(post, [], [], mockUserVerificationStatus);
+      
+      expect(result.details.isModerated).toBe(true);
+      expect(result.details.moderationPenalty).toBe(0.5);
+    });
+
+    it('should calculate engagement bonuses', () => {
+      const post: Post = {
+        id: '1',
+        cellId: 'cell1',
+        authorAddress: 'user2',
+        title: 'Test Post',
+        content: 'Test content',
+        timestamp: Date.now(),
+        upvotes: [],
+        downvotes: []
+      };
+
+      const votes: VoteMessage[] = [
+        { id: 'vote1', targetId: '1', value: 1, author: 'user1', timestamp: Date.now(), type: MessageType.VOTE },
+        { id: 'vote2', targetId: '1', value: 1, author: 'user3', timestamp: Date.now(), type: MessageType.VOTE }
+      ];
+
+      const comments: Comment[] = [
+        { id: 'comment1', postId: '1', authorAddress: 'user1', content: 'Test comment', timestamp: Date.now(), upvotes: [], downvotes: [] }
+      ];
+
+      const result = calculator.calculatePostScore(post, votes, comments, mockUserVerificationStatus);
+      
+      expect(result.details.upvotes).toBe(2);
+      expect(result.details.comments).toBe(1);
+      expect(result.details.verifiedUpvotes).toBe(2);
+      expect(result.details.verifiedCommenters).toBe(1);
+    });
+  });
+
+  describe('timeDecay', () => {
+    it('should apply time decay to older posts', () => {
+      const now = Date.now();
+      const oneDayAgo = now - (24 * 60 * 60 * 1000);
+      const oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000);
+
+      const recentPost: Post = {
+        id: '1',
+        cellId: 'cell1',
+        authorAddress: 'user2',
+        title: 'Recent Post',
+        content: 'Recent content',
+        timestamp: now,
+        upvotes: [],
+        downvotes: []
+      };
+
+      const oldPost: Post = {
+        id: '2',
+        cellId: 'cell1',
+        authorAddress: 'user2',
+        title: 'Old Post',
+        content: 'Old content',
+        timestamp: oneWeekAgo,
+        upvotes: [],
+        downvotes: []
+      };
+
+      const recentResult = calculator.calculatePostScore(recentPost, [], [], mockUserVerificationStatus);
+      const oldResult = calculator.calculatePostScore(oldPost, [], [], mockUserVerificationStatus);
+
+      expect(recentResult.score).toBeGreaterThan(oldResult.score);
+    });
+  });
+});
