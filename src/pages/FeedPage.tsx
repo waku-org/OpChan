@@ -1,11 +1,13 @@
-import React, { useMemo } from 'react';
-import { RefreshCw, Plus } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { RefreshCw, Plus, TrendingUp, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PostCard from '@/components/PostCard';
 import FeedSidebar from '@/components/FeedSidebar';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
+import { sortPosts, SortOption } from '@/lib/forum/sorting';
 
 const FeedPage: React.FC = () => {
   const { 
@@ -16,13 +18,13 @@ const FeedPage: React.FC = () => {
     refreshData 
   } = useForum();
   const { verificationStatus } = useAuth();
+  const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
-  // Combine posts from all cells and sort by timestamp (newest first)
+  // Combine posts from all cells and apply sorting
   const allPosts = useMemo(() => {
-    return [...posts]
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .filter(post => !post.moderated); // Hide moderated posts from main feed
-  }, [posts]);
+    const filteredPosts = posts.filter(post => !post.moderated); // Hide moderated posts from main feed
+    return sortPosts(filteredPosts, sortOption);
+  }, [posts, sortOption]);
 
   // Calculate comment counts for each post
   const getCommentCount = (postId: string) => {
@@ -92,6 +94,26 @@ const FeedPage: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-2">
+            <Select value={sortOption} onValueChange={(value: SortOption) => setSortOption(value)}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="relevance">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    <span>Relevance</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="time">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    <span>Newest</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            
             <Button 
               variant="outline" 
               size="sm"
