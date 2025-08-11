@@ -6,7 +6,7 @@ import { UserVerificationStatus } from './types';
 
 describe('RelevanceCalculator', () => {
   let calculator: RelevanceCalculator;
-  let mockUserVerificationStatus: any;
+  let mockUserVerificationStatus: UserVerificationStatus;
 
   beforeEach(() => {
     calculator = new RelevanceCalculator();
