@@ -20,7 +20,7 @@ const CellList = () => {
 
   if (isInitialLoading) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
+      <div className="container mx-auto px-4 pt-24 pb-16 text-center">
         <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-primary" />
         <p className="text-lg font-medium text-muted-foreground">Loading Cells...</p>
         <p className="text-sm text-muted-foreground/70 mt-1">Connecting to the network and fetching data...</p>
@@ -33,7 +33,7 @@ const CellList = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 pt-24 pb-8 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Layout className="text-cyber-accent w-6 h-6" />
@@ -62,10 +62,11 @@ const CellList = () => {
           
           <Button 
             variant="outline" 
-            size="icon" 
+            size="icon"
             onClick={refreshData} 
             disabled={isRefreshing}
             title="Refresh data"
+            className="px-3"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>
