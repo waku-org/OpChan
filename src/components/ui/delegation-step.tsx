@@ -1,7 +1,8 @@
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Key, Loader2, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
-import { useAuth } from "@/contexts/useAuth";
+import React from 'react';
+import { Button } from './button';
+import { useAuth } from '@/contexts/useAuth';
+import { CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
+import { DelegationDuration } from '@/lib/identity/signatures/key-delegation';
 
 interface DelegationStepProps {
   onComplete: () => void;
@@ -25,6 +26,7 @@ export function DelegationStep({
     clearDelegation
   } = useAuth();
   
+  const [selectedDuration, setSelectedDuration] = React.useState<DelegationDuration>('7days');
   const [delegationResult, setDelegationResult] = React.useState<{
     success: boolean;
     message: string;
@@ -38,12 +40,12 @@ export function DelegationStep({
     setDelegationResult(null);
     
     try {
-      const success = await delegateKey();
+      const success = await delegateKey(selectedDuration);
       
       if (success) {
         const expiryDate = currentUser.delegationExpiry 
           ? new Date(currentUser.delegationExpiry).toLocaleString()
-          : '24 hours from now';
+          : `${selectedDuration === '7days' ? '1 week' : '30 days'} from now`;
           
         setDelegationResult({
           success: true,
@@ -127,120 +129,129 @@ export function DelegationStep({
       <div className="flex-1 space-y-4">
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <Key className="h-8 w-8 text-blue-500" />
+            <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-white">
-            Delegate Signing Key
-          </h3>
+          <h3 className="text-lg font-semibold text-neutral-100">Key Delegation</h3>
           <p className="text-sm text-neutral-400">
-            Create a browser-based signing key
+            Delegate signing authority to your browser for convenient forum interactions
           </p>
         </div>
-
-        {/* Delegation Status */}
-        <div className="p-4 bg-neutral-900/30 border border-neutral-700 rounded-lg">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Key className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium text-white">Key Delegation</span>
-            </div>
-            {currentUser?.walletType === 'bitcoin' ? (
-              <div className="text-orange-500 text-sm">₿</div>
+        
+        <div className="space-y-3">
+          {/* Status */}
+          <div className="flex items-center gap-2">
+            {isDelegationValid() ? (
+              <CheckCircle className="h-4 w-4 text-green-500" />
             ) : (
-              <div className="text-blue-500 text-sm">Ξ</div>
+              <AlertCircle className="h-4 w-4 text-yellow-500" />
+            )}
+            <span className={`text-sm font-medium ${
+              isDelegationValid() ? 'text-green-400' : 'text-yellow-400'
+            }`}>
+              {isDelegationValid() ? 'Delegated' : 'Required'}
+            </span>
+            {isDelegationValid() && (
+              <span className="text-xs text-neutral-400">
+                {Math.floor(delegationTimeRemaining() / (1000 * 60 * 60))}h {Math.floor((delegationTimeRemaining() % (1000 * 60 * 60)) / (1000 * 60))}m remaining
+              </span>
             )}
           </div>
           
-          <div className="space-y-3">
-            {/* Status */}
-            <div className="flex items-center gap-2">
-              {isDelegationValid() ? (
-                <CheckCircle className="h-4 w-4 text-green-500" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-yellow-500" />
-              )}
-              <span className={`text-sm font-medium ${
-                isDelegationValid() ? 'text-green-400' : 'text-yellow-400'
-              }`}>
-                {isDelegationValid() ? 'Delegated' : 'Required'}
-              </span>
-              {isDelegationValid() && (
-                <span className="text-xs text-neutral-400">
-                  {Math.floor(delegationTimeRemaining() / (1000 * 60 * 60))}h {Math.floor((delegationTimeRemaining() % (1000 * 60 * 60)) / (1000 * 60))}m remaining
-                </span>
-              )}
+          {/* Duration Selection */}
+          {!isDelegationValid() && (
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-neutral-300">Delegation Duration:</label>
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="duration"
+                    value="7days"
+                    checked={selectedDuration === '7days'}
+                    onChange={(e) => setSelectedDuration(e.target.value as DelegationDuration)}
+                    className="w-4 h-4 text-green-600 bg-neutral-800 border-neutral-600 focus:ring-green-500 focus:ring-2"
+                  />
+                  <span className="text-sm text-neutral-300">1 Week</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="duration"
+                    value="30days"
+                    checked={selectedDuration === '30days'}
+                    onChange={(e) => setSelectedDuration(e.target.value as DelegationDuration)}
+                    className="w-4 h-4 text-green-600 bg-neutral-800 border-neutral-600 focus:ring-green-500 focus:ring-2"
+                  />
+                  <span className="text-sm text-neutral-300">30 Days</span>
+                </label>
+              </div>
             </div>
-            
-            {/* Delegated Browser Public Key */}
-            {isDelegationValid() && currentUser?.browserPubKey && (
-              <div className="text-xs text-neutral-400">
-                <div className="font-mono break-all bg-neutral-800 p-2 rounded">
-                  {currentUser.browserPubKey}
-                </div>
+          )}
+          
+          {/* Delegated Browser Public Key */}
+          {isDelegationValid() && currentUser?.browserPubKey && (
+            <div className="text-xs text-neutral-400">
+              <div className="font-mono break-all bg-neutral-800 p-2 rounded">
+                {currentUser.browserPubKey}
               </div>
-            )}
-            
-            {/* Wallet Address */}
-            {currentUser && (
-              <div className="text-xs text-neutral-400">
-                <div className="font-mono break-all">
-                  {currentUser.address}
-                </div>
+            </div>
+          )}
+          
+          {/* Wallet Address */}
+          {currentUser && (
+            <div className="text-xs text-neutral-400">
+              <div className="font-mono break-all">
+                {currentUser.address}
               </div>
-            )}
-            
-            {/* Delete Button for Active Delegations */}
-            {isDelegationValid() && (
-              <div className="flex justify-end">
-                <Button
-                  onClick={clearDelegation}
-                  variant="outline"
-                  size="sm"
-                  className="border-red-600/50 text-red-400 hover:bg-red-600/20 hover:border-red-500 text-xs px-2 py-1 h-auto"
-                >
-                  <Trash2 className="mr-1 h-3 w-3" />
-                  Remove
-                </Button>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
+          
+          {/* Delete Button for Active Delegations */}
+          {isDelegationValid() && (
+            <div className="flex justify-end">
+              <Button
+                onClick={clearDelegation}
+                variant="outline"
+                size="sm"
+                className="text-red-400 border-red-400/30 hover:bg-red-400/10"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Clear Delegation
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-
+      
       {/* Action Buttons */}
-      <div className="mt-auto space-y-3">
-        {!isDelegationValid() && (
-          <Button
-            onClick={handleDelegate}
-            disabled={isLoading || isAuthenticating}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            {isLoading || isAuthenticating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Delegating...
-              </>
-            ) : (
-              "Delegate Key"
-            )}
-          </Button>
-        )}
-        
-        {isDelegationValid() && (
+      <div className="mt-auto space-y-2">
+        {isDelegationValid() ? (
           <Button
             onClick={handleComplete}
             className="w-full bg-green-600 hover:bg-green-700 text-white"
             disabled={isLoading}
           >
-            Complete Setup
+            Continue
+          </Button>
+        ) : (
+          <Button
+            onClick={handleDelegate}
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            disabled={isLoading || isAuthenticating}
+          >
+            {isAuthenticating ? 'Delegating...' : 'Delegate Key'}
           </Button>
         )}
         
         <Button
           onClick={onBack}
           variant="outline"
-          className="w-full border-neutral-600 text-neutral-400 hover:bg-neutral-800"
-          disabled={isLoading || isAuthenticating}
+          className="w-full border-neutral-600 text-neutral-300 hover:bg-neutral-800"
+          disabled={isLoading}
         >
           Back
         </Button>

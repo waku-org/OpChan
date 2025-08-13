@@ -4,24 +4,24 @@ import { User } from '@/types';
 import { AuthService, AuthResult } from '@/lib/identity/services/AuthService';
 import { OpchanMessage } from '@/types';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
+import { DelegationDuration } from '@/lib/identity/signatures/key-delegation';
 
 export type VerificationStatus = 'unverified' | 'verified-none' | 'verified-owner' | 'verifying';
 
 interface AuthContextType {
   currentUser: User | null;
-  isAuthenticated: boolean;
   isAuthenticating: boolean;
+  isAuthenticated: boolean;
   verificationStatus: VerificationStatus;
+  connectWallet: () => Promise<boolean>;
+  disconnectWallet: () => void;
   verifyOwnership: () => Promise<boolean>;
-  delegateKey: () => Promise<boolean>;
-  clearDelegation: () => void;
+  delegateKey: (duration?: DelegationDuration) => Promise<boolean>;
   isDelegationValid: () => boolean;
   delegationTimeRemaining: () => number;
-  isWalletAvailable: () => boolean;
-  messageSigning: {
-    signMessage: (message: OpchanMessage) => Promise<OpchanMessage | null>;
-    verifyMessage: (message: OpchanMessage) => boolean;
-  };
+  clearDelegation: () => void;
+  signMessage: (message: OpchanMessage) => Promise<OpchanMessage | null>;
+  verifyMessage: (message: OpchanMessage) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -104,6 +104,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setVerificationStatus('unverified');
     }
   }, [isConnected, address, isBitcoinConnected, isEthereumConnected, toast]);
+
+  const { disconnect } = useDisconnect();
+
+  const connectWallet = async (): Promise<boolean> => {
+    try {
+      if (modal) {
+        await modal.open();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error connecting wallet:', error);
+      return false;
+    }
+  };
+
+  const disconnectWallet = (): void => {
+    disconnect();
+  };
 
   const getVerificationStatus = (user: User): VerificationStatus => {
     if (user.walletType === 'bitcoin') {
@@ -191,10 +210,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const delegateKey = async (): Promise<boolean> => {
-    if (!currentUser || !currentUser.address) {
+  const delegateKey = async (duration: DelegationDuration = '7days'): Promise<boolean> => {
+    if (!currentUser) {
       toast({
-        title: "Not Connected",
+        title: "No User Found",
         description: "Please connect your wallet first.",
         variant: "destructive",
       });
@@ -204,12 +223,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticating(true);
     
     try {
+      const durationText = duration === '7days' ? '1 week' : '30 days';
       toast({
         title: "Starting Key Delegation",
-        description: "This will let you post, comment, and vote without approving each action for 24 hours.",
+        description: `This will let you post, comment, and vote without approving each action for ${durationText}.`,
       });
       
-      const result: AuthResult = await authServiceRef.current.delegateKey(currentUser);
+      const result: AuthResult = await authServiceRef.current.delegateKey(currentUser, duration);
       
       if (!result.success) {
         throw new Error(result.error);
@@ -292,16 +312,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value: AuthContextType = {
     currentUser,
-    isAuthenticated: Boolean(currentUser && isConnected),
     isAuthenticating,
+    isAuthenticated: Boolean(currentUser && isConnected),
     verificationStatus,
+    connectWallet,
+    disconnectWallet,
     verifyOwnership,
     delegateKey,
-    clearDelegation,
     isDelegationValid,
     delegationTimeRemaining,
-    isWalletAvailable,
-    messageSigning
+    clearDelegation,
+    signMessage: messageSigning.signMessage,
+    verifyMessage: messageSigning.verifyMessage
   };
 
   return (

@@ -78,7 +78,7 @@ OpChan uses a two-tier authentication system:
 1. **Wallet Connection**: Initial connection to Phantom wallet
 2. **Key Delegation**: Optional browser key generation for improved UX
    - Reduces wallet signature prompts
-   - 24-hour validity period
+   - Configurable duration: 1 week or 30 days
    - Can be regenerated anytime
 
 ### Network & Performance

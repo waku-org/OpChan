@@ -13,10 +13,31 @@ import { DelegationInfo } from './types';
 
 ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
 
+export type DelegationDuration = '7days' | '30days';
 
 export class KeyDelegation {
   private static readonly DEFAULT_EXPIRY_HOURS = 24;
   private static readonly STORAGE_KEY = LOCAL_STORAGE_KEYS.KEY_DELEGATION;
+  
+  // Duration options in hours
+  private static readonly DURATION_HOURS = {
+    '7days': 24 * 7,    // 168 hours
+    '30days': 24 * 30   // 720 hours
+  } as const;
+  
+  /**
+   * Get the number of hours for a given duration
+   */
+  static getDurationHours(duration: DelegationDuration): number {
+    return KeyDelegation.DURATION_HOURS[duration];
+  }
+  
+  /**
+   * Get available duration options
+   */
+  static getAvailableDurations(): DelegationDuration[] {
+    return Object.keys(KeyDelegation.DURATION_HOURS) as DelegationDuration[];
+  }
   
   /**
    * Generates a new browser-based keypair for signing messages
@@ -56,7 +77,7 @@ export class KeyDelegation {
    * @param signature The signature from the wallet
    * @param browserPublicKey The browser-generated public key
    * @param browserPrivateKey The browser-generated private key
-   * @param expiryHours How many hours the delegation should last
+   * @param duration The duration of the delegation ('1week' or '30days')
    * @param walletType The type of wallet (bitcoin or ethereum)
    * @returns DelegationInfo object
    */
@@ -65,9 +86,10 @@ export class KeyDelegation {
     signature: string,
     browserPublicKey: string,
     browserPrivateKey: string,
-    expiryHours: number = KeyDelegation.DEFAULT_EXPIRY_HOURS,
+    duration: DelegationDuration = '7days',
     walletType: 'bitcoin' | 'ethereum'
   ): DelegationInfo {
+    const expiryHours = KeyDelegation.getDurationHours(duration);
     const expiryTimestamp = Date.now() + (expiryHours * 60 * 60 * 1000);
     
     return {

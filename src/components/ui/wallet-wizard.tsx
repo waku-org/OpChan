@@ -29,10 +29,11 @@ export function WalletWizard({
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1);
   const [isLoading, setIsLoading] = React.useState(false);
   const { currentUser, isAuthenticated, verificationStatus, isDelegationValid } = useAuth();
+  const hasInitialized = React.useRef(false);
 
   // Reset wizard when opened and determine starting step
   React.useEffect(() => {
-    if (open) {
+    if (open && !hasInitialized.current) {
       // Determine the appropriate starting step based on current state
       if (!isAuthenticated) {
         setCurrentStep(1); // Start at connection step if not authenticated
@@ -44,8 +45,11 @@ export function WalletWizard({
         setCurrentStep(3); // Default to step 3 if everything is complete
       }
       setIsLoading(false);
+      hasInitialized.current = true;
+    } else if (!open) {
+      hasInitialized.current = false;
     }
-  }, [open, isAuthenticated, verificationStatus, isDelegationValid]); // Include all dependencies to properly determine step
+  }, [open, isAuthenticated, verificationStatus, isDelegationValid]);
 
   const handleStepComplete = (step: WizardStep) => {
     if (step < 3) {

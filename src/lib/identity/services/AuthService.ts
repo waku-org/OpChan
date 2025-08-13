@@ -4,7 +4,7 @@ import { UseAppKitAccountReturn } from '@reown/appkit/react';
 import { AppKit } from '@reown/appkit';
 import { OrdinalAPI } from '../ordinal';
 import { MessageSigning } from '../signatures/message-signing';
-import { KeyDelegation } from '../signatures/key-delegation';
+import { KeyDelegation, DelegationDuration } from '../signatures/key-delegation';
 import { OpchanMessage } from '@/types';
 
 export interface AuthResult {
@@ -234,7 +234,7 @@ export class AuthService {
   /**
    * Set up key delegation for the user
    */
-  async delegateKey(user: User): Promise<AuthResult> {
+  async delegateKey(user: User, duration: DelegationDuration = '7days'): Promise<AuthResult> {
     try {
       const walletType = user.walletType;
       const isAvailable = this.walletService.isWalletAvailable(walletType);
@@ -246,7 +246,7 @@ export class AuthService {
         };
       }
 
-      const success = await this.walletService.createKeyDelegation(walletType);
+      const success = await this.walletService.createKeyDelegation(walletType, duration);
       
       if (!success) {
         return {

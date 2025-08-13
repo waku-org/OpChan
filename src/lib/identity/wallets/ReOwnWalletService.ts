@@ -1,5 +1,5 @@
 import { UseAppKitAccountReturn } from '@reown/appkit/react';
-import { KeyDelegation } from '../signatures/key-delegation';
+import { KeyDelegation, DelegationDuration } from '../signatures/key-delegation';
 import { AppKit } from '@reown/appkit';
 import { getEnsName } from '@wagmi/core';
 import { ChainNamespace } from '@reown/appkit-common';
@@ -122,7 +122,7 @@ export class ReOwnWalletService {
   /**
    * Create a key delegation for the connected wallet
    */
-  async createKeyDelegation(walletType: 'bitcoin' | 'ethereum'): Promise<boolean> {
+  async createKeyDelegation(walletType: 'bitcoin' | 'ethereum', duration: DelegationDuration = '7days'): Promise<boolean> {
     try {
       const account = this.getActiveAccount(walletType);
       if (!account?.address) {
@@ -133,7 +133,8 @@ export class ReOwnWalletService {
       const keypair = this.keyDelegation.generateKeypair();
       
       // Create delegation message with expiry
-      const expiryTimestamp = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+      const expiryHours = KeyDelegation.getDurationHours(duration);
+      const expiryTimestamp = Date.now() + (expiryHours * 60 * 60 * 1000);
       const delegationMessage = this.keyDelegation.createDelegationMessage(
         keypair.publicKey,
         account.address,
@@ -151,7 +152,7 @@ export class ReOwnWalletService {
         signature,
         keypair.publicKey,
         keypair.privateKey,
-        24, // 24 hours
+        duration,
         walletType
       );
       
