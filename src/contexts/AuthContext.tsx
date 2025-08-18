@@ -21,7 +21,7 @@ interface AuthContextType {
   delegationTimeRemaining: () => number;
   clearDelegation: () => void;
   signMessage: (message: OpchanMessage) => Promise<OpchanMessage | null>;
-  verifyMessage: (message: OpchanMessage) => boolean;
+  verifyMessage: (message: OpchanMessage) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -305,7 +305,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signMessage: async (message: OpchanMessage): Promise<OpchanMessage | null> => {
       return authServiceRef.current.signMessage(message);
     },
-    verifyMessage: (message: OpchanMessage): boolean => {
+    verifyMessage: async (message: OpchanMessage): Promise<boolean> => {
       return authServiceRef.current.verifyMessage(message);
     }
   };

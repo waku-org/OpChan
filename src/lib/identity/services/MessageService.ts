@@ -65,7 +65,7 @@ export class MessageService {
   /**
    * Verify a message signature
    */
-  verifyMessage(message: OpchanMessage): boolean {
+  async verifyMessage(message: OpchanMessage): Promise<boolean> {
     return this.authService.verifyMessage(message);
   }
 } 

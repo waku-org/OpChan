@@ -290,7 +290,7 @@ export class AuthService {
   /**
    * Verify a message signature
    */
-  verifyMessage(message: OpchanMessage): boolean {
+  async verifyMessage(message: OpchanMessage): Promise<boolean> {
     return this.messageSigning.verifyMessage(message);
   }
 

@@ -10,14 +10,20 @@ export enum MessageType {
 }
 
 /**
- * Base interface for all message types
+ * Base interface for all message types with delegation chain security
  */
 export interface BaseMessage {
   type: MessageType;
   timestamp: number;
   author: string;
+
+  // Message signature verification fields
   signature?: string; // Message signature for verification
   browserPubKey?: string; // Public key that signed the message
+  
+  delegationSignature?: string; // Original wallet signature of delegation
+  delegationMessage?: string;   // Original delegation message that was signed
+  delegationExpiry?: number;    // When the delegation expires
 }
 
 /**

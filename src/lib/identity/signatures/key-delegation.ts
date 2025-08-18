@@ -79,6 +79,7 @@ export class KeyDelegation {
    * @param browserPrivateKey The browser-generated private key
    * @param duration The duration of the delegation ('1week' or '30days')
    * @param walletType The type of wallet (bitcoin or ethereum)
+   * @param walletPublicKey The public key of the wallet (for signature verification)
    * @returns DelegationInfo object
    */
   createDelegation(
@@ -87,7 +88,8 @@ export class KeyDelegation {
     browserPublicKey: string,
     browserPrivateKey: string,
     duration: DelegationDuration = '7days',
-    walletType: 'bitcoin' | 'ethereum'
+    walletType: 'bitcoin' | 'ethereum',
+    walletPublicKey?: string
   ): DelegationInfo {
     const expiryHours = KeyDelegation.getDurationHours(duration);
     const expiryTimestamp = Date.now() + (expiryHours * 60 * 60 * 1000);
@@ -98,7 +100,8 @@ export class KeyDelegation {
       browserPublicKey,
       browserPrivateKey,
       walletAddress,
-      walletType
+      walletType,
+      walletPublicKey
     };
   }
   

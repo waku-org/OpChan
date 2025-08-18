@@ -74,9 +74,3 @@ export interface Comment {
   relevanceScore?: number; // Calculated relevance score
   relevanceDetails?: RelevanceScoreDetails; // Detailed breakdown of relevance score calculation
 }
-
-// Extended message types for verification
-export interface SignedMessage {
-  signature?: string; // Signature of the message
-  browserPubKey?: string; // Public key that signed the message
-}
