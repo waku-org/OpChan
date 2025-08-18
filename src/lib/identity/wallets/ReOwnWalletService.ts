@@ -89,6 +89,13 @@ export class ReOwnWalletService {
     // Convert message bytes to string for signing
     const messageString = new TextDecoder().decode(messageBytes);
 
+    console.log(`🔐 Wallet signing request:`, {
+      walletType,
+      requestedAddress: account.address,
+      messageLength: messageString.length,
+      messagePreview: messageString.slice(0, 100) + '...'
+    });
+
     try {
       // Access the adapter through the appKit instance
       // The adapter is available through the appKit's chainAdapters property
@@ -112,9 +119,15 @@ export class ReOwnWalletService {
         provider: provider as Provider 
       });
 
+      console.log(`✅ Wallet signing completed:`, {
+        requestedAddress: account.address,
+        signatureLength: result.signature.length,
+        signaturePrefix: result.signature.slice(0, 16) + '...'
+      });
+
       return result.signature;
     } catch (error) {
-      console.error(`Error signing message with ${walletType} wallet:`, error);
+      console.error(`❌ Error signing message with ${walletType} wallet:`, error);
       throw new Error(`Failed to sign message with ${walletType} wallet: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -129,26 +142,87 @@ export class ReOwnWalletService {
         throw new Error(`No ${walletType} wallet connected`);
       }
 
+      console.log(`🔑 Starting key delegation creation:`, {
+        walletType,
+        accountAddress: account.address,
+        duration
+      });
+
       // Generate a new browser keypair
       const keypair = this.keyDelegation.generateKeypair();
       
       // Create delegation message with expiry
       const expiryHours = KeyDelegation.getDurationHours(duration);
       const expiryTimestamp = Date.now() + (expiryHours * 60 * 60 * 1000);
-      const delegationMessage = this.keyDelegation.createDelegationMessage(
+      let delegationMessage = this.keyDelegation.createDelegationMessage(
         keypair.publicKey,
         account.address,
         expiryTimestamp
       );
+      
+      console.log(`📝 Delegation message created:`, {
+        message: delegationMessage,
+        browserPublicKey: keypair.publicKey.slice(0, 16) + '...',
+        expiryTimestamp: new Date(expiryTimestamp).toISOString()
+      });
       
       const messageBytes = new TextEncoder().encode(delegationMessage);
 
       // Sign the delegation message
       const signature = await this.signMessage(messageBytes, walletType);
 
+      console.log(`🔍 Wallet signing details:`, {
+        originalMessage: delegationMessage,
+        messageBytes: messageBytes.length,
+        signature: signature,
+        signatureLength: signature.length
+      });
+
+      // Verify the signature matches the expected address
+      let recoveredAddress: string | null = null;
+      if (walletType === 'ethereum') {
+        try {
+          const { recoverMessageAddress } = await import('viem');
+          
+          console.log(`🔍 Detailed signature analysis:`, {
+            originalMessage: delegationMessage,
+            signature: signature,
+            signatureLength: signature.length,
+            expectedAddress: account.address
+          });
+          
+          recoveredAddress = await recoverMessageAddress({ 
+            message: delegationMessage, 
+            signature: signature as `0x${string}` 
+          });
+          
+          console.log(`🔍 Signature verification check:`, {
+            expectedAddress: account.address,
+            recoveredAddress: recoveredAddress,
+            addressesMatch: recoveredAddress.toLowerCase() === account.address.toLowerCase(),
+            message: delegationMessage
+          });
+          
+          // Diagnostics only; do NOT mutate the message after signing
+          console.log(`🔍 Additional verification:`, {
+            recoveredAddressLowerCase: recoveredAddress.toLowerCase(),
+            expectedAddressLowerCase: account.address.toLowerCase(),
+            exactMatch: recoveredAddress === account.address,
+            caseInsensitiveMatch: recoveredAddress.toLowerCase() === account.address.toLowerCase()
+          });
+        } catch (error) {
+          console.error(`❌ Error verifying delegation signature:`, error);
+        }
+      }
+
+      console.log(`✅ Delegation signature received:`, {
+        signatureLength: signature.length,
+        signaturePrefix: signature.slice(0, 16) + '...'
+      });
+
       // Create and store the delegation
       const delegationInfo = this.keyDelegation.createDelegation(
-        account.address,
+        account.address, // store the original address used to build the message
         signature,
         keypair.publicKey,
         keypair.privateKey,
@@ -158,9 +232,11 @@ export class ReOwnWalletService {
       
       this.keyDelegation.storeDelegation(delegationInfo);
 
+      console.log(`🎉 Key delegation created and stored successfully`);
+
       return true;
     } catch (error) {
-      console.error(`Error creating key delegation for ${walletType}:`, error);
+      console.error(`❌ Error creating key delegation for ${walletType}:`, error);
       return false;
     }
   }

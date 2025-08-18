@@ -20,7 +20,7 @@ export class MessageService {
    */
   async signAndSendMessage(message: OpchanMessage): Promise<MessageResult> {
     try {
-      const signedMessage = await this.authService.signMessage(message);
+      const signedMessage = this.authService.messageSigning.signMessage(message);
       
       if (!signedMessage) {
         // Check if delegation exists but is expired
@@ -66,6 +66,6 @@ export class MessageService {
    * Verify a message signature
    */
   async verifyMessage(message: OpchanMessage): Promise<boolean> {
-    return this.authService.verifyMessage(message);
+    return this.authService.messageSigning.verifyMessage(message);
   }
 } 

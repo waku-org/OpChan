@@ -125,11 +125,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getVerificationStatus = (user: User): VerificationStatus => {
+    console.log(`🔍 Checking verification status for user:`, {
+      address: user.address,
+      walletType: user.walletType,
+      ordinalOwnership: user.ordinalOwnership,
+      ensOwnership: user.ensOwnership,
+      ensName: user.ensName,
+      hasDelegation: !!user.delegationSignature,
+      delegationExpiry: user.delegationExpiry ? new Date(user.delegationExpiry).toISOString() : 'none'
+    });
+    
     if (user.walletType === 'bitcoin') {
-      return user.ordinalOwnership ? 'verified-owner' : 'verified-none';
+      const status = user.ordinalOwnership ? 'verified-owner' : 'verified-none';
+      console.log(`📊 Bitcoin verification result:`, { status, hasOrdinal: !!user.ordinalOwnership });
+      return status;
     } else if (user.walletType === 'ethereum') {
-      return user.ensOwnership ? 'verified-owner' : 'verified-none';
+      const status = user.ensOwnership ? 'verified-owner' : 'verified-none';
+      console.log(`📊 Ethereum verification result:`, { status, hasENS: !!user.ensOwnership, ensName: user.ensName });
+      return status;
     }
+    
+    console.log(`📊 Default verification result: unverified`);
     return 'unverified';
   };
 
@@ -303,10 +319,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const messageSigning = {
     signMessage: async (message: OpchanMessage): Promise<OpchanMessage | null> => {
-      return authServiceRef.current.signMessage(message);
+      return authServiceRef.current.messageSigning.signMessage(message);
     },
     verifyMessage: async (message: OpchanMessage): Promise<boolean> => {
-      return authServiceRef.current.verifyMessage(message);
+      return authServiceRef.current.messageSigning.verifyMessage(message);
     }
   };
 

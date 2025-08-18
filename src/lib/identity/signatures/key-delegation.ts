@@ -145,15 +145,47 @@ export class KeyDelegation {
     
     // If a current address is provided, validate it matches the delegation
     if (currentAddress && delegation.walletAddress !== currentAddress) {
+      console.warn(`⚠️ Delegation address mismatch detected:`, {
+        storedAddress: delegation.walletAddress,
+        currentAddress: currentAddress,
+        suggestion: 'Consider clearing the delegation and creating a new one'
+      });
       return false;
     }
     
     // If a current wallet type is provided, validate it matches the delegation
     if (currentWalletType && delegation.walletType !== currentWalletType) {
+      console.warn(`⚠️ Delegation wallet type mismatch detected:`, {
+        storedType: delegation.walletType,
+        currentType: currentWalletType,
+        suggestion: 'Consider clearing the delegation and creating a new one'
+      });
       return false;
     }
     
     return true;
+  }
+  
+  /**
+   * Check if the current wallet address matches the stored delegation
+   * @param currentAddress The current wallet address to check
+   * @returns boolean indicating if addresses match
+   */
+  isAddressMatch(currentAddress: string): boolean {
+    const delegation = this.retrieveDelegation();
+    if (!delegation) return false;
+    
+    const matches = delegation.walletAddress === currentAddress;
+    
+    if (!matches) {
+      console.warn(`⚠️ Wallet address mismatch:`, {
+        storedAddress: delegation.walletAddress,
+        currentAddress: currentAddress,
+        timeRemaining: this.getDelegationTimeRemaining()
+      });
+    }
+    
+    return matches;
   }
   
   /**

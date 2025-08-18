@@ -15,13 +15,13 @@ export interface AuthResult {
 
 export class AuthService {
   private walletService: WalletService;
-  private ordinalApi: OrdinalAPI;
-  private messageSigning: MessageSigning;
+  private ordinalAPI: OrdinalAPI;
+  public messageSigning: MessageSigning;
   private keyDelegation: KeyDelegation;
 
   constructor() {
     this.walletService = new WalletService();
-    this.ordinalApi = new OrdinalAPI();
+    this.ordinalAPI = new OrdinalAPI();
     this.keyDelegation = new KeyDelegation();
     this.messageSigning = new MessageSigning(this.keyDelegation);
   }
@@ -280,19 +280,7 @@ export class AuthService {
     }
   }
 
-  /**
-   * Sign a message using delegated key
-   */
-  async signMessage(message: OpchanMessage): Promise<OpchanMessage | null> {
-    return this.messageSigning.signMessage(message);
-  }
 
-  /**
-   * Verify a message signature
-   */
-  async verifyMessage(message: OpchanMessage): Promise<boolean> {
-    return this.messageSigning.verifyMessage(message);
-  }
 
   /**
    * Check if delegation is valid

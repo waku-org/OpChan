@@ -94,7 +94,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const updateStateFromCache = useCallback(() => {
     // Use the verifyMessage function from authService if available
     const verifyFn = isAuthenticated ? 
-      (message: OpchanMessage) => authService.verifyMessage(message) : 
+      (message: OpchanMessage) => authService.messageSigning.verifyMessage(message) : 
       undefined;
     
     // Build user verification status for relevance calculation
