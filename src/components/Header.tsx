@@ -18,8 +18,7 @@ const Header = () => {
     verifyOwnership, 
     delegateKey, 
     isDelegationValid,
-    delegationTimeRemaining,
-    isWalletAvailable
+    delegationTimeRemaining
   } = useAuth();
   const { isNetworkConnected, isRefreshing } = useForum();
   const location = useLocation();
@@ -85,8 +84,10 @@ const Header = () => {
         return 'Verifying...';
       case 'verified-none':
         return 'Read-Only Access';
-      case 'verified-owner':
+      case 'verified-basic':
         return isDelegationValid() ? 'Full Access' : 'Setup Key';
+      case 'verified-owner':
+        return isDelegationValid() ? 'Premium Access' : 'Setup Key';
       default:
         return 'Setup Account';
     }
@@ -100,6 +101,8 @@ const Header = () => {
         return <RefreshCw className="w-3 h-3 animate-spin" />;
       case 'verified-none':
         return <CircleSlash className="w-3 h-3" />;
+      case 'verified-basic':
+        return isDelegationValid() ? <CheckCircle className="w-3 h-3" /> : <Key className="w-3 h-3" />;
       case 'verified-owner':
         return isDelegationValid() ? <CheckCircle className="w-3 h-3" /> : <Key className="w-3 h-3" />;
       default:
@@ -115,6 +118,8 @@ const Header = () => {
         return 'outline';
       case 'verified-none':
         return 'secondary';
+      case 'verified-basic':
+        return isDelegationValid() ? 'default' : 'outline';
       case 'verified-owner':
         return isDelegationValid() ? 'default' : 'outline';
       default:

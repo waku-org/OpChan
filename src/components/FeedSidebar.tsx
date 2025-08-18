@@ -44,8 +44,10 @@ const FeedSidebar: React.FC = () => {
 
     // Ethereum wallet with ENS
     if (currentUser.walletType === 'ethereum') {
-      if (currentUser.ensName && verificationStatus === 'verified-owner') {
+      if (currentUser.ensName && (verificationStatus === 'verified-owner' || currentUser.ensOwnership)) {
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✓ Owns ENS: {currentUser.ensName}</Badge>;
+      } else if (verificationStatus === 'verified-basic') {
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">✓ Connected Wallet</Badge>;
       } else {
         return <Badge variant="outline">Read-only (No ENS detected)</Badge>;
       }
@@ -53,8 +55,10 @@ const FeedSidebar: React.FC = () => {
 
     // Bitcoin wallet with Ordinal
     if (currentUser.walletType === 'bitcoin') {
-      if (verificationStatus === 'verified-owner') {
+      if (verificationStatus === 'verified-owner' || currentUser.ordinalOwnership) {
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✓ Owns Ordinal</Badge>;
+      } else if (verificationStatus === 'verified-basic') {
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">✓ Connected Wallet</Badge>;
       } else {
         return <Badge variant="outline">Read-only (No Ordinal detected)</Badge>;
       }
@@ -62,6 +66,8 @@ const FeedSidebar: React.FC = () => {
 
     // Fallback cases
     switch (verificationStatus) {
+      case 'verified-basic':
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">✓ Connected Wallet</Badge>;
       case 'verified-none':
         return <Badge variant="outline">Read Only</Badge>;
       case 'verifying':

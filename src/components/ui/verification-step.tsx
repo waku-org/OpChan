@@ -36,7 +36,7 @@ export function VerificationStep({
   const [verificationResult, setVerificationResult] = React.useState<{
     success: boolean;
     message: string;
-    details?: any;
+    details?: { ensName?: string; ensAvatar?: string } | boolean | { id: string; details: string };
   } | null>(null);
 
   const handleVerify = async () => {
@@ -62,8 +62,8 @@ export function VerificationStep({
         setVerificationResult({
           success: false,
           message: walletType === 'bitcoin' 
-            ? "No Ordinal ownership found. You'll have read-only access." 
-            : "No ENS ownership found. You'll have read-only access."
+            ? "No Ordinal ownership found. You can still participate in the forum with your connected wallet!" 
+            : "No ENS ownership found. You can still participate in the forum with your connected wallet!"
         });
       }
     } catch (error) {
@@ -81,7 +81,7 @@ export function VerificationStep({
   };
 
   const getVerificationType = () => {
-    return walletType === 'bitcoin' ? 'Bitcoin Ordinal' : 'ENS Domain';
+    return walletType === 'bitcoin' ? 'Bitcoin Ordinal' : 'Ethereum ENS';
   };
 
   const getVerificationIcon = () => {
@@ -94,9 +94,9 @@ export function VerificationStep({
 
   const getVerificationDescription = () => {
     if (walletType === 'bitcoin') {
-      return "Verify that you own Bitcoin Ordinals to get full posting and voting access.";
+      return "Verify your Bitcoin Ordinal ownership to unlock premium features. If you don't own any Ordinals, you can still participate in the forum with your connected wallet.";
     } else {
-      return "Verify that you own an ENS domain to get full posting and voting access.";
+      return "Verify your Ethereum ENS ownership to unlock premium features. If you don't own any ENS, you can still participate in the forum with your connected wallet.";
     }
   };
 
@@ -128,9 +128,9 @@ export function VerificationStep({
             {verificationResult.details && (
               <div className="text-xs text-neutral-400">
                 {walletType === 'bitcoin' ? (
-                  <p>Ordinal ID: {verificationResult.details.id}</p>
+                  <p>Ordinal ID: {typeof verificationResult.details === 'object' && 'id' in verificationResult.details ? verificationResult.details.id : 'Verified'}</p>
                 ) : (
-                  <p>ENS Name: {verificationResult.details.ensName}</p>
+                  <p>ENS Name: {typeof verificationResult.details === 'object' && 'ensName' in verificationResult.details ? verificationResult.details.ensName : 'Verified'}</p>
                 )}
               </div>
             )}

@@ -6,7 +6,7 @@ import { OpchanMessage } from '@/types';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 import { DelegationDuration } from '@/lib/identity/signatures/key-delegation';
 
-export type VerificationStatus = 'unverified' | 'verified-none' | 'verified-owner' | 'verifying';
+export type VerificationStatus = 'unverified' | 'verified-none' | 'verified-basic' | 'verified-owner' | 'verifying';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -76,13 +76,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const newUser: User = {
           address,
           walletType: isBitcoinConnected ? 'bitcoin' : 'ethereum',
-          verificationStatus: 'unverified',
+          verificationStatus: 'verified-basic', // Connected wallets get basic verification by default
           lastChecked: Date.now(),
         };
 
-        setCurrentUser(newUser);
-        setVerificationStatus('unverified');
-        authServiceRef.current.saveUser(newUser);
+        // For Ethereum wallets, try to check ENS ownership immediately
+        if (isEthereumConnected) {
+          authServiceRef.current.getWalletInfo().then((walletInfo) => {
+            if (walletInfo?.ensName) {
+              const updatedUser = {
+                ...newUser,
+                ensOwnership: true,
+                ensName: walletInfo.ensName,
+                verificationStatus: 'verified-owner' as const,
+              };
+              setCurrentUser(updatedUser);
+              setVerificationStatus('verified-owner');
+              authServiceRef.current.saveUser(updatedUser);
+            } else {
+              setCurrentUser(newUser);
+              setVerificationStatus('verified-basic');
+              authServiceRef.current.saveUser(newUser);
+            }
+          }).catch(() => {
+            // Fallback to basic verification if ENS check fails
+            setCurrentUser(newUser);
+            setVerificationStatus('verified-basic');
+            authServiceRef.current.saveUser(newUser);
+          });
+        } else {
+          setCurrentUser(newUser);
+          setVerificationStatus('verified-basic');
+          authServiceRef.current.saveUser(newUser);
+        }
         
         const chainName = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
         const displayName = `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -95,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const verificationType = isBitcoinConnected ? 'Ordinal ownership' : 'ENS ownership';
         toast({
           title: "Action Required",
-          description: `Please verify your ${verificationType} and delegate a signing key for better UX.`,
+          description: `You can participate in the forum now! Verify your ${verificationType} for premium features and delegate a signing key for better UX.`,
         });
       }
     } else {
@@ -126,9 +152,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const getVerificationStatus = (user: User): VerificationStatus => {
     if (user.walletType === 'bitcoin') {
-      return user.ordinalOwnership ? 'verified-owner' : 'verified-none';
+      return user.ordinalOwnership ? 'verified-owner' : 'verified-basic';
     } else if (user.walletType === 'ethereum') {
-      return user.ensOwnership ? 'verified-owner' : 'verified-none';
+      return user.ensOwnership ? 'verified-owner' : 'verified-basic';
     }
     return 'unverified';
   };
@@ -169,18 +195,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (updatedUser.walletType === 'bitcoin' && updatedUser.ordinalOwnership) {
         toast({
           title: "Ordinal Verified",
-          description: "You now have full access. We recommend delegating a key for better UX.",
+          description: "You now have premium access with higher relevance bonuses. We recommend delegating a key for better UX.",
         });
       } else if (updatedUser.walletType === 'ethereum' && updatedUser.ensOwnership) {
         toast({
           title: "ENS Verified",
-          description: "You now have full access. We recommend delegating a key for better UX.",
+          description: "You now have premium access with higher relevance bonuses. We recommend delegating a key for better UX.",
         });
       } else {
         const verificationType = updatedUser.walletType === 'bitcoin' ? 'Ordinal Operators' : 'ENS domain';
         toast({
-          title: "Read-Only Access",
-          description: `No ${verificationType} found. You have read-only access.`,
+          title: "Basic Access Granted",
+          description: `No ${verificationType} found, but you can still participate in the forum with your connected wallet.`,
           variant: "default",
         });
       }

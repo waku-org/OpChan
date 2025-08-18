@@ -35,7 +35,22 @@ export const createPost = async (
   if (!isAuthenticated || !currentUser) {
     toast({
       title: 'Authentication Required',
-      description: 'You need to verify Ordinal ownership to post.',
+      description: 'You need to connect your wallet to post.',
+      variant: 'destructive',
+    });
+    return null;
+  }
+
+  // Check if user has basic verification or better, or owns ENS/Ordinal
+  const hasENSOrOrdinal = !!(currentUser.ensOwnership || currentUser.ordinalOwnership);
+  const isVerified = currentUser.verificationStatus === 'verified-owner' || 
+                     currentUser.verificationStatus === 'verified-basic' || 
+                     hasENSOrOrdinal;
+  
+  if (!isVerified && (currentUser.verificationStatus === 'unverified' || currentUser.verificationStatus === 'verifying')) {
+    toast({
+      title: 'Verification Required',
+      description: 'Please complete wallet verification to post.',
       variant: 'destructive',
     });
     return null;
@@ -92,7 +107,22 @@ export const createComment = async (
   if (!isAuthenticated || !currentUser) {
     toast({
       title: 'Authentication Required',
-      description: 'You need to verify Ordinal ownership to comment.',
+      description: 'You need to connect your wallet to comment.',
+      variant: 'destructive',
+    });
+    return null;
+  }
+
+  // Check if user has basic verification or better, or owns ENS/Ordinal
+  const hasENSOrOrdinal = !!(currentUser.ensOwnership || currentUser.ordinalOwnership);
+  const isVerified = currentUser.verificationStatus === 'verified-owner' || 
+                     currentUser.verificationStatus === 'verified-basic' || 
+                     hasENSOrOrdinal;
+  
+  if (!isVerified && (currentUser.verificationStatus === 'unverified' || currentUser.verificationStatus === 'verifying')) {
+    toast({
+      title: 'Verification Required',
+      description: 'Please complete wallet verification to comment.',
       variant: 'destructive',
     });
     return null;
@@ -210,7 +240,22 @@ export const vote = async (
   if (!isAuthenticated || !currentUser) {
     toast({
       title: 'Authentication Required',
-      description: 'You need to verify Ordinal ownership to vote.',
+      description: 'You need to connect your wallet to vote.',
+      variant: 'destructive',
+    });
+    return false;
+  }
+
+  // Check if user has basic verification or better, or owns ENS/Ordinal
+  const hasENSOrOrdinal = !!(currentUser.ensOwnership || currentUser.ordinalOwnership);
+  const isVerified = currentUser.verificationStatus === 'verified-owner' || 
+                     currentUser.verificationStatus === 'verified-basic' || 
+                     hasENSOrOrdinal;
+  
+  if (!isVerified && (currentUser.verificationStatus === 'unverified' || currentUser.verificationStatus === 'verifying')) {
+    toast({
+      title: 'Verification Required',
+      description: 'Please complete wallet verification to vote.',
       variant: 'destructive',
     });
     return false;

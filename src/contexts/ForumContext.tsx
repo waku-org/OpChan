@@ -21,6 +21,8 @@ import { getDataFromCache } from '@/lib/forum/transformers';
 import { RelevanceCalculator } from '@/lib/forum/relevance';
 import { UserVerificationStatus } from '@/lib/forum/types';
 import { AuthService } from '@/lib/identity/services/AuthService';
+import { getEnsName } from '@wagmi/core';
+import { config } from '@/lib/identity/wallets/appkit';
 
 interface ForumContextType {
   cells: Cell[];
@@ -138,21 +140,55 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         // Create generic user object for other addresses
         allUsers.push({
           address,
-          walletType: 'bitcoin', // Default, will be updated if we have more info
+          walletType: address.startsWith('0x') ? 'ethereum' : 'bitcoin',
           verificationStatus: 'unverified'
         });
       }
     });
     
-    const userVerificationStatus = relevanceCalculator.buildUserVerificationStatus(allUsers);
+    const initialStatus = relevanceCalculator.buildUserVerificationStatus(allUsers);
     
-    // Transform data with relevance calculation
-    const { cells, posts, comments } = getDataFromCache(verifyFn, userVerificationStatus);
+    // Transform data with relevance calculation (initial pass)
+    const { cells, posts, comments } = getDataFromCache(verifyFn, initialStatus);
     
     setCells(cells);
     setPosts(posts);
     setComments(comments);
-    setUserVerificationStatus(userVerificationStatus);
+    setUserVerificationStatus(initialStatus);
+
+    // Enrich: resolve ENS for ethereum addresses asynchronously and update
+    (async () => {
+      const targets = allUsers.filter(u => u.walletType === 'ethereum' && !u.ensOwnership);
+      if (targets.length === 0) return;
+      const lookups = await Promise.all(targets.map(async (u) => {
+        try {
+          const name = await getEnsName(config, { address: u.address as `0x${string}` });
+          return { address: u.address, ensName: name || undefined };
+        } catch {
+          return { address: u.address, ensName: undefined };
+        }
+      }));
+      const ensByAddress = new Map<string, string | undefined>(lookups.map(l => [l.address, l.ensName]));
+      const enrichedUsers: User[] = allUsers.map(u => {
+        const ensName = ensByAddress.get(u.address);
+        if (ensName) {
+          return {
+            ...u,
+            walletType: 'ethereum',
+            ensOwnership: true,
+            ensName,
+            verificationStatus: 'verified-owner'
+          } as User;
+        }
+        return u;
+      });
+      const enrichedStatus = relevanceCalculator.buildUserVerificationStatus(enrichedUsers);
+      const transformed = getDataFromCache(verifyFn, enrichedStatus);
+      setCells(transformed.cells);
+      setPosts(transformed.posts);
+      setComments(transformed.comments);
+      setUserVerificationStatus(enrichedStatus);
+    })();
   }, [authService, isAuthenticated, currentUser]);
   
   const handleRefreshData = async () => {

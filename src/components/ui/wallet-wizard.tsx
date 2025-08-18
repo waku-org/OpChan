@@ -39,7 +39,7 @@ export function WalletWizard({
         setCurrentStep(1); // Start at connection step if not authenticated
       } else if (isAuthenticated && (verificationStatus === 'unverified' || verificationStatus === 'verifying')) {
         setCurrentStep(2); // Start at verification step if authenticated but not verified
-      } else if (isAuthenticated && (verificationStatus === 'verified-owner' || verificationStatus === 'verified-none') && !isDelegationValid()) {
+      } else if (isAuthenticated && (verificationStatus === 'verified-owner' || verificationStatus === 'verified-basic' || verificationStatus === 'verified-none') && !isDelegationValid()) {
         setCurrentStep(3); // Start at delegation step if verified but no valid delegation
       } else {
         setCurrentStep(3); // Default to step 3 if everything is complete
@@ -66,34 +66,25 @@ export function WalletWizard({
   };
 
   const getStepStatus = (step: WizardStep) => {
-    // Step 1: Wallet connection - completed when authenticated
     if (step === 1) {
-      if (isAuthenticated) return "completed";
-      if (currentStep === step) return "current";
-      return "pending";
+      return isAuthenticated ? 'complete' : 'current';
+    } else if (step === 2) {
+      if (!isAuthenticated) return 'disabled';
+      if (verificationStatus === 'unverified' || verificationStatus === 'verifying') return 'current';
+      if (verificationStatus === 'verified-owner' || verificationStatus === 'verified-basic' || verificationStatus === 'verified-none') return 'complete';
+      return 'disabled';
+    } else if (step === 3) {
+      if (!isAuthenticated || (verificationStatus !== 'verified-owner' && verificationStatus !== 'verified-basic' && verificationStatus !== 'verified-none')) return 'disabled';
+      if (isDelegationValid()) return 'complete';
+      return 'current';
     }
-    
-    // Step 2: Verification - completed when verified (either owner or none)
-    if (step === 2) {
-      if (verificationStatus === 'verified-owner' || verificationStatus === 'verified-none') return "completed";
-      if (currentStep === step) return "current";
-      return "pending";
-    }
-    
-    // Step 3: Key delegation - completed when delegation is valid AND authenticated
-    if (step === 3) {
-      if (isAuthenticated && isDelegationValid()) return "completed";
-      if (currentStep === step) return "current";
-      return "pending";
-    }
-    
-    return "pending";
+    return 'disabled';
   };
 
   const renderStepIcon = (step: WizardStep) => {
     const status = getStepStatus(step);
     
-    if (status === "completed") {
+    if (status === "complete") {
       return <CheckCircle className="h-5 w-5 text-green-500" />;
     } else if (status === "current") {
       return <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />;
@@ -130,7 +121,7 @@ export function WalletWizard({
                 <span className={`text-sm ${
                   getStepStatus(step as WizardStep) === "current" 
                     ? "text-blue-500 font-medium" 
-                    : getStepStatus(step as WizardStep) === "completed"
+                    : getStepStatus(step as WizardStep) === "complete"
                     ? "text-green-500"
                     : "text-gray-400"
                 }`}>
@@ -139,7 +130,7 @@ export function WalletWizard({
               </div>
               {step < 3 && (
                 <div className={`w-8 h-px mx-2 ${
-                  getStepStatus(step as WizardStep) === "completed" 
+                  getStepStatus(step as WizardStep) === "complete" 
                     ? "bg-green-500" 
                     : "bg-gray-600"
                 }`} />

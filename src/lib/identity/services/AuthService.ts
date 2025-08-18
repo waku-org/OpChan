@@ -182,6 +182,7 @@ export class AuthService {
     const updatedUser = {
       ...user,
       ordinalOwnership: hasOperators,
+      verificationStatus: hasOperators ? 'verified-owner' : 'verified-basic',
       lastChecked: Date.now(),
     };
 
@@ -206,6 +207,7 @@ export class AuthService {
         ...user,
         ensOwnership: hasENS,
         ensName: ensName,
+        verificationStatus: hasENS ? 'verified-owner' : 'verified-basic',
         lastChecked: Date.now(),
       };
 
@@ -216,11 +218,12 @@ export class AuthService {
     } catch (error) {
       console.error('Error verifying ENS ownership:', error);
       
-      // Fall back to no ENS ownership on error
+      // Fall back to basic verification on error
       const updatedUser = {
         ...user,
         ensOwnership: false,
         ensName: undefined,
+        verificationStatus: 'verified-basic',
         lastChecked: Date.now(),
       };
 

@@ -4,6 +4,7 @@ import { Shield, Crown } from 'lucide-react';
 import { UserVerificationStatus } from '@/lib/forum/types';
 import { getEnsName } from '@wagmi/core';
 import { config } from '@/lib/identity/wallets/appkit';
+import { OrdinalAPI } from '@/lib/identity/ordinal';
 
 interface AuthorDisplayProps {
   address: string;
@@ -20,20 +21,52 @@ export function AuthorDisplay({
 }: AuthorDisplayProps) {
   const userStatus = userVerificationStatus?.[address];
   const [resolvedEns, setResolvedEns] = React.useState<string | undefined>(undefined);
+  const [resolvedOrdinal, setResolvedOrdinal] = React.useState<boolean | undefined>(undefined);
+
+  // Heuristics for address types
+  const isEthereumAddress = address.startsWith('0x') && address.length === 42;
+  const isBitcoinAddress = !isEthereumAddress; // simple heuristic for our context
 
   // Lazily resolve ENS name for Ethereum addresses if not provided
   React.useEffect(() => {
-    const isEthereumAddress = address.startsWith('0x') && address.length === 42;
+    let cancelled = false;
     if (!userStatus?.ensName && isEthereumAddress) {
       getEnsName(config, { address: address as `0x${string}` })
-        .then((name) => setResolvedEns(name || undefined))
-        .catch(() => setResolvedEns(undefined));
+        .then((name) => { if (!cancelled) setResolvedEns(name || undefined); })
+        .catch(() => { if (!cancelled) setResolvedEns(undefined); });
+    } else {
+      setResolvedEns(userStatus?.ensName);
     }
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address]);
+  }, [address, isEthereumAddress, userStatus?.ensName]);
 
-  const hasENS = userStatus?.hasENS || Boolean(resolvedEns) || Boolean(userStatus?.ensName);
-  const hasOrdinal = userStatus?.hasOrdinal || false;
+  // Lazily check Ordinal ownership for Bitcoin addresses if not provided
+  React.useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      console.log({
+        isBitcoinAddress, userStatus
+      })
+      if (isBitcoinAddress) {
+        try {
+          const api = new OrdinalAPI();
+          const res = await api.getOperatorDetails(address);
+          if (!cancelled) setResolvedOrdinal(Boolean(res?.has_operators));
+        } catch {
+          if (!cancelled) setResolvedOrdinal(undefined);
+        }
+      } else {
+        setResolvedOrdinal(userStatus?.hasOrdinal);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, isBitcoinAddress, userStatus?.hasOrdinal]);
+
+  const hasENS = Boolean(userStatus?.hasENS) || Boolean(resolvedEns) || Boolean(userStatus?.ensName);
+  const hasOrdinal = Boolean(userStatus?.hasOrdinal) || Boolean(resolvedOrdinal);
 
   // Only show a badge if the author has ENS or Ordinal ownership (not for basic verification)
   const shouldShowBadge = showBadge && (hasENS || hasOrdinal);

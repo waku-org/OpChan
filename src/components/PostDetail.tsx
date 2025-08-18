@@ -84,12 +84,12 @@ const PostDetail = () => {
   };
   
   const handleVotePost = async (isUpvote: boolean) => {
-    if (verificationStatus !== 'verified-owner') return;
+    if (verificationStatus !== 'verified-owner' && verificationStatus !== 'verified-basic' && !currentUser?.ensOwnership && !currentUser?.ordinalOwnership) return;
     await votePost(post.id, isUpvote);
   };
   
   const handleVoteComment = async (commentId: string, isUpvote: boolean) => {
-    if (verificationStatus !== 'verified-owner') return;
+    if (verificationStatus !== 'verified-owner' && verificationStatus !== 'verified-basic' && !currentUser?.ensOwnership && !currentUser?.ordinalOwnership) return;
     await voteComment(commentId, isUpvote);
   };
   
@@ -185,7 +185,7 @@ const PostDetail = () => {
         </div>
       </div>
       
-      {verificationStatus === 'verified-owner' ? (
+      {(verificationStatus === 'verified-owner' || verificationStatus === 'verified-basic' || currentUser?.ensOwnership || currentUser?.ordinalOwnership) ? (
         <div className="mb-8">
           <form onSubmit={handleCreateComment}>
             <div className="flex gap-2">
@@ -219,7 +219,7 @@ const PostDetail = () => {
         </div>
       ) : (
         <div className="mb-8 p-3 border border-muted rounded-sm bg-secondary/30 text-center">
-          <p className="text-sm mb-2">Connect wallet and verify Ordinal ownership to comment</p>
+          <p className="text-sm mb-2">Connect wallet and verify ownership to comment</p>
           <Button asChild size="sm">
             <Link to="/">Go to Home</Link>
           </Button>

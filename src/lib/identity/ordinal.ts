@@ -9,7 +9,7 @@ export class OrdinalAPI {
    * @returns A promise that resolves with the API response.
    */
   async getOperatorDetails(address: string): Promise<OrdinalApiResponse> {
-
+    
     if (import.meta.env.VITE_OPCHAN_MOCK_ORDINAL_CHECK === 'true') {
       console.log(`[DEV] Bypassing ordinal verification for address: ${address}`);
       return {

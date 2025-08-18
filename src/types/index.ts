@@ -15,7 +15,7 @@ export interface User {
   ensAvatar?: string;
   ensOwnership?: boolean;
   
-  verificationStatus: 'unverified' | 'verified-none' | 'verified-owner' | 'verifying';
+  verificationStatus: 'unverified' | 'verified-none' | 'verified-basic' | 'verified-owner' | 'verifying';
   
   signature?: string;
   lastChecked?: number;

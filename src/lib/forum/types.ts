@@ -22,5 +22,6 @@ export interface RelevanceScoreDetails {
       hasENS: boolean;
       hasOrdinal: boolean;
       ensName?: string;
+      verificationStatus?: 'unverified' | 'verified-none' | 'verified-basic' | 'verified-owner' | 'verifying';
     };
   }

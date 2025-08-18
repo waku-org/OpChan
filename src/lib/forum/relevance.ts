@@ -14,7 +14,8 @@ export class RelevanceCalculator {
     COMMENT: 0.5
   };
   
-  private static readonly VERIFICATION_BONUS = 1.25; // 25% increase
+  private static readonly VERIFICATION_BONUS = 1.25; // 25% increase for ENS/Ordinal owners
+  private static readonly BASIC_VERIFICATION_BONUS = 1.1; // 10% increase for basic verified users
   private static readonly VERIFIED_UPVOTE_BONUS = 0.1;
   private static readonly VERIFIED_COMMENTER_BONUS = 0.05;
   
@@ -201,10 +202,10 @@ export class RelevanceCalculator {
 
 
   /**
-   * Check if a user is verified (has ENS or ordinal ownership)
+   * Check if a user is verified (has ENS or ordinal ownership, or basic verification)
    */
   isUserVerified(user: User): boolean {
-    return !!(user.ensOwnership || user.ordinalOwnership);
+    return !!(user.ensOwnership || user.ordinalOwnership || user.verificationStatus === 'verified-basic');
   }
 
   /**
@@ -218,7 +219,8 @@ export class RelevanceCalculator {
         isVerified: this.isUserVerified(user),
         hasENS: !!user.ensOwnership,
         hasOrdinal: !!user.ordinalOwnership,
-        ensName: user.ensName
+        ensName: user.ensName,
+        verificationStatus: user.verificationStatus
       };
     });
     
@@ -245,22 +247,31 @@ export class RelevanceCalculator {
       }
     
       /**
-       * Apply author verification bonus
+       * Apply verification bonus for verified authors
        */
       private applyAuthorVerificationBonus(
-        score: number,
-        authorAddress: string,
+        score: number, 
+        authorAddress: string, 
         userVerificationStatus: UserVerificationStatus
       ): { bonus: number; isVerified: boolean } {
         const authorStatus = userVerificationStatus[authorAddress];
         const isVerified = authorStatus?.isVerified || false;
         
-        if (isVerified) {
-          const bonus = score * (RelevanceCalculator.VERIFICATION_BONUS - 1);
-          return { bonus, isVerified };
+        if (!isVerified) {
+          return { bonus: 0, isVerified: false };
         }
-        
-        return { bonus: 0, isVerified };
+
+        // Apply different bonuses based on verification level
+        let bonus = 0;
+        if (authorStatus?.verificationStatus === 'verified-owner') {
+          // Full bonus for ENS/Ordinal owners
+          bonus = score * (RelevanceCalculator.VERIFICATION_BONUS - 1);
+        } else if (authorStatus?.verificationStatus === 'verified-basic') {
+          // Lower bonus for basic verified users
+          bonus = score * (RelevanceCalculator.BASIC_VERIFICATION_BONUS - 1);
+        }
+
+        return { bonus, isVerified: true };
       }
     
       /**
