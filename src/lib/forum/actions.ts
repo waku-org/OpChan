@@ -7,7 +7,7 @@ import {
   VoteMessage,
   ModerateMessage,
 } from '@/lib/waku/types';
-import { Cell, Comment, Post, User } from '@/types';
+import { Cell, Comment, Post, User } from '@/types/forum';
 import { transformCell, transformComment, transformPost } from './transformers';
 import { MessageService } from '@/lib/identity/services/MessageService';
 import { AuthService } from '@/lib/identity/services/AuthService';

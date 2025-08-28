@@ -1,4 +1,4 @@
-import { Post, Comment, Cell } from '@/types';
+import { Post, Comment, Cell } from '@/types/forum';
 
 export type SortOption = 'relevance' | 'time';
 

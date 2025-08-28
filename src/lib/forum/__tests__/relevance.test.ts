@@ -1,8 +1,7 @@
-import { RelevanceCalculator } from './relevance';
-import { Post, Comment, Cell, User } from '@/types';
+import { RelevanceCalculator } from '../relevance';
+import { Post, Comment, User, UserVerificationStatus } from '@/types/forum';
 import { VoteMessage, MessageType } from '@/lib/waku/types';
 import { expect, describe, beforeEach, it } from 'vitest';
-import { UserVerificationStatus } from './types';
 
 describe('RelevanceCalculator', () => {
   let calculator: RelevanceCalculator;
