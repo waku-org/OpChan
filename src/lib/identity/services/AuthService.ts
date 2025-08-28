@@ -4,6 +4,7 @@ import { AppKit } from '@reown/appkit';
 import { OrdinalAPI } from '../ordinal';
 import { CryptoService, DelegationDuration } from './CryptoService';
 import { EVerificationStatus, User } from '@/types/forum';
+import { WalletInfo } from '../wallets/ReOwnWalletService';
 
 export interface AuthResult {
   success: boolean;
@@ -30,7 +31,7 @@ export interface AuthServiceInterface {
   clearStoredUser(): void;
   
   // Wallet info
-  getWalletInfo(): Promise<any>;
+  getWalletInfo(): Promise<WalletInfo>;
 }
 
 export class AuthService implements AuthServiceInterface {

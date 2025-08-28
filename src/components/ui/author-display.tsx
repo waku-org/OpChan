@@ -38,7 +38,7 @@ export function AuthorDisplay({
       setResolvedEns(userStatus?.ensName);
     }
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [address, isEthereumAddress, userStatus?.ensName]);
 
   // Lazily check Ordinal ownership for Bitcoin addresses if not provided
