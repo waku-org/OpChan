@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { User } from '@/types';
-import { AuthService, AuthResult } from '@/lib/identity/services/AuthService';
-import { OpchanMessage } from '@/types';
+import { User, OpchanMessage, EVerificationStatus } from '@/types/forum';
+import { AuthService, CryptoService, MessageService, DelegationDuration } from '@/lib/identity/services';
+import { AuthResult } from '@/lib/identity/services/AuthService';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
-import { DelegationDuration } from '@/lib/identity/signatures/key-delegation';
 
 export type VerificationStatus = 'unverified' | 'verified-none' | 'verified-basic' | 'verified-owner' | 'verifying';
 
@@ -47,8 +46,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const activeAccount = isBitcoinConnected ? bitcoinAccount : ethereumAccount;
   const address = activeAccount.address;
   
-  // Create ref for AuthService so it persists between renders
-  const authServiceRef = useRef(new AuthService());
+  // Create service instances that persist between renders
+  const cryptoServiceRef = useRef(new CryptoService());
+  const authServiceRef = useRef(new AuthService(cryptoServiceRef.current));
+  const messageServiceRef = useRef(new MessageService(authServiceRef.current, cryptoServiceRef.current));
   
   // Set AppKit instance and accounts in AuthService
   useEffect(() => {
@@ -76,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const newUser: User = {
           address,
           walletType: isBitcoinConnected ? 'bitcoin' : 'ethereum',
-          verificationStatus: 'verified-basic', // Connected wallets get basic verification by default
+          verificationStatus: EVerificationStatus.VERIFIED_BASIC, // Connected wallets get basic verification by default
           lastChecked: Date.now(),
         };
 
@@ -88,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 ...newUser,
                 ensOwnership: true,
                 ensName: walletInfo.ensName,
-                verificationStatus: 'verified-owner' as const,
+                verificationStatus: EVerificationStatus.VERIFIED_OWNER,
               };
               setCurrentUser(updatedUser);
               setVerificationStatus('verified-owner');
@@ -296,15 +297,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isDelegationValid = (): boolean => {
-    return authServiceRef.current.isDelegationValid();
+    return cryptoServiceRef.current.isDelegationValid();
   };
 
   const delegationTimeRemaining = (): number => {
-    return authServiceRef.current.getDelegationTimeRemaining();
+    return cryptoServiceRef.current.getDelegationTimeRemaining();
   };
 
   const clearDelegation = (): void => {
-    authServiceRef.current.clearDelegation();
+    cryptoServiceRef.current.clearDelegation();
     
     // Update the current user to remove delegation info
     if (currentUser) {
@@ -329,10 +330,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const messageSigning = {
     signMessage: async (message: OpchanMessage): Promise<OpchanMessage | null> => {
-      return authServiceRef.current.signMessage(message);
+      return cryptoServiceRef.current.signMessage(message);
     },
     verifyMessage: (message: OpchanMessage): boolean => {
-      return authServiceRef.current.verifyMessage(message);
+      return cryptoServiceRef.current.verifyMessage(message);
     }
   };
 

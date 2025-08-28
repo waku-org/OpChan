@@ -1,5 +1,5 @@
 import { UseAppKitAccountReturn } from '@reown/appkit/react';
-import { KeyDelegation, DelegationDuration } from '../signatures/key-delegation';
+import { CryptoService, DelegationDuration } from '../services/CryptoService';
 import { AppKit } from '@reown/appkit';
 import { getEnsName } from '@wagmi/core';
 import { ChainNamespace } from '@reown/appkit-common';
@@ -14,13 +14,13 @@ export interface WalletInfo {
 }
 
 export class ReOwnWalletService {
-  private keyDelegation: KeyDelegation;
+  private cryptoService: CryptoService;
   private bitcoinAccount?: UseAppKitAccountReturn;
   private ethereumAccount?: UseAppKitAccountReturn;
   private appKit?: AppKit;
 
   constructor() {
-    this.keyDelegation = new KeyDelegation();
+    this.cryptoService = new CryptoService();
   }
 
   /**
@@ -130,12 +130,12 @@ export class ReOwnWalletService {
       }
 
       // Generate a new browser keypair
-      const keypair = this.keyDelegation.generateKeypair();
+      const keypair = this.cryptoService.generateKeypair();
       
       // Create delegation message with expiry
-      const expiryHours = KeyDelegation.getDurationHours(duration);
+      const expiryHours = CryptoService.getDurationHours(duration);
       const expiryTimestamp = Date.now() + (expiryHours * 60 * 60 * 1000);
-      const delegationMessage = this.keyDelegation.createDelegationMessage(
+      const delegationMessage = this.cryptoService.createDelegationMessage(
         keypair.publicKey,
         account.address,
         expiryTimestamp
@@ -147,7 +147,7 @@ export class ReOwnWalletService {
       const signature = await this.signMessage(messageBytes, walletType);
 
       // Create and store the delegation
-      const delegationInfo = this.keyDelegation.createDelegation(
+      this.cryptoService.createDelegation(
         account.address,
         signature,
         keypair.publicKey,
@@ -155,8 +155,6 @@ export class ReOwnWalletService {
         duration,
         walletType
       );
-      
-      this.keyDelegation.storeDelegation(delegationInfo);
 
       return true;
     } catch (error) {
@@ -175,10 +173,10 @@ export class ReOwnWalletService {
     }
 
     // Check if we have a valid delegation for this specific wallet
-    if (this.keyDelegation.isDelegationValid(account.address, walletType)) {
+    if (this.cryptoService.isDelegationValid(account.address, walletType)) {
       // Use delegated key for signing
       const messageString = new TextDecoder().decode(messageBytes);
-      const signature = this.keyDelegation.signMessage(messageString);
+      const signature = this.cryptoService.signRawMessage(messageString);
       
       if (signature) {
         return signature;
@@ -200,9 +198,9 @@ export class ReOwnWalletService {
     const account = this.getActiveAccount(walletType);
     const currentAddress = account?.address;
     
-    const hasDelegation = this.keyDelegation.retrieveDelegation() !== null;
-    const isValid = this.keyDelegation.isDelegationValid(currentAddress, walletType);
-    const timeRemaining = this.keyDelegation.getDelegationTimeRemaining();
+    const hasDelegation = this.cryptoService.getBrowserPublicKey() !== null;
+    const isValid = this.cryptoService.isDelegationValid(currentAddress, walletType);
+    const timeRemaining = this.cryptoService.getDelegationTimeRemaining();
 
     return {
       hasDelegation,
@@ -215,7 +213,7 @@ export class ReOwnWalletService {
    * Clear delegation for the connected wallet
    */
   clearDelegation(walletType: 'bitcoin' | 'ethereum'): void {
-    this.keyDelegation.clearDelegation();
+    this.cryptoService.clearDelegation();
   }
 
   /**

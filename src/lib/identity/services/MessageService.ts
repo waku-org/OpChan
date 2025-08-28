@@ -1,5 +1,6 @@
-import { OpchanMessage } from '@/types';
+import { OpchanMessage } from '@/types/forum';
 import { AuthService } from './AuthService';
+import { CryptoService } from './CryptoService';
 import messageManager from '@/lib/waku';
 
 export interface MessageResult {
@@ -8,23 +9,30 @@ export interface MessageResult {
   error?: string;
 }
 
-export class MessageService {
-  private authService: AuthService;
+export interface MessageServiceInterface {
+  sendMessage(message: OpchanMessage): Promise<MessageResult>;
+  verifyMessage(message: OpchanMessage): boolean;
+}
 
-  constructor(authService: AuthService) {
+export class MessageService implements MessageServiceInterface {
+  private authService: AuthService;
+  private cryptoService: CryptoService;
+
+  constructor(authService: AuthService, cryptoService: CryptoService) {
     this.authService = authService;
+    this.cryptoService = cryptoService;
   }
 
   /**
    * Sign and send a message to the Waku network
    */
-  async signAndSendMessage(message: OpchanMessage): Promise<MessageResult> {
+  async sendMessage(message: OpchanMessage): Promise<MessageResult> {
     try {
-      const signedMessage = await this.authService.signMessage(message);
+      const signedMessage = this.cryptoService.signMessage(message);
       
       if (!signedMessage) {
         // Check if delegation exists but is expired
-        const isDelegationExpired = this.authService.isDelegationValid() === false;
+        const isDelegationExpired = this.cryptoService.isDelegationValid() === false;
         
         return {
           success: false,
@@ -66,6 +74,6 @@ export class MessageService {
    * Verify a message signature
    */
   verifyMessage(message: OpchanMessage): boolean {
-    return this.authService.verifyMessage(message);
+    return this.cryptoService.verifyMessage(message);
   }
-} 
+}

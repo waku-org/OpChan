@@ -1,5 +1,5 @@
 import { RelevanceCalculator } from '../relevance';
-import { Post, Comment, User, UserVerificationStatus } from '@/types/forum';
+import { Post, Comment, User, UserVerificationStatus, EVerificationStatus } from '@/types/forum';
 import { VoteMessage, MessageType } from '@/lib/waku/types';
 import { expect, describe, beforeEach, it } from 'vitest';
 
@@ -58,7 +58,7 @@ describe('RelevanceCalculator', () => {
       const verifiedUser: User = {
         address: 'user1',
         walletType: 'ethereum',
-        verificationStatus: 'verified-owner',
+        verificationStatus: EVerificationStatus.VERIFIED_OWNER,
         ensOwnership: true,
         ensName: 'test.eth',
         lastChecked: Date.now()
@@ -72,7 +72,7 @@ describe('RelevanceCalculator', () => {
       const verifiedUser: User = {
         address: 'user3',
         walletType: 'bitcoin',
-        verificationStatus: 'verified-owner',
+        verificationStatus: EVerificationStatus.VERIFIED_OWNER,
         ordinalOwnership: true,
         lastChecked: Date.now()
       };
@@ -85,7 +85,7 @@ describe('RelevanceCalculator', () => {
       const unverifiedUser: User = {
         address: 'user2',
         walletType: 'ethereum',
-        verificationStatus: 'unverified',
+        verificationStatus: EVerificationStatus.UNVERIFIED,
         ensOwnership: false,
         lastChecked: Date.now()
       };
@@ -184,7 +184,7 @@ describe('RelevanceCalculator', () => {
         {
           address: 'user1',
           walletType: 'ethereum',
-          verificationStatus: 'verified-owner',
+          verificationStatus: EVerificationStatus.VERIFIED_OWNER,
           ensOwnership: true,
           ensName: 'test.eth',
           lastChecked: Date.now()
@@ -192,7 +192,7 @@ describe('RelevanceCalculator', () => {
         {
           address: 'user2',
           walletType: 'bitcoin',
-          verificationStatus: 'unverified',
+          verificationStatus: EVerificationStatus.UNVERIFIED,
           ordinalOwnership: false,
           lastChecked: Date.now()
         }

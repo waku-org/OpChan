@@ -14,13 +14,21 @@ export interface User {
   ensAvatar?: string;
   ensOwnership?: boolean;
   
-  verificationStatus: 'unverified' | 'verified-none' | 'verified-basic' | 'verified-owner' | 'verifying';
+  verificationStatus: EVerificationStatus;
   
   signature?: string;
   lastChecked?: number;
   browserPubKey?: string; // Browser-generated public key for key delegation
   delegationSignature?: string; // Signature from Bitcoin/Ethereum wallet for delegation
   delegationExpiry?: number; // When the delegation expires
+}
+
+export enum EVerificationStatus {
+  UNVERIFIED = 'unverified',
+  VERIFIED_NONE = 'verified-none',
+  VERIFIED_BASIC = 'verified-basic',
+  VERIFIED_OWNER = 'verified-owner',
+  VERIFYING = 'verifying',
 }
 
 export interface Cell {

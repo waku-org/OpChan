@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from './button';
 import { useAuth } from '@/contexts/useAuth';
 import { CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
-import { DelegationDuration } from '@/lib/identity/signatures/key-delegation';
+import { DelegationDuration } from '@/lib/identity/services/CryptoService';
 
 interface DelegationStepProps {
   onComplete: () => void;

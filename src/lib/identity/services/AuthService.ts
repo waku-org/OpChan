@@ -1,11 +1,9 @@
-import { User } from '@/types';
 import { WalletService } from '../wallets/index';
 import { UseAppKitAccountReturn } from '@reown/appkit/react';
 import { AppKit } from '@reown/appkit';
 import { OrdinalAPI } from '../ordinal';
-import { MessageSigning } from '../signatures/message-signing';
-import { KeyDelegation, DelegationDuration } from '../signatures/key-delegation';
-import { OpchanMessage } from '@/types';
+import { CryptoService, DelegationDuration } from './CryptoService';
+import { EVerificationStatus, User } from '@/types/forum';
 
 export interface AuthResult {
   success: boolean;
@@ -13,17 +11,37 @@ export interface AuthResult {
   error?: string;
 }
 
-export class AuthService {
+export interface AuthServiceInterface {
+  // Wallet operations
+  setAccounts(bitcoinAccount: UseAppKitAccountReturn, ethereumAccount: UseAppKitAccountReturn): void;
+  setAppKit(appKit: AppKit): void;
+  connectWallet(): Promise<AuthResult>;
+  disconnectWallet(): Promise<void>;
+  
+  // Verification
+  verifyOwnership(user: User): Promise<AuthResult>;
+  
+  // Delegation setup
+  delegateKey(user: User, duration?: DelegationDuration): Promise<AuthResult>;
+  
+  // User persistence
+  loadStoredUser(): User | null;
+  saveUser(user: User): void;
+  clearStoredUser(): void;
+  
+  // Wallet info
+  getWalletInfo(): Promise<any>;
+}
+
+export class AuthService implements AuthServiceInterface {
   private walletService: WalletService;
   private ordinalApi: OrdinalAPI;
-  private messageSigning: MessageSigning;
-  private keyDelegation: KeyDelegation;
+  private cryptoService: CryptoService;
 
-  constructor() {
+  constructor(cryptoService: CryptoService) {
     this.walletService = new WalletService();
     this.ordinalApi = new OrdinalAPI();
-    this.keyDelegation = new KeyDelegation();
-    this.messageSigning = new MessageSigning(this.keyDelegation);
+    this.cryptoService = cryptoService;
   }
 
   /**
@@ -98,7 +116,7 @@ export class AuthService {
       const user: User = {
         address: address,
         walletType: walletType,
-        verificationStatus: 'unverified',
+        verificationStatus: EVerificationStatus.UNVERIFIED,
         lastChecked: Date.now(),
       };
 
@@ -132,19 +150,12 @@ export class AuthService {
    */
   async disconnectWallet(): Promise<void> {
     // Clear any existing delegations when disconnecting
-    this.keyDelegation.clearDelegation();
+    this.cryptoService.clearDelegation();
     this.walletService.clearDelegation('bitcoin');
     this.walletService.clearDelegation('ethereum');
     
     // Clear stored user data
     this.clearStoredUser();
-  }
-
-  /**
-   * Clear delegation for current wallet
-   */
-  clearDelegation(): void {
-    this.keyDelegation.clearDelegation();
   }
 
   /**
@@ -182,7 +193,7 @@ export class AuthService {
     const updatedUser = {
       ...user,
       ordinalOwnership: hasOperators,
-      verificationStatus: hasOperators ? 'verified-owner' : 'verified-basic',
+      verificationStatus: hasOperators ? EVerificationStatus.VERIFIED_OWNER : EVerificationStatus.VERIFIED_BASIC,
       lastChecked: Date.now(),
     };
 
@@ -207,7 +218,7 @@ export class AuthService {
         ...user,
         ensOwnership: hasENS,
         ensName: ensName,
-        verificationStatus: hasENS ? 'verified-owner' : 'verified-basic',
+        verificationStatus: hasENS ? EVerificationStatus.VERIFIED_OWNER : EVerificationStatus.VERIFIED_BASIC,
         lastChecked: Date.now(),
       };
 
@@ -223,7 +234,7 @@ export class AuthService {
         ...user,
         ensOwnership: false,
         ensName: undefined,
-        verificationStatus: 'verified-basic',
+        verificationStatus: EVerificationStatus.VERIFIED_BASIC,
         lastChecked: Date.now(),
       };
 
@@ -262,7 +273,7 @@ export class AuthService {
       const delegationStatus = this.walletService.getDelegationStatus(walletType);
       
       // Get the actual browser public key from the delegation
-      const browserPublicKey = this.keyDelegation.getBrowserPublicKey();
+      const browserPublicKey = this.cryptoService.getBrowserPublicKey();
       
       const updatedUser = {
         ...user,
@@ -281,44 +292,6 @@ export class AuthService {
         error: error instanceof Error ? error.message : 'Failed to delegate key'
       };
     }
-  }
-
-  /**
-   * Sign a message using delegated key
-   */
-  async signMessage(message: OpchanMessage): Promise<OpchanMessage | null> {
-    return this.messageSigning.signMessage(message);
-  }
-
-  /**
-   * Verify a message signature
-   */
-  verifyMessage(message: OpchanMessage): boolean {
-    return this.messageSigning.verifyMessage(message);
-  }
-
-  /**
-   * Check if delegation is valid
-   */
-  isDelegationValid(): boolean {
-    // Only check the currently connected wallet type
-    const activeWalletType = this.getActiveWalletType();
-    if (!activeWalletType) return false;
-    
-    const status = this.walletService.getDelegationStatus(activeWalletType);
-    return status.isValid;
-  }
-
-  /**
-   * Get delegation time remaining
-   */
-  getDelegationTimeRemaining(): number {
-    // Only check the currently connected wallet type
-    const activeWalletType = this.getActiveWalletType();
-    if (!activeWalletType) return 0;
-    
-    const status = this.walletService.getDelegationStatus(activeWalletType);
-    return status.timeRemaining || 0;
   }
 
   /**

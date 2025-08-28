@@ -9,8 +9,7 @@ import {
 } from '@/lib/waku/types';
 import { Cell, Comment, Post, User } from '@/types/forum';
 import { transformCell, transformComment, transformPost } from './transformers';
-import { MessageService } from '@/lib/identity/services/MessageService';
-import { AuthService } from '@/lib/identity/services/AuthService';
+import { MessageService, AuthService, CryptoService } from '@/lib/identity/services';
 
 type ToastFunction = (props: {
   title: string;
@@ -70,8 +69,9 @@ export const createPost = async (
       author: currentUser.address,
     };
 
-    const messageService = new MessageService(authService!);
-    const result = await messageService.signAndSendMessage(postMessage);
+    const cryptoService = new CryptoService();
+    const messageService = new MessageService(authService!, cryptoService);
+    const result = await messageService.sendMessage(postMessage);
     if (!result.success) {
       toast({
         title: 'Post Failed',
@@ -141,8 +141,9 @@ export const createComment = async (
       author: currentUser.address,
     };
 
-    const messageService = new MessageService(authService!);
-    const result = await messageService.signAndSendMessage(commentMessage);
+    const cryptoService = new CryptoService();
+    const messageService = new MessageService(authService!, cryptoService);
+    const result = await messageService.sendMessage(commentMessage);
     if (!result.success) {
       toast({
         title: 'Comment Failed',
@@ -199,8 +200,9 @@ export const createCell = async (
       author: currentUser.address,
     };
 
-    const messageService = new MessageService(authService!);
-    const result = await messageService.signAndSendMessage(cellMessage);
+    const cryptoService = new CryptoService();
+    const messageService = new MessageService(authService!, cryptoService);
+    const result = await messageService.sendMessage(cellMessage);
     if (!result.success) {
       toast({
         title: 'Cell Failed',
@@ -275,8 +277,9 @@ export const vote = async (
       author: currentUser.address,
     };
 
-    const messageService = new MessageService(authService!);
-    const result = await messageService.signAndSendMessage(voteMessage);
+    const cryptoService = new CryptoService();
+    const messageService = new MessageService(authService!, cryptoService);
+    const result = await messageService.sendMessage(voteMessage);
     if (!result.success) {
       toast({
         title: 'Vote Failed',
@@ -340,8 +343,9 @@ export const moderatePost = async (
       timestamp: Date.now(),
       author: currentUser.address,
     };
-    const messageService = new MessageService(authService!);
-    const result = await messageService.signAndSendMessage(modMsg);
+    const cryptoService = new CryptoService();
+    const messageService = new MessageService(authService!, cryptoService);
+    const result = await messageService.sendMessage(modMsg);
     if (!result.success) {
       toast({ title: 'Moderation Failed', description: result.error || 'Failed to moderate post. Please try again.', variant: 'destructive' });
       return false;
@@ -389,8 +393,9 @@ export const moderateComment = async (
       timestamp: Date.now(),
       author: currentUser.address,
     };
-    const messageService = new MessageService(authService!);
-    const result = await messageService.signAndSendMessage(modMsg);
+    const cryptoService = new CryptoService();
+    const messageService = new MessageService(authService!, cryptoService);
+    const result = await messageService.sendMessage(modMsg);
     if (!result.success) {
       toast({ title: 'Moderation Failed', description: result.error || 'Failed to moderate comment. Please try again.', variant: 'destructive' });
       return false;
@@ -437,8 +442,9 @@ export const moderateUser = async (
     signature: '',
     browserPubKey: currentUser.browserPubKey,
   };
-  const messageService = new MessageService(authService!);
-  const result = await messageService.signAndSendMessage(modMsg);
+  const cryptoService = new CryptoService();
+  const messageService = new MessageService(authService!, cryptoService);
+  const result = await messageService.sendMessage(modMsg);
   if (!result.success) {
     toast({ title: 'Moderation Failed', description: result.error || 'Failed to moderate user. Please try again.', variant: 'destructive' });
     return false;
