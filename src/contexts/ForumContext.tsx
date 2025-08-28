@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { Cell, Post, Comment, OpchanMessage, User } from '@/types';
+import { Cell, Post, Comment, OpchanMessage, User, EVerificationStatus } from '@/types/forum';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/useAuth';
 import { 
@@ -19,8 +19,8 @@ import {
 import messageManager from '@/lib/waku';
 import { getDataFromCache } from '@/lib/forum/transformers';
 import { RelevanceCalculator } from '@/lib/forum/relevance';
-import { UserVerificationStatus } from '@/lib/forum/types';
-import { AuthService } from '@/lib/identity/services/AuthService';
+import { UserVerificationStatus } from '@/types/forum';
+import { CryptoService, AuthService } from '@/lib/identity/services';
 import { getEnsName } from '@wagmi/core';
 import { config } from '@/lib/identity/wallets/appkit';
 
@@ -90,13 +90,14 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const { currentUser, isAuthenticated } = useAuth();
   
-  const authService = useMemo(() => new AuthService(), []);
+  const cryptoService = useMemo(() => new CryptoService(), []);
+  const authService = useMemo(() => new AuthService(cryptoService), [cryptoService]);
   
   // Transform message cache data to the expected types
   const updateStateFromCache = useCallback(() => {
-    // Use the verifyMessage function from authService if available
+    // Use the verifyMessage function from cryptoService if available
     const verifyFn = isAuthenticated ? 
-      (message: OpchanMessage) => authService.verifyMessage(message) : 
+      (message: OpchanMessage) => cryptoService.verifyMessage(message) : 
       undefined;
     
     // Build user verification status for relevance calculation
@@ -141,7 +142,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         allUsers.push({
           address,
           walletType: address.startsWith('0x') ? 'ethereum' : 'bitcoin',
-          verificationStatus: 'unverified'
+          verificationStatus: EVerificationStatus.UNVERIFIED
         });
       }
     });
@@ -189,7 +190,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       setComments(transformed.comments);
       setUserVerificationStatus(enrichedStatus);
     })();
-  }, [authService, isAuthenticated, currentUser]);
+  }, [cryptoService, isAuthenticated, currentUser]);
   
   const handleRefreshData = async () => {
     setIsRefreshing(true);
