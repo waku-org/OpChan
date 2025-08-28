@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageSquare, MessageCircle, ArrowUp, ArrowDown, Clock, RefreshCw, Eye } from 'lucide-react';
+import { ArrowLeft, MessageSquare, MessageCircle, ArrowUp, ArrowDown, RefreshCw, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { CypherImage } from './ui/CypherImage';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,6 @@ const PostList = () => {
   const { 
     getCellById, 
     getPostsByCell, 
-    getCommentsByPost,
     createPost, 
     isInitialLoading, 
     isPostingPost, 

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { useForum } from '@/contexts/useForum';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {  LogOut, Terminal, Wifi, WifiOff, AlertTriangle, CheckCircle, Key, RefreshCw, CircleSlash, Home, Grid3X3, Plus } from 'lucide-react';
+import {  LogOut, Terminal, Wifi, WifiOff, AlertTriangle, CheckCircle, Key, RefreshCw, CircleSlash, Home, Grid3X3} from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
@@ -13,12 +13,8 @@ import { WalletWizard } from '@/components/ui/wallet-wizard';
 const Header = () => {
   const { 
     currentUser, 
-    isAuthenticated, 
     verificationStatus, 
-    verifyOwnership, 
-    delegateKey, 
     isDelegationValid,
-    delegationTimeRemaining
   } = useAuth();
   const { isNetworkConnected, isRefreshing } = useForum();
   const location = useLocation();

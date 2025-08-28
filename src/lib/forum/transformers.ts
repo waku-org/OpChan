@@ -1,7 +1,8 @@
-import { Cell, Post, Comment, OpchanMessage, User } from '@/types';
-import { CellMessage, CommentMessage, MessageType, PostMessage, VoteMessage } from '@/lib/waku/types';
+import { Cell, Post, Comment, OpchanMessage } from '@/types/forum';
+import { CellMessage, CommentMessage, PostMessage, VoteMessage } from '@/lib/waku/types';
 import messageManager from '@/lib/waku';
-import { RelevanceCalculator, UserVerificationStatus } from './relevance';
+import { RelevanceCalculator } from './relevance';
+import { UserVerificationStatus } from '@/types/forum';
 
 type VerifyFunction = (message: OpchanMessage) => boolean;
 

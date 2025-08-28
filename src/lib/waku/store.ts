@@ -1,6 +1,5 @@
 import { IDecodedMessage, LightNode } from "@waku/sdk";
 import {  decodeMessage, decoders} from "./codec";
-import { CONTENT_TOPICS } from "./constants";
 import { CellMessage, PostMessage, CommentMessage, VoteMessage } from "./types";
 
 class StoreManager {

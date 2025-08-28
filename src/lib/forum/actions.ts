@@ -9,7 +9,7 @@ import {
 } from '@/lib/waku/types';
 import { Cell, Comment, Post, User } from '@/types/forum';
 import { transformCell, transformComment, transformPost } from './transformers';
-import { MessageService, AuthService, CryptoService } from '@/lib/identity/services';
+import { MessageService, AuthService, CryptoService } from '@/lib/services';
 
 type ToastFunction = (props: {
   title: string;

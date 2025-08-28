@@ -34,7 +34,7 @@ interface CommentFeedItem extends FeedItemBase {
 type FeedItem = PostFeedItem | CommentFeedItem;
 
 const ActivityFeed: React.FC = () => {
-  const { posts, comments, cells, getCellById, isInitialLoading, userVerificationStatus } = useForum();
+  const { posts, comments, getCellById, isInitialLoading, userVerificationStatus } = useForum();
 
   const combinedFeed: FeedItem[] = [
     ...posts.map((post): PostFeedItem => ({

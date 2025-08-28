@@ -151,7 +151,6 @@ export class RelevanceCalculator {
   calculateCellScore(
     cell: Cell,
     posts: Post[],
-    userVerificationStatus: UserVerificationStatus
   ): { score: number; details: RelevanceScoreDetails } {
     // Apply base score
     let score = this.applyBaseScore('CELL');

@@ -28,7 +28,7 @@ export function WalletWizard({
 }: WalletWizardProps) {
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1);
   const [isLoading, setIsLoading] = React.useState(false);
-  const { currentUser, isAuthenticated, verificationStatus, isDelegationValid } = useAuth();
+  const {  isAuthenticated, verificationStatus, isDelegationValid } = useAuth();
   const hasInitialized = React.useRef(false);
 
   // Reset wizard when opened and determine starting step

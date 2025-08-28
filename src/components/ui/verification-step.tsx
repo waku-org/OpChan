@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Bitcoin, Coins, Shield, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/useAuth";
 import { useAppKitAccount } from "@reown/appkit/react";
@@ -31,7 +30,7 @@ export function VerificationStep({
   
   const isBitcoinConnected = bitcoinAccount.isConnected;
   const isEthereumConnected = ethereumAccount.isConnected;
-  const walletType = isBitcoinConnected ? 'bitcoin' : 'ethereum';
+  const walletType = isBitcoinConnected ? 'bitcoin' : isEthereumConnected ?  'ethereum' : undefined;
   
   const [verificationResult, setVerificationResult] = React.useState<{
     success: boolean;
@@ -69,7 +68,7 @@ export function VerificationStep({
     } catch (error) {
       setVerificationResult({
         success: false,
-        message: "Verification failed. Please try again."
+        message: `Verification failed. Please try again: ${error}`
       });
     } finally {
       setIsLoading(false);

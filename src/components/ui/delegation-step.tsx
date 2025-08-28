@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from './button';
 import { useAuth } from '@/contexts/useAuth';
 import { CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
-import { DelegationDuration } from '@/lib/identity/services/CryptoService';
+import { DelegationDuration } from '@/lib/services/CryptoService';
 
 interface DelegationStepProps {
   onComplete: () => void;
@@ -61,7 +61,7 @@ export function DelegationStep({
     } catch (error) {
       setDelegationResult({
         success: false,
-        message: "Delegation failed. Please try again."
+        message: `Delegation failed. Please try again: ${error}`
       });
     } finally {
       setIsLoading(false);
@@ -70,10 +70,6 @@ export function DelegationStep({
 
   const handleComplete = () => {
     onComplete();
-  };
-
-  const handleRefresh = () => {
-    window.location.reload();
   };
 
   // Show delegation result

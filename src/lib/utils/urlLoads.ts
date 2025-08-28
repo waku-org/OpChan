@@ -14,7 +14,7 @@ export async function urlLoads(url: string, timeoutMs: number = 5000): Promise<b
     
     clearTimeout(timeoutId);
     return response.ok;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

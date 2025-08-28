@@ -1,5 +1,5 @@
 import { UseAppKitAccountReturn } from '@reown/appkit/react';
-import { CryptoService, DelegationDuration } from '../services/CryptoService';
+import { CryptoService, DelegationDuration } from '../../services/CryptoService';
 import { AppKit } from '@reown/appkit';
 import { getEnsName } from '@wagmi/core';
 import { ChainNamespace } from '@reown/appkit-common';
@@ -212,7 +212,7 @@ export class ReOwnWalletService {
   /**
    * Clear delegation for the connected wallet
    */
-  clearDelegation(walletType: 'bitcoin' | 'ethereum'): void {
+  clearDelegation(): void {
     this.cryptoService.clearDelegation();
   }
 
@@ -222,7 +222,7 @@ export class ReOwnWalletService {
   async getWalletInfo(): Promise<WalletInfo | null> {
     if (this.bitcoinAccount?.isConnected) {
       return {
-        address: this.bitcoinAccount.address,
+        address: this.bitcoinAccount.address as string,
         walletType: 'bitcoin',
         isConnected: true
       };
@@ -240,7 +240,7 @@ export class ReOwnWalletService {
       }
 
       return {
-        address: this.ethereumAccount.address,
+        address: this.ethereumAccount.address as string,
         walletType: 'ethereum',
         ensName,
         isConnected: true

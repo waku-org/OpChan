@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Cell, Post, Comment, OpchanMessage, User, EVerificationStatus } from '@/types/forum';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/useAuth';
@@ -20,7 +20,7 @@ import messageManager from '@/lib/waku';
 import { getDataFromCache } from '@/lib/forum/transformers';
 import { RelevanceCalculator } from '@/lib/forum/relevance';
 import { UserVerificationStatus } from '@/types/forum';
-import { CryptoService, AuthService } from '@/lib/identity/services';
+import { CryptoService, AuthService } from '@/lib/services';
 import { getEnsName } from '@wagmi/core';
 import { config } from '@/lib/identity/wallets/appkit';
 

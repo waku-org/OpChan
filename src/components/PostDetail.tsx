@@ -4,11 +4,10 @@ import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send, RefreshCw, Eye, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send, Eye, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Comment } from '@/types';
+import { Comment } from '@/types/forum';
 import { CypherImage } from './ui/CypherImage';
-import { Badge } from '@/components/ui/badge';
 import { RelevanceIndicator } from './ui/relevance-indicator';
 import { AuthorDisplay } from './ui/author-display';
 
@@ -17,7 +16,6 @@ const PostDetail = () => {
   const navigate = useNavigate();
   const { 
     posts, 
-    comments, 
     getCommentsByPost, 
     createComment, 
     votePost, 
@@ -26,13 +24,11 @@ const PostDetail = () => {
     isInitialLoading, 
     isPostingComment,
     isVoting,
-    isRefreshing,
-    refreshData,
     moderateComment,
     moderateUser,
     userVerificationStatus
   } = useForum();
-  const { currentUser, isAuthenticated, verificationStatus } = useAuth();
+  const { currentUser,  verificationStatus } = useAuth();
   const [newComment, setNewComment] = useState('');
   
   if (!postId) return <div>Invalid post ID</div>;

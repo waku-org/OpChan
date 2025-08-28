@@ -1,4 +1,4 @@
-import { NetworkConfig, ShardInfo } from "@waku/sdk";
+import { NetworkConfig } from "@waku/sdk";
 import { MessageType } from "./types";
 
 /**

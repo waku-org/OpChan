@@ -1,13 +1,12 @@
 //TODO: perhaps store all messages in an indexed DB? (helpful when Waku is down)
 // with a `isPublished` flag to indicate if the message has been sent to the network
 
-import { createDecoder, createLightNode, HealthStatus, HealthStatusChangeEvents, LightNode } from "@waku/sdk";
-import { BOOTSTRAP_NODES } from "./constants";
+import  { createLightNode, LightNode } from "@waku/sdk";
 import StoreManager from "./store";
 import { CommentCache, MessageType, VoteCache, ModerateMessage } from "./types";
 import { PostCache } from "./types";
 import { CellCache } from "./types";
-import { OpchanMessage } from "@/types";
+import { OpchanMessage } from "@/types/forum";
 import { EphemeralProtocolsManager } from "./lightpush_filter";
 import { NETWORK_CONFIG } from "./constants";
 

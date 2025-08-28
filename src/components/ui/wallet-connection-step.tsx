@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bitcoin, Coins, Loader2 } from "lucide-react";
@@ -7,7 +6,6 @@ import {
   useAppKitAccount, 
   useAppKitState
 } from "@reown/appkit/react";
-import { useAuth } from "@/contexts/useAuth";
 
 interface WalletConnectionStepProps {
   onComplete: () => void;
@@ -22,7 +20,6 @@ export function WalletConnectionStep({
 }: WalletConnectionStepProps) {
   const { initialized } = useAppKitState();
   const appKit = useAppKit();
-  const { isAuthenticated } = useAuth();
   
   // Get account info for different chains
   const bitcoinAccount = useAppKitAccount({ namespace: "bip122" });

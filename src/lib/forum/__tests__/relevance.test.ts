@@ -146,7 +146,6 @@ describe('RelevanceCalculator', () => {
   describe('timeDecay', () => {
     it('should apply time decay to older posts', () => {
       const now = Date.now();
-      const oneDayAgo = now - (24 * 60 * 60 * 1000);
       const oneWeekAgo = now - (7 * 24 * 60 * 60 * 1000);
 
       const recentPost: Post = {
