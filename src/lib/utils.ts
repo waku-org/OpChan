@@ -19,3 +19,7 @@ export function hexToBytes(hex: string): Uint8Array {
   }
   return bytes;
 }
+
+export function generateStringId(): string {
+  return crypto.randomUUID();
+}

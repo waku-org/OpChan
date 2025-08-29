@@ -1,6 +1,6 @@
 import { IDecodedMessage, LightNode } from "@waku/sdk";
 import {  decodeMessage, decoders} from "./codec";
-import { CellMessage, PostMessage, CommentMessage, VoteMessage } from "./types";
+import { OpchanMessage } from "@/types/forum";
 
 class StoreManager {
     private node: LightNode;
@@ -10,7 +10,7 @@ class StoreManager {
     }
 
     public async queryStore() {
-        const result: (CellMessage | PostMessage | CommentMessage | VoteMessage)[] = [];
+        const result: OpchanMessage[] = [];
 
         try {
             // Add query options to prevent database overload

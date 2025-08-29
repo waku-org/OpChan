@@ -14,7 +14,7 @@ export enum MessageType {
  */
 export interface BaseMessage {
   type: MessageType;
-  timestamp: number;
+  timestamp: number | Date;
   author: string;
   signature?: string; // Message signature for verification
   browserPubKey?: string; // Public key that signed the message

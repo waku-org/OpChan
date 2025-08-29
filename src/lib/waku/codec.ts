@@ -62,7 +62,7 @@ export function encodeMessage(message: OpchanMessage): Uint8Array {
 /**
  * Decode a message from a Uint8Array based on its type
  */
-export function decodeMessage(payload: Uint8Array): CellMessage | PostMessage | CommentMessage | VoteMessage {
+export function decodeMessage(payload: Uint8Array): OpchanMessage {
   const messageJson = new TextDecoder().decode(payload);  
   const message = JSON.parse(messageJson) as OpchanMessage;
   
