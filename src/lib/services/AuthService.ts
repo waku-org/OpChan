@@ -1,10 +1,10 @@
-import { WalletService } from '../wallets/index';
+import { WalletService } from '../identity/wallets/index';
 import { UseAppKitAccountReturn } from '@reown/appkit/react';
 import { AppKit } from '@reown/appkit';
-import { OrdinalAPI } from '../ordinal';
+import { OrdinalAPI } from '../identity/ordinal';
 import { CryptoService, DelegationDuration } from './CryptoService';
 import { EVerificationStatus, User } from '@/types/forum';
-import { WalletInfo } from '../wallets/ReOwnWalletService';
+import { WalletInfo } from '../identity/wallets/ReOwnWalletService';
 
 export interface AuthResult {
   success: boolean;
@@ -31,7 +31,7 @@ export interface AuthServiceInterface {
   clearStoredUser(): void;
   
   // Wallet info
-  getWalletInfo(): Promise<WalletInfo>;
+  getWalletInfo(): Promise<WalletInfo | null>;
 }
 
 export class AuthService implements AuthServiceInterface {
@@ -152,8 +152,6 @@ export class AuthService implements AuthServiceInterface {
   async disconnectWallet(): Promise<void> {
     // Clear any existing delegations when disconnecting
     this.cryptoService.clearDelegation();
-    this.walletService.clearDelegation('bitcoin');
-    this.walletService.clearDelegation('ethereum');
     
     // Clear stored user data
     this.clearStoredUser();
@@ -298,7 +296,7 @@ export class AuthService implements AuthServiceInterface {
   /**
    * Get current wallet info
    */
-  async getWalletInfo() {
+  async getWalletInfo(): Promise<WalletInfo | null> {
     // Use the wallet service to get detailed wallet info including ENS
     return await this.walletService.getWalletInfo();
   }

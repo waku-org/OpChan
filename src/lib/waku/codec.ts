@@ -4,50 +4,38 @@ import {  CellMessage, PostMessage, CommentMessage, VoteMessage } from './types'
 import { CONTENT_TOPICS, NETWORK_CONFIG } from './constants';
 import { OpchanMessage } from '@/types/forum';
 
+// Create the sharded pubsub topic
+const PUBSUB_TOPIC = `/waku/2/rs/${NETWORK_CONFIG.clusterId}/0`;
+
 export const encoders = {
     [MessageType.CELL]: createEncoder({
-        contentTopic: CONTENT_TOPICS['cell'],
-        pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
+        contentTopic: CONTENT_TOPICS[MessageType.CELL],
+        routingInfo: { clusterId: NETWORK_CONFIG.clusterId, shardId: 0, pubsubTopic: PUBSUB_TOPIC }
     }),
     [MessageType.POST]: createEncoder({
-      contentTopic: CONTENT_TOPICS['post'], 
-      pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
+      contentTopic: CONTENT_TOPICS[MessageType.POST],
+      routingInfo: { clusterId: NETWORK_CONFIG.clusterId, shardId: 0, pubsubTopic: PUBSUB_TOPIC }
     }),
     [MessageType.COMMENT]: createEncoder({
-      contentTopic: CONTENT_TOPICS['comment'],
-      pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
+      contentTopic: CONTENT_TOPICS[MessageType.COMMENT],
+      routingInfo: { clusterId: NETWORK_CONFIG.clusterId, shardId: 0, pubsubTopic: PUBSUB_TOPIC }
     }),
     [MessageType.VOTE]: createEncoder({
-      contentTopic: CONTENT_TOPICS['vote'],
-      pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
+      contentTopic: CONTENT_TOPICS[MessageType.VOTE],
+      routingInfo: { clusterId: NETWORK_CONFIG.clusterId, shardId: 0, pubsubTopic: PUBSUB_TOPIC }
     }),
     [MessageType.MODERATE]: createEncoder({
-      contentTopic: CONTENT_TOPICS['moderate'],
-      pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
+      contentTopic: CONTENT_TOPICS[MessageType.MODERATE],
+      routingInfo: { clusterId: NETWORK_CONFIG.clusterId, shardId: 0, pubsubTopic: PUBSUB_TOPIC }
     })
 }
 
 export const decoders = {
-    [MessageType.CELL]: createDecoder(CONTENT_TOPICS['cell'], {
-        clusterId: NETWORK_CONFIG.clusterId,
-        shard: 0
-    }),
-    [MessageType.POST]: createDecoder(CONTENT_TOPICS['post'], {
-        clusterId: NETWORK_CONFIG.clusterId,
-        shard: 0
-    }),
-    [MessageType.COMMENT]: createDecoder(CONTENT_TOPICS['comment'], {
-        clusterId: NETWORK_CONFIG.clusterId,
-        shard: 0
-    }),
-    [MessageType.VOTE]: createDecoder(CONTENT_TOPICS['vote'], {
-        clusterId: NETWORK_CONFIG.clusterId,
-        shard: 0
-    }),
-    [MessageType.MODERATE]: createDecoder(CONTENT_TOPICS['moderate'], {
-        clusterId: NETWORK_CONFIG.clusterId,
-        shard: 0
-    })
+    [MessageType.CELL]: createDecoder(CONTENT_TOPICS[MessageType.CELL], { clusterId: NETWORK_CONFIG.clusterId, shardId: 0, pubsubTopic: PUBSUB_TOPIC }),
+    [MessageType.POST]: createDecoder(CONTENT_TOPICS[MessageType.POST], { clusterId: NETWORK_CONFIG.clusterId, shardId: 0, pubsubTopic: PUBSUB_TOPIC }),
+    [MessageType.COMMENT]: createDecoder(CONTENT_TOPICS[MessageType.COMMENT], { clusterId: NETWORK_CONFIG.clusterId, shardId: 0, pubsubTopic: PUBSUB_TOPIC }),
+    [MessageType.VOTE]: createDecoder(CONTENT_TOPICS[MessageType.VOTE], { clusterId: NETWORK_CONFIG.clusterId, shardId: 0, pubsubTopic: PUBSUB_TOPIC }),
+    [MessageType.MODERATE]: createDecoder(CONTENT_TOPICS[MessageType.MODERATE], { clusterId: NETWORK_CONFIG.clusterId, shardId: 0, pubsubTopic: PUBSUB_TOPIC })
 }
 
 /**

@@ -1,4 +1,5 @@
 import messageManager from '@/lib/waku';
+import { HealthStatus } from '@waku/sdk';
 
 export type ToastFunction = (props: {
   title: string;
@@ -44,8 +45,7 @@ export const initializeNetwork = async (
       toast({ title: 'Connection timeout', description: 'Could not connect to any peers. Some features may be unavailable.', variant: 'destructive' });
       console.warn('Timeout connecting to peer:', err);
     }
-    await messageManager.queryStore();
-    await messageManager.subscribeToMessages();
+    // await messageManager.queryStore();
     updateStateFromCache();
   } catch (err) {
     console.error('Error loading forum data:', err);
@@ -81,10 +81,13 @@ export const monitorNetworkHealth = (
   toast: ToastFunction,
 ): { unsubscribe: () => void } => {
   setIsNetworkConnected(messageManager.isReady);
-  const unsubscribe = messageManager.onHealthChange((isReady) => {
+  const unsubscribe = messageManager.onHealthChange((isReady, health) => {
     setIsNetworkConnected(isReady);
-    if (isReady) {
-      toast({ title: 'Network connected', description: 'Connected to the Waku network' });
+    
+    if (health === HealthStatus.SufficientlyHealthy) {
+      toast({ title: 'Network connected', description: 'Connected to the Waku network with excellent connectivity' });
+    } else if (health === HealthStatus.MinimallyHealthy) {
+      toast({ title: 'Network connected', description: 'Connected to Waku network. Some features may be limited.', variant: 'default' });
     } else {
       toast({ title: 'Network disconnected', description: 'Lost connection to the Waku network', variant: 'destructive' });
     }

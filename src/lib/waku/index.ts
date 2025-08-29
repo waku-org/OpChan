@@ -1,25 +1,24 @@
 //TODO: perhaps store all messages in an indexed DB? (helpful when Waku is down)
 // with a `isPublished` flag to indicate if the message has been sent to the network
 
-import  { createLightNode, LightNode } from "@waku/sdk";
+import  { createLightNode, LightNode, WakuEvent, HealthStatus } from "@waku/sdk";
 import StoreManager from "./store";
 import { CommentCache, MessageType, VoteCache, ModerateMessage } from "./types";
 import { PostCache } from "./types";
 import { CellCache } from "./types";
 import { OpchanMessage } from "@/types/forum";
-import { EphemeralProtocolsManager } from "./lightpush_filter";
 import { NETWORK_CONFIG } from "./constants";
+import { ReliableMessageManager } from "./reliable_channel";
 
-export type HealthChangeCallback = (isReady: boolean) => void;
+export type HealthChangeCallback = (isReady: boolean, health: HealthStatus) => void;
 
 class MessageManager {
     private node: LightNode;
-    //TODO: implement SDS?
-    private ephemeralProtocolsManager: EphemeralProtocolsManager;
+    private reliableMessageManager: ReliableMessageManager | null = null;
     private storeManager: StoreManager;
     private _isReady: boolean = false;
+    private _currentHealth: HealthStatus = HealthStatus.Unhealthy;
     private healthListeners: Set<HealthChangeCallback> = new Set();
-    private peerCheckInterval: NodeJS.Timeout | null = null;
 
 
     public readonly messageCache: {
@@ -48,55 +47,84 @@ class MessageManager {
     }
 
     public async stop() {
-        if (this.peerCheckInterval) {
-            clearInterval(this.peerCheckInterval);
-            this.peerCheckInterval = null;
+        if (this.reliableMessageManager) {
+            this.reliableMessageManager.cleanup();
+            this.reliableMessageManager = null;
         }
+        
         await this.node.stop();
         this.setIsReady(false);
     }
 
     private constructor(node: LightNode) {
         this.node = node;
-        this.ephemeralProtocolsManager = new EphemeralProtocolsManager(node);
         this.storeManager = new StoreManager(node);
         
-        // Start peer monitoring
-        this.startPeerMonitoring();
+        this.setupHealthMonitoring();
     }
 
     /**
-     * Start monitoring connected peers to determine node health
-     * Runs every 1 second to check if we have at least one peer
+     * Set up health monitoring using Waku's built-in health events
      */
-    private startPeerMonitoring() {
-        // Initial peer check
-        this.checkPeers();
-        
-        // Regular peer checking
-        this.peerCheckInterval = setInterval(() => {
-            this.checkPeers();
-        }, 1000);
+    private setupHealthMonitoring() {
+        this.node.events.addEventListener(WakuEvent.Health, (event) => {
+            const health = event.detail;
+            this._currentHealth = health;
+            
+            console.log(`Waku health status: ${health}`);
+            
+            if (health === HealthStatus.SufficientlyHealthy) {
+                console.log("Waku is sufficiently healthy - initializing reliable messaging");
+                this.setIsReady(true);
+                this.initializeReliableManager();
+            } else if (health === HealthStatus.MinimallyHealthy) {
+                console.log("Waku is minimally healthy - may have issues sending/receiving messages");
+                this.setIsReady(true);
+                this.initializeReliableManager();
+            } else {
+                console.log("Waku is unhealthy - disconnected from network");
+                this.setIsReady(false);
+                this.cleanupReliableManager();
+            }
+        });
     }
-    
-    /**
-     * Check if we have connected peers and update ready state
-     */
-    private async checkPeers() {
+
+    private async initializeReliableManager() {
+        // Only initialize if not already initialized
+        if (this.reliableMessageManager) {
+            return;
+        }
+        
         try {
-            const peers = await this.node.getConnectedPeers();
-            this.setIsReady(peers.length >= 1);
-        } catch (err) {
-            console.error("Error checking peers:", err);
-            this.setIsReady(false);
+            this.reliableMessageManager = new ReliableMessageManager(this.node);
+            
+            // Set up listener for incoming reliable messages
+            this.reliableMessageManager.addIncomingMessageListener({
+                onMessage: (message) => {
+                    console.log("Received reliable message:", message);
+                    this.updateCache(message);
+                }
+            });
+            
+            console.log("Reliable message manager initialized successfully");
+        } catch (error) {
+            console.error("Failed to initialize reliable message manager:", error);
+        }
+    }
+
+    private cleanupReliableManager() {
+        if (this.reliableMessageManager) {
+            console.log("Cleaning up reliable message manager due to health status");
+            this.reliableMessageManager.cleanup();
+            this.reliableMessageManager = null;
         }
     }
 
     private setIsReady(isReady: boolean) {
         if (this._isReady !== isReady) {
             this._isReady = isReady;
-            // Notify all health listeners
-            this.healthListeners.forEach(listener => listener(isReady));
+            // Notify all health listeners with both ready state and health status
+            this.healthListeners.forEach(listener => listener(isReady, this._currentHealth));
         }
     }
 
@@ -108,6 +136,13 @@ class MessageManager {
     }
 
     /**
+     * Returns the current Waku health status
+     */
+    public get currentHealth(): HealthStatus {
+        return this._currentHealth;
+    }
+
+    /**
      * Subscribe to health status changes
      * @param callback Function to call when health status changes
      * @returns Function to unsubscribe
@@ -116,7 +151,7 @@ class MessageManager {
         this.healthListeners.add(callback);
         
         // Immediately call with current status
-        callback(this._isReady);
+        callback(this._isReady, this._currentHealth);
         
         // Return unsubscribe function
         return () => {
@@ -125,31 +160,28 @@ class MessageManager {
     }
 
     /**
-     * Waits for the node to connect to at least one peer
+     * Waits for the node to achieve at least minimally healthy status
      * @param timeoutMs Maximum time to wait in milliseconds
-     * @returns Promise that resolves when connected or rejects on timeout
+     * @returns Promise that resolves when healthy or rejects on timeout
      */
     public async waitForRemotePeer(timeoutMs: number = 15000): Promise<boolean> {
         if (this._isReady) return true;
         
         return new Promise<boolean>((resolve, reject) => {
             const timeout = setTimeout(() => {
-                reject(new Error(`Timed out waiting for remote peer after ${timeoutMs}ms`));
+                reject(new Error(`Timed out waiting for healthy network connection after ${timeoutMs}ms`));
             }, timeoutMs);
             
-            const checkHandler = (isReady: boolean) => {
-                if (isReady) {
+            const checkHandler = (isReady: boolean, health: HealthStatus) => {
+                if (isReady && (health === HealthStatus.MinimallyHealthy || health === HealthStatus.SufficientlyHealthy)) {
                     clearTimeout(timeout);
                     this.healthListeners.delete(checkHandler);
                     resolve(true);
                 }
             };
             
-            // Add temporary listener for peer connection
+            // Add temporary listener for health status
             this.healthListeners.add(checkHandler);
-            
-            // Also do an immediate check in case we already have peers
-            this.checkPeers();
         });
     }
 
@@ -165,19 +197,23 @@ class MessageManager {
     }
 
     public async sendMessage(message: OpchanMessage) {
-        await this.ephemeralProtocolsManager.sendMessage(message);
-        //TODO: should we update the cache here? or just from store/filter?
-        this.updateCache(message);
-    }
-
-    public async subscribeToMessages(types: MessageType[] = [MessageType.CELL, MessageType.POST, MessageType.COMMENT, MessageType.VOTE, MessageType.MODERATE]) {
-        const { result, subscription } = await this.ephemeralProtocolsManager.subscribeToMessages(types);
-        
-        for (const message of result) {
-            this.updateCache(message);
+        if (!this.reliableMessageManager) {
+            throw new Error("Reliable message manager not initialized");
         }
+
+        // Use reliable channel with status tracking
+        const messageId = await this.reliableMessageManager.sendMessage(message, {
+            onSent: (id) => console.log(`Message ${id} sent ✓`),
+            onAcknowledged: (id) => console.log(`Message ${id} acknowledged ✓✓`),
+            onError: (id, error) => console.error(`Message ${id} failed:`, error)
+        });
         
-        return { messages: result, subscription };
+        console.log(`Sent reliable message with ID: ${messageId}`);
+        
+        // Update local cache immediately for optimistic UI
+        this.updateCache(message);
+        
+        return messageId;
     }
 
     private updateCache(message: OpchanMessage) {
