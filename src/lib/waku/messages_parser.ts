@@ -1,7 +1,7 @@
 import { IDecodedMessage } from '@waku/sdk';
-import { Cell, Post, Comment } from '@/types';
+import { Cell, Post, Comment } from '@/types/forum';
 import { CellMessage, CommentMessage, MessageType,  PostMessage } from './types';
-import { OpchanMessage } from '@/types';
+import { OpchanMessage } from '@/types/forum';
 // Utility functions for converting between message types and application models
 export function cellToMessage(cell: Cell, sender: string): CellMessage {
   return {

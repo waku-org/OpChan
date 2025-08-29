@@ -49,7 +49,7 @@
     "@reown/appkit-adapter-wagmi": "^1.7.17",
     "@reown/appkit-wallet-button": "^1.7.17",
     "@tanstack/react-query": "^5.84.1",
-    "@waku/sdk": "^0.0.30",
+    "@waku/sdk": "^0.0.35-67a7287.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",

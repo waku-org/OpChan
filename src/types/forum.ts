@@ -36,7 +36,7 @@ export interface Cell {
   name: string;
   description: string;
   icon?: string;
-  signature: string; // Message signature
+  signature?: string; // Message signature
   browserPubKey?: string; // Public key that signed the message
   relevanceScore?: number; // Calculated relevance score
   activeMemberCount?: number; // Number of active members in the cell
