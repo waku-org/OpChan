@@ -4,11 +4,11 @@ import { MessageType } from "./types";
  * Content topics for different message types
  */
 export const CONTENT_TOPICS: Record<MessageType, string> = {
-  [MessageType.CELL]: '/opchan/1/cell/proto',
-  [MessageType.POST]: '/opchan/1/post/proto',
-  [MessageType.COMMENT]: '/opchan/1/comment/proto',
-  [MessageType.VOTE]: '/opchan/1/vote/proto',
-  [MessageType.MODERATE]: '/opchan/1/moderate/proto'
+  [MessageType.CELL]: '/opchan-sds/1/cell/proto',
+  [MessageType.POST]: '/opchan-sds/1/post/proto',
+  [MessageType.COMMENT]: '/opchan-sds/1/comment/proto',
+  [MessageType.VOTE]: '/opchan-sds/1/vote/proto',
+  [MessageType.MODERATE]: '/opchan-sds/1/moderate/proto'
 };
 
 export const NETWORK_CONFIG = {
