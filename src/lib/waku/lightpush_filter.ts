@@ -1,6 +1,6 @@
 import { LightNode } from "@waku/sdk";
 import { CellMessage, CommentMessage, MessageType, PostMessage, VoteMessage, ModerateMessage } from "./types";
-import { OpchanMessage } from "@/types";
+import { OpchanMessage } from "@/types/forum";
 import { encodeMessage, encoders, decoders, decodeMessage } from "./codec";
 
 export class EphemeralProtocolsManager {

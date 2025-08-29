@@ -67,6 +67,7 @@ export const createPost = async (
       content,
       timestamp: Date.now(),
       author: currentUser.address,
+      signature: currentUser.signature 
     };
 
     const cryptoService = new CryptoService();
@@ -134,11 +135,12 @@ export const createComment = async (
     const commentId = uuidv4();
     const commentMessage: CommentMessage = {
       type: MessageType.COMMENT,
-      id: commentId,
+      id: commentId,  
       postId,
       content,
       timestamp: Date.now(),
       author: currentUser.address,
+      signature: currentUser.signature 
     };
 
     const cryptoService = new CryptoService();
@@ -198,6 +200,7 @@ export const createCell = async (
       ...(icon && { icon }),
       timestamp: Date.now(),
       author: currentUser.address,
+      signature: currentUser.signature 
     };
 
     const cryptoService = new CryptoService();
@@ -275,6 +278,7 @@ export const vote = async (
       value: isUpvote ? 1 : -1,
       timestamp: Date.now(),
       author: currentUser.address,
+      signature: currentUser.signature 
     };
 
     const cryptoService = new CryptoService();
@@ -342,6 +346,7 @@ export const moderatePost = async (
       reason,
       timestamp: Date.now(),
       author: currentUser.address,
+      signature: currentUser.signature 
     };
     const cryptoService = new CryptoService();
     const messageService = new MessageService(authService!, cryptoService);
@@ -392,6 +397,7 @@ export const moderateComment = async (
       reason,
       timestamp: Date.now(),
       author: currentUser.address,
+      signature: currentUser.signature 
     };
     const cryptoService = new CryptoService();
     const messageService = new MessageService(authService!, cryptoService);
@@ -439,7 +445,7 @@ export const moderateUser = async (
     reason,
     author: currentUser.address,
     timestamp: Date.now(),
-    signature: '',
+    signature: currentUser.signature,
     browserPubKey: currentUser.browserPubKey,
   };
   const cryptoService = new CryptoService();

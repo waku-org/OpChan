@@ -16,7 +16,7 @@ export interface User {
   
   verificationStatus: EVerificationStatus;
   
-  signature?: string;
+  signature: string;
   lastChecked?: number;
   browserPubKey?: string; // Browser-generated public key for key delegation
   delegationSignature?: string; // Signature from Bitcoin/Ethereum wallet for delegation
@@ -52,7 +52,7 @@ export interface Post {
   timestamp: number;
   upvotes: VoteMessage[];
   downvotes: VoteMessage[];
-  signature?: string; // Message signature
+  signature: string; // Message signature
   browserPubKey?: string; // Public key that signed the message
   moderated?: boolean;
   moderatedBy?: string;
@@ -72,7 +72,7 @@ export interface Comment {
   timestamp: number;
   upvotes: VoteMessage[];
   downvotes: VoteMessage[];
-  signature?: string; // Message signature
+  signature: string; // Message signature
   browserPubKey?: string; // Public key that signed the message
   moderated?: boolean;
   moderatedBy?: string;
@@ -84,7 +84,7 @@ export interface Comment {
 
 // Extended message types for verification
 export interface SignedMessage {
-  signature?: string; // Signature of the message
+  signature: string; // Signature of the message
   browserPubKey?: string; // Public key that signed the message
 }
 

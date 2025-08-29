@@ -1,7 +1,6 @@
 import { IDecodedMessage } from '@waku/sdk';
-import { Cell, Post, Comment } from '@/types';
+import { OpchanMessage, Cell, Post, Comment } from '@/types/forum';
 import { CellMessage, CommentMessage, MessageType,  PostMessage } from './types';
-import { OpchanMessage } from '@/types';
 // Utility functions for converting between message types and application models
 export function cellToMessage(cell: Cell, sender: string): CellMessage {
   return {
@@ -11,7 +10,8 @@ export function cellToMessage(cell: Cell, sender: string): CellMessage {
     id: cell.id,
     name: cell.name,
     description: cell.description,
-    ...(cell.icon && { icon: cell.icon })
+    ...(cell.icon && { icon: cell.icon }),
+    signature: cell.signature,
   };
 }
 
@@ -20,7 +20,8 @@ export function messageToCell(message: CellMessage): Cell {
     id: message.id,
     name: message.name,
     description: message.description,
-    icon: message.icon || ''
+    icon: message.icon || '',
+    signature: message.signature,
   };
 }
 
@@ -32,7 +33,8 @@ export function postToMessage(post: Post, sender: string): PostMessage {
     id: post.id,
     title: post.title,
     cellId: post.cellId,
-    content: post.content
+    content: post.content,
+    signature: post.signature,
   };
 }
 
@@ -45,7 +47,8 @@ export function messageToPost(message: PostMessage): Post {
     timestamp: message.timestamp,
     title: message.title,
     upvotes: [],
-    downvotes: []
+    downvotes: [],
+    signature: message.signature,
   };
 }
 
@@ -56,7 +59,8 @@ export function commentToMessage(comment: Comment, sender: string): CommentMessa
     author: sender,
     id: comment.id,
     postId: comment.postId,
-    content: comment.content
+    content: comment.content,
+    signature: comment.signature,
   };
 }
 
@@ -68,7 +72,8 @@ export function messageToComment(message: CommentMessage): Comment {
     content: message.content,
     timestamp: message.timestamp,
     upvotes: [],
-    downvotes: []
+    downvotes: [],
+    signature: message.signature,
   };
 }
 

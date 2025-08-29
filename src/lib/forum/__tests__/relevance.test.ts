@@ -26,7 +26,8 @@ describe('RelevanceCalculator', () => {
         content: 'Test content',
         timestamp: Date.now(),
         upvotes: [],
-        downvotes: []
+        downvotes: [],
+        signature: 'signature'
       };
 
       const result = calculator.calculatePostScore(post, [], [], mockUserVerificationStatus);
@@ -45,7 +46,8 @@ describe('RelevanceCalculator', () => {
         content: 'Test content',
         timestamp: Date.now(),
         upvotes: [],
-        downvotes: []
+        downvotes: [],
+        signature: 'signature'
       };
 
       const result = calculator.calculatePostScore(post, [], [], mockUserVerificationStatus);
@@ -61,7 +63,8 @@ describe('RelevanceCalculator', () => {
         verificationStatus: EVerificationStatus.VERIFIED_OWNER,
         ensOwnership: true,
         ensName: 'test.eth',
-        lastChecked: Date.now()
+        lastChecked: Date.now(),
+        signature: 'signature'
       };
 
       const isVerified = calculator.isUserVerified(verifiedUser);
@@ -74,7 +77,8 @@ describe('RelevanceCalculator', () => {
         walletType: 'bitcoin',
         verificationStatus: EVerificationStatus.VERIFIED_OWNER,
         ordinalOwnership: true,
-        lastChecked: Date.now()
+        lastChecked: Date.now(),
+        signature: 'signature'
       };
 
       const isVerified = calculator.isUserVerified(verifiedUser);
@@ -87,7 +91,8 @@ describe('RelevanceCalculator', () => {
         walletType: 'ethereum',
         verificationStatus: EVerificationStatus.UNVERIFIED,
         ensOwnership: false,
-        lastChecked: Date.now()
+        lastChecked: Date.now(),
+        signature: 'signature'
       };
 
       const isVerified = calculator.isUserVerified(unverifiedUser);
@@ -104,7 +109,8 @@ describe('RelevanceCalculator', () => {
         timestamp: Date.now(),
         upvotes: [],
         downvotes: [],
-        moderated: true
+        moderated: true,
+        signature: 'signature'
       };
 
       const result = calculator.calculatePostScore(post, [], [], mockUserVerificationStatus);
@@ -122,16 +128,17 @@ describe('RelevanceCalculator', () => {
         content: 'Test content',
         timestamp: Date.now(),
         upvotes: [],
-        downvotes: []
+        downvotes: [],
+        signature: 'signature'
       };
 
       const votes: VoteMessage[] = [
-        { id: 'vote1', targetId: '1', value: 1, author: 'user1', timestamp: Date.now(), type: MessageType.VOTE },
-        { id: 'vote2', targetId: '1', value: 1, author: 'user3', timestamp: Date.now(), type: MessageType.VOTE }
+        { id: 'vote1', targetId: '1', value: 1, author: 'user1', timestamp: Date.now(), type: MessageType.VOTE, signature: 'signature' },
+        { id: 'vote2', targetId: '1', value: 1, author: 'user3', timestamp: Date.now(), type: MessageType.VOTE, signature: 'signature' }
       ];
 
       const comments: Comment[] = [
-        { id: 'comment1', postId: '1', authorAddress: 'user1', content: 'Test comment', timestamp: Date.now(), upvotes: [], downvotes: [] }
+        { id: 'comment1', postId: '1', authorAddress: 'user1', content: 'Test comment', timestamp: Date.now(), upvotes: [], downvotes: [], signature: 'signature' }
       ];
 
       const result = calculator.calculatePostScore(post, votes, comments, mockUserVerificationStatus);
@@ -156,7 +163,8 @@ describe('RelevanceCalculator', () => {
         content: 'Recent content',
         timestamp: now,
         upvotes: [],
-        downvotes: []
+        downvotes: [],
+        signature: 'signature'
       };
 
       const oldPost: Post = {
@@ -167,7 +175,8 @@ describe('RelevanceCalculator', () => {
         content: 'Old content',
         timestamp: oneWeekAgo,
         upvotes: [],
-        downvotes: []
+        downvotes: [],
+        signature: 'signature'
       };
 
       const recentResult = calculator.calculatePostScore(recentPost, [], [], mockUserVerificationStatus);
@@ -186,14 +195,16 @@ describe('RelevanceCalculator', () => {
           verificationStatus: EVerificationStatus.VERIFIED_OWNER,
           ensOwnership: true,
           ensName: 'test.eth',
-          lastChecked: Date.now()
+              lastChecked: Date.now(),
+          signature: 'signature'
         },
         {
           address: 'user2',
           walletType: 'bitcoin',
           verificationStatus: EVerificationStatus.UNVERIFIED,
           ordinalOwnership: false,
-          lastChecked: Date.now()
+          lastChecked: Date.now(),
+          signature: 'signature'
         }
       ];
 

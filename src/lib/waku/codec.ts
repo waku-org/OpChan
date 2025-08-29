@@ -2,7 +2,7 @@ import { createDecoder, createEncoder } from '@waku/sdk';
 import { MessageType } from './types';
 import {  CellMessage, PostMessage, CommentMessage, VoteMessage } from './types';
 import { CONTENT_TOPICS, NETWORK_CONFIG } from './constants';
-import { OpchanMessage } from '@/types';
+import { OpchanMessage } from '@/types/forum';
 
 export const encoders = {
     [MessageType.CELL]: createEncoder({
@@ -21,6 +21,10 @@ export const encoders = {
       contentTopic: CONTENT_TOPICS['vote'],
       pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
     }),
+    [MessageType.MODERATE]: createEncoder({
+      contentTopic: CONTENT_TOPICS['moderate'],
+      pubsubTopicShardInfo: {clusterId: NETWORK_CONFIG.clusterId, shard: 0}
+    })
 }
 
 export const decoders = {
@@ -40,6 +44,10 @@ export const decoders = {
         clusterId: NETWORK_CONFIG.clusterId,
         shard: 0
     }),
+    [MessageType.MODERATE]: createDecoder(CONTENT_TOPICS['moderate'], {
+        clusterId: NETWORK_CONFIG.clusterId,
+        shard: 0
+    })
 }
 
 /**
