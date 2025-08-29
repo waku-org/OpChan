@@ -1,5 +1,5 @@
 import { Cell, Post, Comment, OpchanMessage } from '@/types/forum';
-import { CellMessage, CommentMessage, PostMessage, VoteMessage } from '@/lib/waku/types';
+import { CellMessage, CommentMessage, PostMessage, VoteMessage } from '@/types/waku';
 import messageManager from '@/lib/waku';
 import { RelevanceCalculator } from './relevance';
 import { UserVerificationStatus } from '@/types/forum';

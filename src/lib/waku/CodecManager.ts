@@ -4,13 +4,13 @@ import {
   IEncoder,
   LightNode,
 } from '@waku/sdk';
-import { MessageType } from './types';
+import { MessageType } from '../../types/waku';
 import {
   CellMessage,
   PostMessage,
   CommentMessage,
   VoteMessage,
-} from './types';
+} from '../../types/waku';
 import { CONTENT_TOPICS } from './constants';
 import { OpchanMessage } from '@/types/forum';
 

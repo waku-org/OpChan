@@ -1,5 +1,5 @@
 import { Post, Comment, Cell, User, RelevanceScoreDetails, UserVerificationStatus } from '@/types/forum';
-import { VoteMessage } from '@/lib/waku/types';
+import { VoteMessage } from '@/types/waku';
 
 export class RelevanceCalculator {
   private static readonly BASE_SCORES = {

@@ -1,4 +1,4 @@
-import { MessageType } from "./types";
+import { MessageType } from "../../types/waku";
 
 /**
  * Content topics for different message types

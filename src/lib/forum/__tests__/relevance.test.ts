@@ -1,6 +1,6 @@
 import { RelevanceCalculator } from '../relevance';
 import { Post, Comment, User, UserVerificationStatus, EVerificationStatus } from '@/types/forum';
-import { VoteMessage, MessageType } from '@/lib/waku/types';
+import { VoteMessage, MessageType } from '@/types/waku';
 import { expect, describe, beforeEach, it } from 'vitest';
 
 describe('RelevanceCalculator', () => {

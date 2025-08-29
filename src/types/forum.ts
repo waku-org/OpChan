@@ -1,4 +1,4 @@
-import { CellMessage, CommentMessage, PostMessage, VoteMessage, ModerateMessage } from "@/lib/waku/types";
+import { CellMessage, CommentMessage, PostMessage, VoteMessage, ModerateMessage } from "@/types/waku";
 
 export type OpchanMessage = CellMessage | PostMessage | CommentMessage | VoteMessage | ModerateMessage;
 
