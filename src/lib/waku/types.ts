@@ -13,6 +13,7 @@ export enum MessageType {
  * Base interface for all message types
  */
 export interface BaseMessage {
+  id: string;
   type: MessageType;
   timestamp: number | Date;
   author: string;
@@ -25,7 +26,6 @@ export interface BaseMessage {
  */
 export interface CellMessage extends BaseMessage {
   type: MessageType.CELL;
-  id: string;
   name: string;
   description: string;
   icon?: string;
@@ -36,7 +36,6 @@ export interface CellMessage extends BaseMessage {
  */
 export interface PostMessage extends BaseMessage {
   type: MessageType.POST;
-  id: string;
   cellId: string;
   title: string;
   content: string;
@@ -47,7 +46,6 @@ export interface PostMessage extends BaseMessage {
  */
 export interface CommentMessage extends BaseMessage {
   type: MessageType.COMMENT;
-  id: string;
   postId: string;
   content: string;
 }
@@ -57,7 +55,6 @@ export interface CommentMessage extends BaseMessage {
  */
 export interface VoteMessage extends BaseMessage {
   type: MessageType.VOTE;
-  id: string;
   targetId: string; // ID of the post or comment being voted on
   value: 1 | -1; 
 }

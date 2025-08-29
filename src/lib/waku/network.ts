@@ -15,13 +15,16 @@ export const refreshData = async (
 ): Promise<void> => {
   try {
     toast({ title: 'Refreshing data', description: 'SDS handles message syncing automatically...' });
+    
     if (!isNetworkConnected) {
-      try {
-        await messageManager.waitForRemotePeer(10000);
-      } catch (err) {
-        console.warn('Could not connect to peer during refresh:', err);
-      }
+      toast({ 
+        title: 'Network disconnected', 
+        description: 'Unable to refresh data. Please wait for network connection to be restored.',
+        variant: 'destructive' 
+      });
+      return;
     }
+    
     updateStateFromCache();
     toast({ title: 'Data refreshed', description: 'Your view has been updated with the latest messages.' });
   } catch (err) {
@@ -38,17 +41,24 @@ export const initializeNetwork = async (
 ): Promise<void> => {
   try {
     toast({ title: 'Loading data', description: 'Connecting to the Waku network...' });
-    try {
-      await messageManager.waitForRemotePeer(15000);
-    } catch (err) {
-      toast({ title: 'Connection timeout', description: 'Could not connect to any peers. Some features may be unavailable.', variant: 'destructive' });
-      console.warn('Timeout connecting to peer:', err);
-    }
+    
+    // Load data from cache immediately - health monitoring will handle network status
     updateStateFromCache();
+    
+    // Check current network status and provide appropriate feedback
+    if (messageManager.isReady) {
+      toast({ title: 'Connected', description: 'Successfully connected to Waku network.' });
+    } else {
+      toast({ 
+        title: 'Connecting...', 
+        description: 'Establishing network connection. You can view cached data while we connect.',
+        variant: 'default' 
+      });
+    }
   } catch (err) {
     console.error('Error loading forum data:', err);
     setError('Failed to load forum data. Please try again later.');
-    toast({ title: 'Connection error', description: 'Failed to connect to Waku network. Please try refreshing.', variant: 'destructive' });
+    toast({ title: 'Load error', description: 'Failed to load forum data. Please try refreshing.', variant: 'destructive' });
   }
 };
 
