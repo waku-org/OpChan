@@ -1,6 +1,6 @@
 import { IDecodedMessage, LightNode, ReliableChannel, ReliableChannelEvent } from "@waku/sdk";
 import { MessageType } from "./types";
-import { decodeMessage, decoders, encodeMessage, encoders } from "./codec";
+import { CodecManager } from "./codec";
 import { generateStringId } from "@/lib/utils";
 import { OpchanMessage } from "@/types/forum";
 
@@ -18,15 +18,17 @@ export class ReliableMessageManager {
     private channels: Map<MessageType, ReliableChannel<IDecodedMessage>> = new Map();
     private messageCallbacks: Map<string, MessageStatusCallback> = new Map();
     private incomingMessageCallbacks: IncomingMessageCallback[] = [];
+    private codecManager: CodecManager;
     
     constructor(node: LightNode) {
+        this.codecManager = new CodecManager(node);
         this.initializeChannels(node);
     }
 
     private async initializeChannels(node: LightNode) {
         for (const type of Object.values(MessageType)) {
-            const encoder = encoders[type];
-            const decoder = decoders[type];
+            const encoder = this.codecManager.getEncoder(type);
+            const decoder = this.codecManager.getDecoder(type);
             const senderId = generateStringId();
             const channelId = `opchan-${type}`;  // Unique channel ID for each message type
             
@@ -45,7 +47,7 @@ export class ReliableMessageManager {
             try {
                 const wakuMessage = event.detail;
                 if (wakuMessage.payload) {
-                    const opchanMessage = decodeMessage(wakuMessage.payload);
+                    const opchanMessage = this.codecManager.decodeMessage(wakuMessage.payload);
                    
                  
                     this.incomingMessageCallbacks.forEach(callback => {
@@ -92,7 +94,7 @@ export class ReliableMessageManager {
             throw new Error(`No reliable channel for message type: ${message.type}`);
         }
 
-        const encodedMessage = encodeMessage(message);
+        const encodedMessage = this.codecManager.encodeMessage(message);
         const messageId = ReliableChannel.getMessageId(encodedMessage);
 
         // Store callback for this message

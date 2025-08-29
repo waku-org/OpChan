@@ -6,7 +6,6 @@ import { CommentCache, MessageType, VoteCache, ModerateMessage } from "./types";
 import { PostCache } from "./types";
 import { CellCache } from "./types";
 import { OpchanMessage } from "@/types/forum";
-import { NETWORK_CONFIG } from "./constants";
 import { ReliableMessageManager } from "./reliable_channel";
 
 export type HealthChangeCallback = (isReady: boolean, health: HealthStatus) => void;
@@ -37,7 +36,6 @@ class MessageManager {
     public static async create(): Promise<MessageManager> {
         const node = await createLightNode({
             defaultBootstrap: true,
-            networkConfig: NETWORK_CONFIG,
             autoStart: true,
         });
         

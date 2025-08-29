@@ -11,12 +11,6 @@ export const CONTENT_TOPICS: Record<MessageType, string> = {
   [MessageType.MODERATE]: '/opchan-sds/1/moderate/proto'
 };
 
-export const NETWORK_CONFIG = {
-  // contentTopics: Object.values(CONTENT_TOPICS),
-  clusterId: 1,
-  shards: [0,1,2,3,4,5,6,7]
-}
-
 /**
  * Bootstrap nodes for the Waku network
  * These are public Waku nodes that our node will connect to on startup

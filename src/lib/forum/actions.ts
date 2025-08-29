@@ -336,6 +336,7 @@ export const moderatePost = async (
 
     const modMsg: ModerateMessage = {
       type: MessageType.MODERATE,
+      id: uuidv4(),
       cellId,
       targetType: 'post',
       targetId: postId,
@@ -386,6 +387,7 @@ export const moderateComment = async (
 
     const modMsg: ModerateMessage = {
       type: MessageType.MODERATE,
+      id: uuidv4(),
       cellId,
       targetType: 'comment',
       targetId: commentId,
@@ -433,6 +435,7 @@ export const moderateUser = async (
 
   const modMsg: ModerateMessage = {
     type: MessageType.MODERATE,
+    id: uuidv4(),
     cellId,
     targetType: 'user',
     targetId: userAddress,
