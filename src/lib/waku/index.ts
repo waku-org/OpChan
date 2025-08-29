@@ -2,7 +2,6 @@
 // with a `isPublished` flag to indicate if the message has been sent to the network
 
 import  { createLightNode, LightNode, WakuEvent, HealthStatus } from "@waku/sdk";
-import StoreManager from "./store";
 import { CommentCache, MessageType, VoteCache, ModerateMessage } from "./types";
 import { PostCache } from "./types";
 import { CellCache } from "./types";
@@ -15,7 +14,6 @@ export type HealthChangeCallback = (isReady: boolean, health: HealthStatus) => v
 class MessageManager {
     private node: LightNode;
     private reliableMessageManager: ReliableMessageManager | null = null;
-    private storeManager: StoreManager;
     private _isReady: boolean = false;
     private _currentHealth: HealthStatus = HealthStatus.Unhealthy;
     private healthListeners: Set<HealthChangeCallback> = new Set();
@@ -58,8 +56,6 @@ class MessageManager {
 
     private constructor(node: LightNode) {
         this.node = node;
-        this.storeManager = new StoreManager(node);
-        
         this.setupHealthMonitoring();
     }
 
@@ -183,17 +179,6 @@ class MessageManager {
             // Add temporary listener for health status
             this.healthListeners.add(checkHandler);
         });
-    }
-
-    public async queryStore() {
-        const messages = await this.storeManager.queryStore();
-        
-        for (const message of messages) {
-            console.log("message", message);
-            this.updateCache(message);
-        }
-
-        return messages;
     }
 
     public async sendMessage(message: OpchanMessage) {

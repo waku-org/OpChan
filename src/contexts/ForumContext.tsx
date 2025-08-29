@@ -195,14 +195,17 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const handleRefreshData = async () => {
     setIsRefreshing(true);
     try {
-      // Manually query the network for updates
-      await messageManager.queryStore();
+      // SDS handles message syncing automatically, just update UI
       updateStateFromCache();
+      toast({
+        title: "Data Refreshed",
+        description: "Your view has been updated.",
+      });
     } catch (error) {
       console.error("Error refreshing data:", error);
       toast({
         title: "Refresh Failed",
-        description: "Could not fetch the latest data. Please try again.",
+        description: "Could not update the view. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -226,7 +229,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     loadData();
 
     // Set up periodic queries
-    const { cleanup } = setupPeriodicQueries(isNetworkConnected, updateStateFromCache);
+    const { cleanup } = setupPeriodicQueries(updateStateFromCache);
 
     return cleanup;
   }, [isNetworkConnected, toast, updateStateFromCache]);

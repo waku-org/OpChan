@@ -14,7 +14,7 @@ export const refreshData = async (
   setError: (error: string | null) => void,
 ): Promise<void> => {
   try {
-    toast({ title: 'Refreshing data', description: 'Fetching latest messages from the network...' });
+    toast({ title: 'Refreshing data', description: 'SDS handles message syncing automatically...' });
     if (!isNetworkConnected) {
       try {
         await messageManager.waitForRemotePeer(10000);
@@ -22,12 +22,11 @@ export const refreshData = async (
         console.warn('Could not connect to peer during refresh:', err);
       }
     }
-    await messageManager.queryStore();
     updateStateFromCache();
     toast({ title: 'Data refreshed', description: 'Your view has been updated with the latest messages.' });
   } catch (err) {
     console.error('Error refreshing data:', err);
-    toast({ title: 'Refresh failed', description: 'Could not fetch the latest messages. Please try again.', variant: 'destructive' });
+    toast({ title: 'Refresh failed', description: 'Could not sync with network. Please try again.', variant: 'destructive' });
     setError('Failed to refresh data. Please try again later.');
   }
 };
@@ -45,7 +44,6 @@ export const initializeNetwork = async (
       toast({ title: 'Connection timeout', description: 'Could not connect to any peers. Some features may be unavailable.', variant: 'destructive' });
       console.warn('Timeout connecting to peer:', err);
     }
-    // await messageManager.queryStore();
     updateStateFromCache();
   } catch (err) {
     console.error('Error loading forum data:', err);
@@ -55,23 +53,12 @@ export const initializeNetwork = async (
 };
 
 export const setupPeriodicQueries = (
-  isNetworkConnected: boolean,
   updateStateFromCache: () => void,
 ): { cleanup: () => void } => {
   const uiRefreshInterval = setInterval(updateStateFromCache, 5000);
-  const networkQueryInterval = setInterval(async () => {
-    if (isNetworkConnected) {
-      try {
-        await messageManager.queryStore();
-      } catch (err) {
-        console.warn('Error during scheduled network query:', err);
-      }
-    }
-  }, 3000);
   return {
     cleanup: () => {
       clearInterval(uiRefreshInterval);
-      clearInterval(networkQueryInterval);
     },
   };
 };
