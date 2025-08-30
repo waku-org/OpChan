@@ -1,11 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Bitcoin, Coins, Loader2 } from "lucide-react";
-import { 
-  useAppKit, 
-  useAppKitAccount, 
-  useAppKitState
-} from "@reown/appkit/react";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Bitcoin, Coins, Loader2 } from 'lucide-react';
+import {
+  useAppKit,
+  useAppKitAccount,
+  useAppKitState,
+} from '@reown/appkit/react';
 
 interface WalletConnectionStepProps {
   onComplete: () => void;
@@ -20,32 +20,32 @@ export function WalletConnectionStep({
 }: WalletConnectionStepProps) {
   const { initialized } = useAppKitState();
   const appKit = useAppKit();
-  
+
   // Get account info for different chains
-  const bitcoinAccount = useAppKitAccount({ namespace: "bip122" });
-  const ethereumAccount = useAppKitAccount({ namespace: "eip155" });
-  
+  const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
+  const ethereumAccount = useAppKitAccount({ namespace: 'eip155' });
+
   // Determine which account is connected
   const isBitcoinConnected = bitcoinAccount.isConnected;
   const isEthereumConnected = ethereumAccount.isConnected;
   const isConnected = isBitcoinConnected || isEthereumConnected;
-  
+
   // Get the active account info
   const activeAccount = isBitcoinConnected ? bitcoinAccount : ethereumAccount;
   const activeAddress = activeAccount.address;
-  const activeChain = isBitcoinConnected ? "Bitcoin" : "Ethereum";
+  const activeChain = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
 
   const handleBitcoinConnect = async () => {
     if (!initialized || !appKit) {
       console.error('AppKit not initialized');
       return;
     }
-    
+
     setIsLoading(true);
     try {
-      await appKit.open({ 
-        view: "Connect", 
-        namespace: "bip122" 
+      await appKit.open({
+        view: 'Connect',
+        namespace: 'bip122',
       });
     } catch (error) {
       console.error('Error connecting Bitcoin wallet:', error);
@@ -59,12 +59,12 @@ export function WalletConnectionStep({
       console.error('AppKit not initialized');
       return;
     }
-    
+
     setIsLoading(true);
     try {
-      await appKit.open({ 
-        view: "Connect", 
-        namespace: "eip155" 
+      await appKit.open({
+        view: 'Connect',
+        namespace: 'eip155',
       });
     } catch (error) {
       console.error('Error connecting Ethereum wallet:', error);
@@ -97,14 +97,17 @@ export function WalletConnectionStep({
           <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-green-400 font-medium">Wallet Connected</span>
+              <span className="text-green-400 font-medium">
+                Wallet Connected
+              </span>
             </div>
             <p className="text-sm text-neutral-300 mb-2">
-              Connected to {activeChain} with {activeAddress?.slice(0, 6)}...{activeAddress?.slice(-4)}
+              Connected to {activeChain} with {activeAddress?.slice(0, 6)}...
+              {activeAddress?.slice(-4)}
             </p>
           </div>
         </div>
-        
+
         {/* Action Button */}
         <div className="mt-auto">
           <Button
@@ -149,7 +152,7 @@ export function WalletConnectionStep({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px'
+              gap: '8px',
             }}
           >
             {isLoading ? (
@@ -158,7 +161,7 @@ export function WalletConnectionStep({
                 Connecting...
               </>
             ) : (
-              "Connect Bitcoin Wallet"
+              'Connect Bitcoin Wallet'
             )}
           </Button>
         </div>
@@ -195,7 +198,7 @@ export function WalletConnectionStep({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px'
+              gap: '8px',
             }}
           >
             {isLoading ? (
@@ -204,7 +207,7 @@ export function WalletConnectionStep({
                 Connecting...
               </>
             ) : (
-              "Connect Ethereum Wallet"
+              'Connect Ethereum Wallet'
             )}
           </Button>
         </div>
@@ -215,4 +218,4 @@ export function WalletConnectionStep({
       </div>
     </div>
   );
-} 
+}

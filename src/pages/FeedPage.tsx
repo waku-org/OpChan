@@ -2,7 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { RefreshCw, TrendingUp, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import PostCard from '@/components/PostCard';
 import FeedSidebar from '@/components/FeedSidebar';
 import { useForum } from '@/contexts/useForum';
@@ -10,13 +16,8 @@ import { useAuth } from '@/contexts/useAuth';
 import { sortPosts, SortOption } from '@/lib/forum/sorting';
 
 const FeedPage: React.FC = () => {
-  const { 
-    posts, 
-    comments, 
-    isInitialLoading, 
-    isRefreshing, 
-    refreshData 
-  } = useForum();
+  const { posts, comments, isInitialLoading, isRefreshing, refreshData } =
+    useForum();
   const { verificationStatus } = useAuth();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
@@ -28,7 +29,9 @@ const FeedPage: React.FC = () => {
 
   // Calculate comment counts for each post
   const getCommentCount = (postId: string) => {
-    return comments.filter(comment => comment.postId === postId && !comment.moderated).length;
+    return comments.filter(
+      comment => comment.postId === postId && !comment.moderated
+    ).length;
   };
 
   // Loading skeleton
@@ -36,12 +39,15 @@ const FeedPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-cyber-dark">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
-                  <div className="flex gap-6">
-          {/* Main feed skeleton */}
-          <div className="flex-1 max-w-3xl">
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="bg-cyber-muted/20 border border-cyber-muted rounded-sm p-4">
+          <div className="flex gap-6">
+            {/* Main feed skeleton */}
+            <div className="flex-1 max-w-3xl">
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-cyber-muted/20 border border-cyber-muted rounded-sm p-4"
+                  >
                     <div className="flex gap-4">
                       <div className="w-10 space-y-2">
                         <Skeleton className="h-6 w-6" />
@@ -60,11 +66,14 @@ const FeedPage: React.FC = () => {
                 ))}
               </div>
             </div>
-            
+
             {/* Sidebar skeleton */}
             <div className="w-80 space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-cyber-muted/20 border border-cyber-muted rounded-sm p-4">
+                <div
+                  key={i}
+                  className="bg-cyber-muted/20 border border-cyber-muted rounded-sm p-4"
+                >
                   <Skeleton className="h-6 w-1/2 mb-3" />
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-full" />
@@ -94,7 +103,10 @@ const FeedPage: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Select value={sortOption} onValueChange={(value: SortOption) => setSortOption(value)}>
+            <Select
+              value={sortOption}
+              onValueChange={(value: SortOption) => setSortOption(value)}
+            >
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
@@ -113,15 +125,17 @@ const FeedPage: React.FC = () => {
                 </SelectItem>
               </SelectContent>
             </Select>
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               size="sm"
-              onClick={refreshData} 
+              onClick={refreshData}
               disabled={isRefreshing}
               className="flex items-center space-x-2"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+              />
               <span>Refresh</span>
             </Button>
           </div>
@@ -143,16 +157,17 @@ const FeedPage: React.FC = () => {
                     </p>
                     {verificationStatus !== 'verified-owner' && (
                       <p className="text-sm text-cyber-neutral/80">
-                        Connect your wallet and verify Ordinal ownership to start posting
+                        Connect your wallet and verify Ordinal ownership to
+                        start posting
                       </p>
                     )}
                   </div>
                 </div>
               ) : (
                 allPosts.map(post => (
-                  <PostCard 
-                    key={post.id} 
-                    post={post} 
+                  <PostCard
+                    key={post.id}
+                    post={post}
                     commentCount={getCommentCount(post.id)}
                   />
                 ))

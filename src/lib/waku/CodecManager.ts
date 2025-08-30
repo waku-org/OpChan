@@ -1,9 +1,4 @@
-import {
-  IDecodedMessage,
-  IDecoder,
-  IEncoder,
-  LightNode,
-} from '@waku/sdk';
+import { IDecodedMessage, IDecoder, IEncoder, LightNode } from '@waku/sdk';
 import { MessageType } from '../../types/waku';
 import {
   CellMessage,
@@ -20,14 +15,14 @@ export class CodecManager {
 
   constructor(private node: LightNode) {
     this.encoders = new Map(
-      Object.values(MessageType).map((type) => [
+      Object.values(MessageType).map(type => [
         type,
         this.node.createEncoder({ contentTopic: CONTENT_TOPICS[type] }),
       ])
     );
 
     this.decoders = new Map(
-      Object.values(MessageType).map((type) => [
+      Object.values(MessageType).map(type => [
         type,
         this.node.createDecoder({ contentTopic: CONTENT_TOPICS[type] }),
       ])
@@ -77,9 +72,7 @@ export class CodecManager {
   /**
    * Get decoder for a specific message type
    */
-  getDecoder(
-    messageType: MessageType
-  ): IDecoder<IDecodedMessage> {
+  getDecoder(messageType: MessageType): IDecoder<IDecodedMessage> {
     const decoder = this.decoders.get(messageType);
     if (!decoder) {
       throw new Error(`No decoder found for message type: ${messageType}`);
@@ -97,9 +90,7 @@ export class CodecManager {
   /**
    * Get decoders for specific message types
    */
-  getDecoders(
-    messageTypes: MessageType[]
-  ): IDecoder<IDecodedMessage>[] {
-    return messageTypes.map((type) => this.getDecoder(type));
+  getDecoders(messageTypes: MessageType[]): IDecoder<IDecodedMessage>[] {
+    return messageTypes.map(type => this.getDecoder(type));
   }
 }

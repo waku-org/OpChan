@@ -1,4 +1,3 @@
-import React from 'react';
 import Header from '@/components/Header';
 import CellList from '@/components/CellList';
 import { useForum } from '@/contexts/useForum';
@@ -15,8 +14,8 @@ const Index = () => {
         <CellList />
         {!isNetworkConnected && (
           <div className="fixed bottom-4 right-4">
-            <Button 
-              onClick={refreshData} 
+            <Button
+              onClick={refreshData}
               variant="destructive"
               className="flex items-center gap-2 shadow-lg animate-pulse"
             >

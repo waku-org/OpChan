@@ -1,8 +1,13 @@
-import { IDecodedMessage, LightNode, ReliableChannel, ReliableChannelEvent } from "@waku/sdk";
-import { MessageType } from "../../../types/waku";
-import { CodecManager } from "../CodecManager";
-import { generateStringId } from "@/lib/utils";
-import { OpchanMessage } from "@/types/forum";
+import {
+  IDecodedMessage,
+  LightNode,
+  ReliableChannel,
+  ReliableChannelEvent,
+} from '@waku/sdk';
+import { MessageType } from '../../../types/waku';
+import { CodecManager } from '../CodecManager';
+import { generateStringId } from '@/lib/utils';
+import { OpchanMessage } from '@/types/forum';
 
 export interface MessageStatusCallback {
   onSent?: (messageId: string) => void;
@@ -13,11 +18,12 @@ export interface MessageStatusCallback {
 export type IncomingMessageCallback = (message: OpchanMessage) => void;
 
 export class ReliableMessaging {
-  private channels: Map<MessageType, ReliableChannel<IDecodedMessage>> = new Map();
+  private channels: Map<MessageType, ReliableChannel<IDecodedMessage>> =
+    new Map();
   private messageCallbacks: Map<string, MessageStatusCallback> = new Map();
   private incomingMessageCallbacks: Set<IncomingMessageCallback> = new Set();
   private codecManager: CodecManager;
-  
+
   constructor(node: LightNode) {
     this.codecManager = new CodecManager(node);
     this.initializeChannels(node);
@@ -29,9 +35,15 @@ export class ReliableMessaging {
       const decoder = this.codecManager.getDecoder(type);
       const senderId = generateStringId();
       const channelId = `opchan-${type}`;
-      
+
       try {
-        const channel = await ReliableChannel.create(node, channelId, senderId, encoder, decoder);
+        const channel = await ReliableChannel.create(
+          node,
+          channelId,
+          senderId,
+          encoder,
+          decoder
+        );
         this.channels.set(type, channel);
         this.setupChannelListeners(channel, type);
       } catch (error) {
@@ -40,43 +52,59 @@ export class ReliableMessaging {
     }
   }
 
-  private setupChannelListeners(channel: ReliableChannel<IDecodedMessage>, type: MessageType): void {
-    channel.addEventListener(ReliableChannelEvent.InMessageReceived, (event) => {
+  private setupChannelListeners(
+    channel: ReliableChannel<IDecodedMessage>,
+    type: MessageType
+  ): void {
+    channel.addEventListener(ReliableChannelEvent.InMessageReceived, event => {
       try {
         const wakuMessage = event.detail;
         if (wakuMessage.payload) {
-          const opchanMessage = this.codecManager.decodeMessage(wakuMessage.payload);
-          this.incomingMessageCallbacks.forEach(callback => callback(opchanMessage));
+          const opchanMessage = this.codecManager.decodeMessage(
+            wakuMessage.payload
+          );
+          this.incomingMessageCallbacks.forEach(callback =>
+            callback(opchanMessage)
+          );
         }
       } catch (error) {
         console.error(`Failed to process incoming message for ${type}:`, error);
       }
     });
 
-    channel.addEventListener(ReliableChannelEvent.OutMessageSent, (event) => {
+    channel.addEventListener(ReliableChannelEvent.OutMessageSent, event => {
       const messageId = event.detail;
       this.messageCallbacks.get(messageId)?.onSent?.(messageId);
     });
 
-    channel.addEventListener(ReliableChannelEvent.OutMessageAcknowledged, (event) => {
-      const messageId = event.detail;
-      this.messageCallbacks.get(messageId)?.onAcknowledged?.(messageId);
-    });
-
-    channel.addEventListener(ReliableChannelEvent.OutMessageIrrecoverableError, (event) => {
-      const messageId = event.detail.messageId;
-      const error = event.detail.error;
-      const callback = this.messageCallbacks.get(messageId);
-      
-      if (callback?.onError) {
-        callback.onError(messageId, error?.toString() || 'Unknown error');
+    channel.addEventListener(
+      ReliableChannelEvent.OutMessageAcknowledged,
+      event => {
+        const messageId = event.detail;
+        this.messageCallbacks.get(messageId)?.onAcknowledged?.(messageId);
       }
-      
-      this.messageCallbacks.delete(messageId);
-    });
+    );
+
+    channel.addEventListener(
+      ReliableChannelEvent.OutMessageIrrecoverableError,
+      event => {
+        const messageId = event.detail.messageId;
+        const error = event.detail.error;
+        const callback = this.messageCallbacks.get(messageId);
+
+        if (callback?.onError) {
+          callback.onError(messageId, error?.toString() || 'Unknown error');
+        }
+
+        this.messageCallbacks.delete(messageId);
+      }
+    );
   }
 
-  public async sendMessage(message: OpchanMessage, statusCallback?: MessageStatusCallback): Promise<void> {
+  public async sendMessage(
+    message: OpchanMessage,
+    statusCallback?: MessageStatusCallback
+  ): Promise<void> {
     const channel = this.channels.get(message.type);
     if (!channel) {
       throw new Error(`No reliable channel for message type: ${message.type}`);

@@ -6,7 +6,9 @@ export type SortOption = 'relevance' | 'time';
  * Sort posts by relevance score (highest first)
  */
 export const sortByRelevance = (items: Post[] | Comment[] | Cell[]) => {
-  return items.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+  return items.sort(
+    (a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0)
+  );
 };
 
 /**
@@ -33,7 +35,10 @@ export const sortPosts = (posts: Post[], option: SortOption): Post[] => {
 /**
  * Sort comments with a specific option
  */
-export const sortComments = (comments: Comment[], option: SortOption): Comment[] => {
+export const sortComments = (
+  comments: Comment[],
+  option: SortOption
+): Comment[] => {
   switch (option) {
     case 'relevance':
       return sortByRelevance(comments) as Comment[];

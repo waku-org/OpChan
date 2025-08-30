@@ -1,8 +1,8 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function bytesToHex(bytes: Uint8Array): string {
@@ -10,7 +10,6 @@ export function bytesToHex(bytes: Uint8Array): string {
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
 }
-
 
 export function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);

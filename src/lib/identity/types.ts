@@ -22,4 +22,4 @@ export interface OrdinalApiResponse {
   has_operators: boolean;
   error_message: string;
   data: OrdinalDetail[];
-} 
+}

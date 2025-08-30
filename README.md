@@ -13,22 +13,26 @@ A decentralized forum application built as a Proof of Concept for a Waku-powered
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/waku-org/OpChan.git
    cd OpChan
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Setup environment variables**
+
    ```bash
    cp .env.example .env
    ```
-   
+
    Edit `.env` to configure development settings:
+
    ```env
    # Set to 'true' to bypass verification in development
    VITE_OPCHAN_MOCK_ORDINAL_CHECK=false
@@ -101,6 +105,7 @@ OpChan uses a two-tier authentication system:
 7. Open a Pull Request
 
 ## TODOs
+
 - [x] replace mock wallet connection/disconnection
   - supports Phantom
 - [x] replace mock Ordinal verification (API)
@@ -118,7 +123,6 @@ OpChan implements a decentralized architecture with these key components:
 - **Key Delegation**: Improves UX while maintaining security
 - **Content Addressing**: Messages are cryptographically signed and verifiable
 - **Moderation Layer**: Cell-based moderation without global censorship
-
 
 ## Support
 

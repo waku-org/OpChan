@@ -4,7 +4,16 @@ import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, ArrowUp, ArrowDown, Clock, MessageCircle, Send, Eye, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  Clock,
+  MessageCircle,
+  Send,
+  Eye,
+  Loader2,
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Comment } from '@/types/forum';
 import { CypherImage } from './ui/CypherImage';
@@ -14,144 +23,181 @@ import { AuthorDisplay } from './ui/author-display';
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
-  const { 
-    posts, 
-    getCommentsByPost, 
-    createComment, 
-    votePost, 
-    voteComment, 
-    getCellById, 
-    isInitialLoading, 
+  const {
+    posts,
+    getCommentsByPost,
+    createComment,
+    votePost,
+    voteComment,
+    getCellById,
+    isInitialLoading,
     isPostingComment,
     isVoting,
     moderateComment,
     moderateUser,
-    userVerificationStatus
+    userVerificationStatus,
   } = useForum();
-  const { currentUser,  verificationStatus } = useAuth();
+  const { currentUser, verificationStatus } = useAuth();
   const [newComment, setNewComment] = useState('');
-  
+
   if (!postId) return <div>Invalid post ID</div>;
-  
+
   if (isInitialLoading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-primary" />
-        <p className="text-lg font-medium text-muted-foreground">Loading Post...</p>
+        <p className="text-lg font-medium text-muted-foreground">
+          Loading Post...
+        </p>
       </div>
     );
   }
-  
+
   const post = posts.find(p => p.id === postId);
-  
+
   if (!post) {
     return (
       <div className="container mx-auto px-4 py-6 text-center">
         <h2 className="text-xl font-bold mb-4">Post not found</h2>
-        <p className="mb-4">The post you're looking for doesn't exist or has been removed.</p>
+        <p className="mb-4">
+          The post you're looking for doesn't exist or has been removed.
+        </p>
         <Button asChild>
           <Link to="/">Go back home</Link>
         </Button>
       </div>
     );
   }
-  
+
   const cell = getCellById(post.cellId);
   const postComments = getCommentsByPost(post.id);
-  
-  const isCellAdmin = currentUser && cell && currentUser.address === cell.signature;
+
+  const isCellAdmin =
+    currentUser && cell && currentUser.address === cell.signature;
   const visibleComments = isCellAdmin
     ? postComments
     : postComments.filter(comment => !comment.moderated);
-  
+
   const handleCreateComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newComment.trim()) return;
-    
+
     try {
       const result = await createComment(postId, newComment);
       if (result) {
         setNewComment('');
       }
     } catch (error) {
-      console.error("Error creating comment:", error);
+      console.error('Error creating comment:', error);
     }
   };
-  
+
   const handleVotePost = async (isUpvote: boolean) => {
-    if (verificationStatus !== 'verified-owner' && verificationStatus !== 'verified-basic' && !currentUser?.ensOwnership && !currentUser?.ordinalOwnership) return;
+    if (
+      verificationStatus !== 'verified-owner' &&
+      verificationStatus !== 'verified-basic' &&
+      !currentUser?.ensDetails &&
+      !currentUser?.ordinalDetails
+    )
+      return;
     await votePost(post.id, isUpvote);
   };
-  
+
   const handleVoteComment = async (commentId: string, isUpvote: boolean) => {
-    if (verificationStatus !== 'verified-owner' && verificationStatus !== 'verified-basic' && !currentUser?.ensOwnership && !currentUser?.ordinalOwnership) return;
+    if (
+      verificationStatus !== 'verified-owner' &&
+      verificationStatus !== 'verified-basic' &&
+      !currentUser?.ensDetails &&
+      !currentUser?.ordinalDetails
+    )
+      return;
     await voteComment(commentId, isUpvote);
   };
-  
-  const isPostUpvoted = currentUser && post.upvotes.some(vote => vote.author === currentUser.address);
-  const isPostDownvoted = currentUser && post.downvotes.some(vote => vote.author === currentUser.address);
-  
+
+  const isPostUpvoted =
+    currentUser &&
+    post.upvotes.some(vote => vote.author === currentUser.address);
+  const isPostDownvoted =
+    currentUser &&
+    post.downvotes.some(vote => vote.author === currentUser.address);
+
   const isCommentVoted = (comment: Comment, isUpvote: boolean) => {
     if (!currentUser) return false;
     const votes = isUpvote ? comment.upvotes : comment.downvotes;
     return votes.some(vote => vote.author === currentUser.address);
   };
-  
+
   const getIdentityImageUrl = (address: string) => {
     return `https://api.dicebear.com/7.x/identicon/svg?seed=${address}`;
   };
-  
+
   const handleModerateComment = async (commentId: string) => {
-    const reason = window.prompt('Enter a reason for moderation (optional):') || undefined;
+    const reason =
+      window.prompt('Enter a reason for moderation (optional):') || undefined;
     if (!cell) return;
     await moderateComment(cell.id, commentId, reason, cell.signature);
   };
-  
+
   const handleModerateUser = async (userAddress: string) => {
     if (!cell) return;
-    const reason = window.prompt('Reason for moderating this user? (optional)') || undefined;
+    const reason =
+      window.prompt('Reason for moderating this user? (optional)') || undefined;
     await moderateUser(cell.id, userAddress, reason, cell.signature);
   };
-  
+
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="mb-6">
-        <Button 
-          onClick={() => navigate(`/cell/${post.cellId}`)} 
-          variant="ghost" 
+        <Button
+          onClick={() => navigate(`/cell/${post.cellId}`)}
+          variant="ghost"
           size="sm"
           className="mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
           Back to /{cell?.name || 'cell'}/
         </Button>
-        
+
         <div className="border border-muted rounded-sm p-3 mb-6">
           <div className="flex gap-3 items-start">
             <div className="flex flex-col items-center w-6 pt-1">
-              <button 
+              <button
                 className={`p-1 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isPostUpvoted ? 'text-primary' : ''}`}
                 onClick={() => handleVotePost(true)}
                 disabled={verificationStatus !== 'verified-owner' || isVoting}
-                title={verificationStatus === 'verified-owner' ? "Upvote" : "Full access required to vote"}
+                title={
+                  verificationStatus === 'verified-owner'
+                    ? 'Upvote'
+                    : 'Full access required to vote'
+                }
               >
                 <ArrowUp className="w-5 h-5" />
               </button>
-              <span className="text-sm font-medium py-1">{post.upvotes.length - post.downvotes.length}</span>
-              <button 
+              <span className="text-sm font-medium py-1">
+                {post.upvotes.length - post.downvotes.length}
+              </span>
+              <button
                 className={`p-1 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isPostDownvoted ? 'text-primary' : ''}`}
                 onClick={() => handleVotePost(false)}
                 disabled={verificationStatus !== 'verified-owner' || isVoting}
-                title={verificationStatus === 'verified-owner' ? "Downvote" : "Full access required to vote"}
+                title={
+                  verificationStatus === 'verified-owner'
+                    ? 'Downvote'
+                    : 'Full access required to vote'
+                }
               >
                 <ArrowDown className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="flex-1">
-              <h2 className="text-xl font-bold mb-2 text-foreground">{post.title}</h2>
-              <p className="text-base mb-4 text-foreground/90">{post.content}</p>
+              <h2 className="text-xl font-bold mb-2 text-foreground">
+                {post.title}
+              </h2>
+              <p className="text-base mb-4 text-foreground/90">
+                {post.content}
+              </p>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center">
                   <Clock className="w-3 h-3 mr-1" />
@@ -159,16 +205,17 @@ const PostDetail = () => {
                 </span>
                 <span className="flex items-center">
                   <MessageCircle className="w-3 h-3 mr-1" />
-                  {postComments.length} {postComments.length === 1 ? 'comment' : 'comments'}
+                  {postComments.length}{' '}
+                  {postComments.length === 1 ? 'comment' : 'comments'}
                 </span>
-                <AuthorDisplay 
+                <AuthorDisplay
                   address={post.authorAddress}
                   userVerificationStatus={userVerificationStatus}
                   className="truncate max-w-[150px]"
                 />
                 {post.relevanceScore !== undefined && (
-                  <RelevanceIndicator 
-                    score={post.relevanceScore} 
+                  <RelevanceIndicator
+                    score={post.relevanceScore}
                     details={post.relevanceDetails}
                     type="post"
                     className="text-xs"
@@ -180,20 +227,23 @@ const PostDetail = () => {
           </div>
         </div>
       </div>
-      
-      {(verificationStatus === 'verified-owner' || verificationStatus === 'verified-basic' || currentUser?.ensOwnership || currentUser?.ordinalOwnership) ? (
+
+      {verificationStatus === 'verified-owner' ||
+      verificationStatus === 'verified-basic' ||
+      currentUser?.ensDetails ||
+      currentUser?.ordinalDetails ? (
         <div className="mb-8">
           <form onSubmit={handleCreateComment}>
             <div className="flex gap-2">
               <Textarea
                 placeholder="Add a comment..."
                 value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
+                onChange={e => setNewComment(e.target.value)}
                 className="flex-1 bg-secondary/40 border-muted resize-none rounded-sm text-sm p-2"
                 disabled={isPostingComment}
               />
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isPostingComment || !newComment.trim()}
                 size="icon"
               >
@@ -209,19 +259,21 @@ const PostDetail = () => {
             <h3 className="font-medium">Read-Only Mode</h3>
           </div>
           <p className="text-sm text-muted-foreground">
-            Your wallet has been verified but does not contain any Ordinal Operators. 
-            You can browse threads but cannot comment or vote.
+            Your wallet has been verified but does not contain any Ordinal
+            Operators. You can browse threads but cannot comment or vote.
           </p>
         </div>
       ) : (
         <div className="mb-8 p-3 border border-muted rounded-sm bg-secondary/30 text-center">
-          <p className="text-sm mb-2">Connect wallet and verify ownership to comment</p>
+          <p className="text-sm mb-2">
+            Connect wallet and verify ownership to comment
+          </p>
           <Button asChild size="sm">
             <Link to="/">Go to Home</Link>
           </Button>
         </div>
       )}
-      
+
       <div className="space-y-2">
         {postComments.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
@@ -229,23 +281,41 @@ const PostDetail = () => {
           </div>
         ) : (
           visibleComments.map(comment => (
-            <div key={comment.id} className="comment-card" id={`comment-${comment.id}`}>
+            <div
+              key={comment.id}
+              className="comment-card"
+              id={`comment-${comment.id}`}
+            >
               <div className="flex gap-2 items-start">
                 <div className="flex flex-col items-center w-5 pt-0.5">
-                  <button 
+                  <button
                     className={`p-0.5 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isCommentVoted(comment, true) ? 'text-primary' : ''}`}
                     onClick={() => handleVoteComment(comment.id, true)}
-                    disabled={verificationStatus !== 'verified-owner' || isVoting}
-                    title={verificationStatus === 'verified-owner' ? "Upvote" : "Full access required to vote"}
+                    disabled={
+                      verificationStatus !== 'verified-owner' || isVoting
+                    }
+                    title={
+                      verificationStatus === 'verified-owner'
+                        ? 'Upvote'
+                        : 'Full access required to vote'
+                    }
                   >
                     <ArrowUp className="w-4 h-4" />
                   </button>
-                  <span className="text-xs font-medium py-0.5">{comment.upvotes.length - comment.downvotes.length}</span>
-                  <button 
+                  <span className="text-xs font-medium py-0.5">
+                    {comment.upvotes.length - comment.downvotes.length}
+                  </span>
+                  <button
                     className={`p-0.5 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isCommentVoted(comment, false) ? 'text-primary' : ''}`}
                     onClick={() => handleVoteComment(comment.id, false)}
-                    disabled={verificationStatus !== 'verified-owner' || isVoting}
-                    title={verificationStatus === 'verified-owner' ? "Downvote" : "Full access required to vote"}
+                    disabled={
+                      verificationStatus !== 'verified-owner' || isVoting
+                    }
+                    title={
+                      verificationStatus === 'verified-owner'
+                        ? 'Downvote'
+                        : 'Full access required to vote'
+                    }
                   >
                     <ArrowDown className="w-4 h-4" />
                   </button>
@@ -253,12 +323,12 @@ const PostDetail = () => {
                 <div className="flex-1 pt-0.5">
                   <div className="flex justify-between items-center mb-1.5">
                     <div className="flex items-center gap-1.5">
-                      <CypherImage 
+                      <CypherImage
                         src={getIdentityImageUrl(comment.authorAddress)}
                         alt={comment.authorAddress.slice(0, 6)}
                         className="rounded-sm w-5 h-5 bg-secondary"
                       />
-                      <AuthorDisplay 
+                      <AuthorDisplay
                         address={comment.authorAddress}
                         userVerificationStatus={userVerificationStatus}
                         className="text-xs"
@@ -266,8 +336,8 @@ const PostDetail = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {comment.relevanceScore !== undefined && (
-                        <RelevanceIndicator 
-                          score={comment.relevanceScore} 
+                        <RelevanceIndicator
+                          score={comment.relevanceScore}
                           details={comment.relevanceDetails}
                           type="comment"
                           className="text-xs"
@@ -275,23 +345,37 @@ const PostDetail = () => {
                         />
                       )}
                       <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
+                        {formatDistanceToNow(comment.timestamp, {
+                          addSuffix: true,
+                        })}
                       </span>
                     </div>
                   </div>
                   <p className="text-sm break-words">{comment.content}</p>
                   {isCellAdmin && !comment.moderated && (
-                    <Button size="sm" variant="destructive" className="ml-2" onClick={() => handleModerateComment(comment.id)}>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="ml-2"
+                      onClick={() => handleModerateComment(comment.id)}
+                    >
                       Moderate
                     </Button>
                   )}
                   {isCellAdmin && comment.authorAddress !== cell.signature && (
-                    <Button size="sm" variant="destructive" className="ml-2" onClick={() => handleModerateUser(comment.authorAddress)}>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="ml-2"
+                      onClick={() => handleModerateUser(comment.authorAddress)}
+                    >
                       Moderate User
                     </Button>
                   )}
                   {comment.moderated && (
-                    <span className="ml-2 text-xs text-red-500">[Moderated]</span>
+                    <span className="ml-2 text-xs text-red-500">
+                      [Moderated]
+                    </span>
                   )}
                 </div>
               </div>

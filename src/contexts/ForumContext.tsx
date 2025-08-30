@@ -1,26 +1,33 @@
-import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { Cell, Post, Comment, OpchanMessage, User, EVerificationStatus } from '@/types/forum';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
+import { Cell, Post, Comment, OpchanMessage } from '@/types/forum';
+import { User, EVerificationStatus, DisplayPreference } from '@/types/identity';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/useAuth';
-import { 
-  createPost, 
-  createComment, 
-  vote, 
-  createCell, 
-  moderatePost, 
-  moderateComment, 
-  moderateUser 
+import {
+  createPost,
+  createComment,
+  vote,
+  createCell,
+  moderatePost,
+  moderateComment,
+  moderateUser,
 } from '@/lib/forum/actions';
-import { 
-  setupPeriodicQueries, 
-  monitorNetworkHealth, 
-  initializeNetwork 
+import {
+  setupPeriodicQueries,
+  monitorNetworkHealth,
+  initializeNetwork,
 } from '@/lib/waku/network';
 import messageManager from '@/lib/waku';
 import { getDataFromCache } from '@/lib/forum/transformers';
 import { RelevanceCalculator } from '@/lib/forum/relevance';
 import { UserVerificationStatus } from '@/types/forum';
-import { CryptoService, AuthService } from '@/lib/services';
+import { CryptoService } from '@/lib/services';
 import { getEnsName } from '@wagmi/core';
 import { config } from '@/lib/identity/wallets/appkit';
 
@@ -43,11 +50,19 @@ interface ForumContextType {
   getCellById: (id: string) => Cell | undefined;
   getPostsByCell: (cellId: string) => Post[];
   getCommentsByPost: (postId: string) => Comment[];
-  createPost: (cellId: string, title: string, content: string) => Promise<Post | null>;
+  createPost: (
+    cellId: string,
+    title: string,
+    content: string
+  ) => Promise<Post | null>;
   createComment: (postId: string, content: string) => Promise<Comment | null>;
   votePost: (postId: string, isUpvote: boolean) => Promise<boolean>;
   voteComment: (commentId: string, isUpvote: boolean) => Promise<boolean>;
-  createCell: (name: string, description: string, icon?: string) => Promise<Cell | null>;
+  createCell: (
+    name: string,
+    description: string,
+    icon?: string
+  ) => Promise<Cell | null>;
   refreshData: () => Promise<void>;
   moderatePost: (
     cellId: string,
@@ -85,43 +100,43 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isNetworkConnected, setIsNetworkConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userVerificationStatus, setUserVerificationStatus] = useState<UserVerificationStatus>({});
-  
+  const [userVerificationStatus, setUserVerificationStatus] =
+    useState<UserVerificationStatus>({});
+
   const { toast } = useToast();
   const { currentUser, isAuthenticated } = useAuth();
-  
+
   const cryptoService = useMemo(() => new CryptoService(), []);
-  const authService = useMemo(() => new AuthService(cryptoService), [cryptoService]);
-  
+
   // Transform message cache data to the expected types
   const updateStateFromCache = useCallback(() => {
     // Use the verifyMessage function from cryptoService if available
-    const verifyFn = isAuthenticated ? 
-      (message: OpchanMessage) => cryptoService.verifyMessage(message) : 
-      undefined;
-    
+    const verifyFn = isAuthenticated
+      ? (message: OpchanMessage) => cryptoService.verifyMessage(message)
+      : undefined;
+
     // Build user verification status for relevance calculation
     const relevanceCalculator = new RelevanceCalculator();
     const allUsers: User[] = [];
-    
+
     // Collect all unique users from posts, comments, and votes
     const userAddresses = new Set<string>();
-    
+
     // Add users from posts
     Object.values(messageManager.messageCache.posts).forEach(post => {
       userAddresses.add(post.author);
     });
-    
+
     // Add users from comments
     Object.values(messageManager.messageCache.comments).forEach(comment => {
       userAddresses.add(comment.author);
     });
-    
+
     // Add users from votes
     Object.values(messageManager.messageCache.votes).forEach(vote => {
       userAddresses.add(vote.author);
     });
-    
+
     // Create user objects for verification status
     Array.from(userAddresses).forEach(address => {
       // Check if this address matches the current user's address
@@ -131,27 +146,31 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
           address,
           walletType: currentUser.walletType,
           verificationStatus: currentUser.verificationStatus,
-          ensOwnership: currentUser.ensOwnership,
-          ensName: currentUser.ensName,
-          ensAvatar: currentUser.ensAvatar,
-          ordinalOwnership: currentUser.ordinalOwnership,
-          lastChecked: currentUser.lastChecked
+          displayPreference: currentUser.displayPreference,
+          ensDetails: currentUser.ensDetails,
+          ordinalDetails: currentUser.ordinalDetails,
+          lastChecked: currentUser.lastChecked,
         });
       } else {
         // Create generic user object for other addresses
         allUsers.push({
           address,
           walletType: address.startsWith('0x') ? 'ethereum' : 'bitcoin',
-          verificationStatus: EVerificationStatus.UNVERIFIED
+          verificationStatus: EVerificationStatus.UNVERIFIED,
+          displayPreference: DisplayPreference.WALLET_ADDRESS,
         });
       }
     });
-    
-    const initialStatus = relevanceCalculator.buildUserVerificationStatus(allUsers);
-    
+
+    const initialStatus =
+      relevanceCalculator.buildUserVerificationStatus(allUsers);
+
     // Transform data with relevance calculation (initial pass)
-    const { cells, posts, comments } = getDataFromCache(verifyFn, initialStatus);
-    
+    const { cells, posts, comments } = getDataFromCache(
+      verifyFn,
+      initialStatus
+    );
+
     setCells(cells);
     setPosts(posts);
     setComments(comments);
@@ -159,17 +178,25 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
 
     // Enrich: resolve ENS for ethereum addresses asynchronously and update
     (async () => {
-      const targets = allUsers.filter(u => u.walletType === 'ethereum' && !u.ensOwnership);
+      const targets = allUsers.filter(
+        u => u.walletType === 'ethereum' && !u.ensDetails
+      );
       if (targets.length === 0) return;
-      const lookups = await Promise.all(targets.map(async (u) => {
-        try {
-          const name = await getEnsName(config, { address: u.address as `0x${string}` });
-          return { address: u.address, ensName: name || undefined };
-        } catch {
-          return { address: u.address, ensName: undefined };
-        }
-      }));
-      const ensByAddress = new Map<string, string | undefined>(lookups.map(l => [l.address, l.ensName]));
+      const lookups = await Promise.all(
+        targets.map(async u => {
+          try {
+            const name = await getEnsName(config, {
+              address: u.address as `0x${string}`,
+            });
+            return { address: u.address, ensName: name || undefined };
+          } catch {
+            return { address: u.address, ensName: undefined };
+          }
+        })
+      );
+      const ensByAddress = new Map<string, string | undefined>(
+        lookups.map(l => [l.address, l.ensName])
+      );
       const enrichedUsers: User[] = allUsers.map(u => {
         const ensName = ensByAddress.get(u.address);
         if (ensName) {
@@ -178,12 +205,13 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
             walletType: 'ethereum',
             ensOwnership: true,
             ensName,
-            verificationStatus: 'verified-owner'
+            verificationStatus: 'verified-owner',
           } as User;
         }
         return u;
       });
-      const enrichedStatus = relevanceCalculator.buildUserVerificationStatus(enrichedUsers);
+      const enrichedStatus =
+        relevanceCalculator.buildUserVerificationStatus(enrichedUsers);
       const transformed = getDataFromCache(verifyFn, enrichedStatus);
       setCells(transformed.cells);
       setPosts(transformed.posts);
@@ -191,22 +219,22 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       setUserVerificationStatus(enrichedStatus);
     })();
   }, [cryptoService, isAuthenticated, currentUser]);
-  
+
   const handleRefreshData = async () => {
     setIsRefreshing(true);
     try {
       // SDS handles message syncing automatically, just update UI
       updateStateFromCache();
       toast({
-        title: "Data Refreshed",
-        description: "Your view has been updated.",
+        title: 'Data Refreshed',
+        description: 'Your view has been updated.',
       });
     } catch (error) {
-      console.error("Error refreshing data:", error);
+      console.error('Error refreshing data:', error);
       toast({
-        title: "Refresh Failed",
-        description: "Could not update the view. Please try again.",
-        variant: "destructive",
+        title: 'Refresh Failed',
+        description: 'Could not update the view. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsRefreshing(false);
@@ -239,87 +267,101 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getPostsByCell = (cellId: string): Post[] => {
-    return posts.filter(post => post.cellId === cellId)
+    return posts
+      .filter(post => post.cellId === cellId)
       .sort((a, b) => b.timestamp - a.timestamp);
   };
 
   const getCommentsByPost = (postId: string): Comment[] => {
-    return comments.filter(comment => comment.postId === postId)
+    return comments
+      .filter(comment => comment.postId === postId)
       .sort((a, b) => a.timestamp - b.timestamp);
   };
 
-  const handleCreatePost = async (cellId: string, title: string, content: string): Promise<Post | null> => {
+  const handleCreatePost = async (
+    cellId: string,
+    title: string,
+    content: string
+  ): Promise<Post | null> => {
     setIsPostingPost(true);
     const result = await createPost(
-      cellId, 
-      title, 
-      content, 
-      currentUser, 
-      isAuthenticated, 
-      toast, 
-      updateStateFromCache,
-      authService
+      cellId,
+      title,
+      content,
+      currentUser,
+      isAuthenticated,
+      toast,
+      updateStateFromCache
     );
     setIsPostingPost(false);
     return result;
   };
 
-  const handleCreateComment = async (postId: string, content: string): Promise<Comment | null> => {
+  const handleCreateComment = async (
+    postId: string,
+    content: string
+  ): Promise<Comment | null> => {
     setIsPostingComment(true);
     const result = await createComment(
-      postId, 
-      content, 
-      currentUser, 
-      isAuthenticated, 
-      toast, 
-      updateStateFromCache,
-      authService
+      postId,
+      content,
+      currentUser,
+      isAuthenticated,
+      toast,
+      updateStateFromCache
     );
     setIsPostingComment(false);
     return result;
   };
 
-  const handleVotePost = async (postId: string, isUpvote: boolean): Promise<boolean> => {
+  const handleVotePost = async (
+    postId: string,
+    isUpvote: boolean
+  ): Promise<boolean> => {
     setIsVoting(true);
     const result = await vote(
-      postId, 
-      isUpvote, 
-      currentUser, 
-      isAuthenticated, 
-      toast, 
-      updateStateFromCache,
-      authService
+      postId,
+      isUpvote,
+      currentUser,
+      isAuthenticated,
+      toast,
+      updateStateFromCache
     );
     setIsVoting(false);
     return result;
   };
 
-  const handleVoteComment = async (commentId: string, isUpvote: boolean): Promise<boolean> => {
+  const handleVoteComment = async (
+    commentId: string,
+    isUpvote: boolean
+  ): Promise<boolean> => {
     setIsVoting(true);
     const result = await vote(
-      commentId, 
-      isUpvote, 
-      currentUser, 
-      isAuthenticated, 
-      toast, 
-      updateStateFromCache,
-      authService
+      commentId,
+      isUpvote,
+      currentUser,
+      isAuthenticated,
+      toast,
+      updateStateFromCache
     );
     setIsVoting(false);
     return result;
   };
 
-  const handleCreateCell = async (name: string, description: string, icon?: string): Promise<Cell | null> => {
+  const handleCreateCell = async (
+    name: string,
+    description: string,
+    icon?: string
+  ): Promise<Cell | null> => {
     setIsPostingCell(true);
     const result = await createCell(
-      name, 
-      description, 
-      icon, 
-      currentUser, 
-      isAuthenticated, 
-      toast, 
-      updateStateFromCache,
-      authService
+      name,
+      description,
+      icon,
+      currentUser,
+      isAuthenticated,
+      toast,
+      updateStateFromCache
     );
     setIsPostingCell(false);
     return result;
@@ -339,8 +381,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated,
       cellOwner,
       toast,
-      updateStateFromCache,
-      authService
+      updateStateFromCache
     );
   };
 
@@ -358,8 +399,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated,
       cellOwner,
       toast,
-      updateStateFromCache,
-      authService
+      updateStateFromCache
     );
   };
 
@@ -377,8 +417,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated,
       cellOwner,
       toast,
-      updateStateFromCache,
-      authService
+      updateStateFromCache
     );
   };
 
@@ -408,12 +447,10 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         refreshData: handleRefreshData,
         moderatePost: handleModeratePost,
         moderateComment: handleModerateComment,
-        moderateUser: handleModerateUser
+        moderateUser: handleModerateUser,
       }}
     >
       {children}
     </ForumContext.Provider>
   );
 }
-
-

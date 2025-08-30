@@ -1,9 +1,8 @@
 import { WalletService } from '../identity/wallets/index';
 import { UseAppKitAccountReturn } from '@reown/appkit/react';
 import { AppKit } from '@reown/appkit';
-import { OrdinalAPI } from '../identity/ordinal';
 import { CryptoService, DelegationDuration } from './CryptoService';
-import { EVerificationStatus, User } from '@/types/forum';
+import { EVerificationStatus, User, DisplayPreference } from '@/types/identity';
 import { WalletInfo } from '../identity/wallets/ReOwnWalletService';
 
 export interface AuthResult {
@@ -14,41 +13,45 @@ export interface AuthResult {
 
 export interface AuthServiceInterface {
   // Wallet operations
-  setAccounts(bitcoinAccount: UseAppKitAccountReturn, ethereumAccount: UseAppKitAccountReturn): void;
+  setAccounts(
+    bitcoinAccount: UseAppKitAccountReturn,
+    ethereumAccount: UseAppKitAccountReturn
+  ): void;
   setAppKit(appKit: AppKit): void;
   connectWallet(): Promise<AuthResult>;
   disconnectWallet(): Promise<void>;
-  
+
   // Verification
   verifyOwnership(user: User): Promise<AuthResult>;
-  
+
   // Delegation setup
   delegateKey(user: User, duration?: DelegationDuration): Promise<AuthResult>;
-  
+
   // User persistence
   loadStoredUser(): User | null;
   saveUser(user: User): void;
   clearStoredUser(): void;
-  
+
   // Wallet info
   getWalletInfo(): Promise<WalletInfo | null>;
 }
 
 export class AuthService implements AuthServiceInterface {
   private walletService: WalletService;
-  private ordinalApi: OrdinalAPI;
   private cryptoService: CryptoService;
 
   constructor(cryptoService: CryptoService) {
     this.walletService = new WalletService();
-    this.ordinalApi = new OrdinalAPI();
     this.cryptoService = cryptoService;
   }
 
   /**
    * Set AppKit accounts for wallet service
    */
-  setAccounts(bitcoinAccount: UseAppKitAccountReturn, ethereumAccount: UseAppKitAccountReturn) {
+  setAccounts(
+    bitcoinAccount: UseAppKitAccountReturn,
+    ethereumAccount: UseAppKitAccountReturn
+  ) {
     this.walletService.setAccounts(bitcoinAccount, ethereumAccount);
   }
 
@@ -64,26 +67,15 @@ export class AuthService implements AuthServiceInterface {
    */
   private getActiveAddress(): string | null {
     const isBitcoinConnected = this.walletService.isWalletAvailable('bitcoin');
-    const isEthereumConnected = this.walletService.isWalletAvailable('ethereum');
-    
+    const isEthereumConnected =
+      this.walletService.isWalletAvailable('ethereum');
+
     if (isBitcoinConnected) {
       return this.walletService.getActiveAddress('bitcoin') || null;
     } else if (isEthereumConnected) {
       return this.walletService.getActiveAddress('ethereum') || null;
     }
-    
-    return null;
-  }
 
-  /**
-   * Get the active wallet type
-   */
-  private getActiveWalletType(): 'bitcoin' | 'ethereum' | null {
-    if (this.walletService.isWalletAvailable('bitcoin')) {
-      return 'bitcoin';
-    } else if (this.walletService.isWalletAvailable('ethereum')) {
-      return 'ethereum';
-    }
     return null;
   }
 
@@ -93,13 +85,15 @@ export class AuthService implements AuthServiceInterface {
   async connectWallet(): Promise<AuthResult> {
     try {
       // Check which wallet is connected
-      const isBitcoinConnected = this.walletService.isWalletAvailable('bitcoin');
-      const isEthereumConnected = this.walletService.isWalletAvailable('ethereum');
-      
+      const isBitcoinConnected =
+        this.walletService.isWalletAvailable('bitcoin');
+      const isEthereumConnected =
+        this.walletService.isWalletAvailable('ethereum');
+
       if (!isBitcoinConnected && !isEthereumConnected) {
         return {
           success: false,
-          error: 'No wallet connected'
+          error: 'No wallet connected',
         };
       }
 
@@ -110,7 +104,7 @@ export class AuthService implements AuthServiceInterface {
       if (!address) {
         return {
           success: false,
-          error: 'No wallet address available'
+          error: 'No wallet address available',
         };
       }
 
@@ -118,6 +112,7 @@ export class AuthService implements AuthServiceInterface {
         address: address,
         walletType: walletType,
         verificationStatus: EVerificationStatus.UNVERIFIED,
+        displayPreference: DisplayPreference.WALLET_ADDRESS,
         lastChecked: Date.now(),
       };
 
@@ -125,23 +120,29 @@ export class AuthService implements AuthServiceInterface {
       if (walletType === 'ethereum') {
         try {
           const walletInfo = await this.walletService.getWalletInfo();
-          user.ensName = walletInfo?.ensName;
-          user.ensOwnership = !!(walletInfo?.ensName);
+          if (walletInfo?.ensName) {
+            user.ensDetails = {
+              ensName: walletInfo.ensName,
+            };
+          }
         } catch (error) {
-          console.warn('Failed to resolve ENS during wallet connection:', error);
-          user.ensName = undefined;
-          user.ensOwnership = false;
+          console.warn(
+            'Failed to resolve ENS during wallet connection:',
+            error
+          );
+          user.ensDetails = undefined;
         }
       }
 
       return {
         success: true,
-        user
+        user,
       };
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to connect wallet'
+        error:
+          error instanceof Error ? error.message : 'Failed to connect wallet',
       };
     }
   }
@@ -152,7 +153,7 @@ export class AuthService implements AuthServiceInterface {
   async disconnectWallet(): Promise<void> {
     // Clear any existing delegations when disconnecting
     this.cryptoService.clearDelegation();
-    
+
     // Clear stored user data
     this.clearStoredUser();
   }
@@ -169,13 +170,14 @@ export class AuthService implements AuthServiceInterface {
       } else {
         return {
           success: false,
-          error: 'Unknown wallet type'
+          error: 'Unknown wallet type',
         };
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to verify ownership'
+        error:
+          error instanceof Error ? error.message : 'Failed to verify ownership',
       };
     }
   }
@@ -192,13 +194,15 @@ export class AuthService implements AuthServiceInterface {
     const updatedUser = {
       ...user,
       ordinalOwnership: hasOperators,
-      verificationStatus: hasOperators ? EVerificationStatus.VERIFIED_OWNER : EVerificationStatus.VERIFIED_BASIC,
+      verificationStatus: hasOperators
+        ? EVerificationStatus.VERIFIED_OWNER
+        : EVerificationStatus.VERIFIED_BASIC,
       lastChecked: Date.now(),
     };
 
     return {
       success: true,
-      user: updatedUser
+      user: updatedUser,
     };
   }
 
@@ -209,25 +213,27 @@ export class AuthService implements AuthServiceInterface {
     try {
       // Get wallet info with ENS resolution
       const walletInfo = await this.walletService.getWalletInfo();
-      
-      const hasENS = !!(walletInfo?.ensName);
+
+      const hasENS = !!walletInfo?.ensName;
       const ensName = walletInfo?.ensName;
 
       const updatedUser = {
         ...user,
         ensOwnership: hasENS,
         ensName: ensName,
-        verificationStatus: hasENS ? EVerificationStatus.VERIFIED_OWNER : EVerificationStatus.VERIFIED_BASIC,
+        verificationStatus: hasENS
+          ? EVerificationStatus.VERIFIED_OWNER
+          : EVerificationStatus.VERIFIED_BASIC,
         lastChecked: Date.now(),
       };
 
       return {
         success: true,
-        user: updatedUser
+        user: updatedUser,
       };
     } catch (error) {
       console.error('Error verifying ENS ownership:', error);
-      
+
       // Fall back to basic verification on error
       const updatedUser = {
         ...user,
@@ -239,7 +245,7 @@ export class AuthService implements AuthServiceInterface {
 
       return {
         success: true,
-        user: updatedUser
+        user: updatedUser,
       };
     }
   }
@@ -247,48 +253,58 @@ export class AuthService implements AuthServiceInterface {
   /**
    * Set up key delegation for the user
    */
-  async delegateKey(user: User, duration: DelegationDuration = '7days'): Promise<AuthResult> {
+  async delegateKey(
+    user: User,
+    duration: DelegationDuration = '7days'
+  ): Promise<AuthResult> {
     try {
       const walletType = user.walletType;
       const isAvailable = this.walletService.isWalletAvailable(walletType);
-      
+
       if (!isAvailable) {
         return {
           success: false,
-          error: `${walletType} wallet is not available or connected. Please ensure it is connected.`
+          error: `${walletType} wallet is not available or connected. Please ensure it is connected.`,
         };
       }
 
-      const success = await this.walletService.createKeyDelegation(walletType, duration);
-      
+      const success = await this.walletService.createKeyDelegation(
+        walletType,
+        duration
+      );
+
       if (!success) {
         return {
           success: false,
-          error: 'Failed to create key delegation'
+          error: 'Failed to create key delegation',
         };
       }
 
       // Get delegation status to update user
-      const delegationStatus = this.walletService.getDelegationStatus(walletType);
-      
+      const delegationStatus =
+        this.walletService.getDelegationStatus(walletType);
+
       // Get the actual browser public key from the delegation
       const browserPublicKey = this.cryptoService.getBrowserPublicKey();
-      
+
       const updatedUser = {
         ...user,
         browserPubKey: browserPublicKey || undefined,
         delegationSignature: delegationStatus.isValid ? 'valid' : undefined,
-        delegationExpiry: delegationStatus.timeRemaining ? Date.now() + delegationStatus.timeRemaining : undefined,
+        delegationExpiry: delegationStatus.timeRemaining
+          ? Date.now() + delegationStatus.timeRemaining
+          : undefined,
       };
 
       return {
         success: true,
-        user: updatedUser
+        user: updatedUser,
       };
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to delegate key'
+        error:
+          error instanceof Error ? error.message : 'Failed to delegate key',
       };
     }
   }
@@ -312,7 +328,7 @@ export class AuthService implements AuthServiceInterface {
       const user = JSON.parse(storedUser);
       const lastChecked = user.lastChecked || 0;
       const expiryTime = 24 * 60 * 60 * 1000;
-      
+
       if (Date.now() - lastChecked < expiryTime) {
         return user;
       } else {
@@ -320,7 +336,7 @@ export class AuthService implements AuthServiceInterface {
         return null;
       }
     } catch (e) {
-      console.error("Failed to parse stored user data", e);
+      console.error('Failed to parse stored user data', e);
       localStorage.removeItem('opchan-user');
       return null;
     }
@@ -339,4 +355,4 @@ export class AuthService implements AuthServiceInterface {
   clearStoredUser(): void {
     localStorage.removeItem('opchan-user');
   }
-} 
+}

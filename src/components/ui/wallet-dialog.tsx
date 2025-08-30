@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,16 +5,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Bitcoin, Coins } from "lucide-react";
-import { 
-  useAppKit, 
-  useAppKitAccount, 
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Bitcoin, Coins } from 'lucide-react';
+import {
+  useAppKit,
+  useAppKitAccount,
   useDisconnect,
-  useAppKitState
-} from "@reown/appkit/react";
+  useAppKitState,
+} from '@reown/appkit/react';
 
 interface WalletDialogProps {
   open: boolean;
@@ -32,20 +31,20 @@ export function WalletConnectionDialog({
   const { initialized } = useAppKitState();
   const appKit = useAppKit();
   const { disconnect } = useDisconnect();
-  
+
   // Get account info for different chains
-  const bitcoinAccount = useAppKitAccount({ namespace: "bip122" });
-  const ethereumAccount = useAppKitAccount({ namespace: "eip155" });
-  
+  const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
+  const ethereumAccount = useAppKitAccount({ namespace: 'eip155' });
+
   // Determine which account is connected
   const isBitcoinConnected = bitcoinAccount.isConnected;
   const isEthereumConnected = ethereumAccount.isConnected;
   const isConnected = isBitcoinConnected || isEthereumConnected;
-  
+
   // Get the active account info
   const activeAccount = isBitcoinConnected ? bitcoinAccount : ethereumAccount;
   const activeAddress = activeAccount.address;
-  const activeChain = isBitcoinConnected ? "Bitcoin" : "Ethereum";
+  const activeChain = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
 
   const handleDisconnect = async () => {
     await disconnect();
@@ -57,10 +56,10 @@ export function WalletConnectionDialog({
       console.error('AppKit not initialized');
       return;
     }
-    
-    appKit.open({ 
-      view: "Connect", 
-      namespace: "bip122" 
+
+    appKit.open({
+      view: 'Connect',
+      namespace: 'bip122',
     });
     onConnect();
     onOpenChange(false);
@@ -71,10 +70,10 @@ export function WalletConnectionDialog({
       console.error('AppKit not initialized');
       return;
     }
-    
-    appKit.open({ 
-      view: "Connect", 
-      namespace: "eip155" 
+
+    appKit.open({
+      view: 'Connect',
+      namespace: 'eip155',
     });
     onConnect();
     onOpenChange(false);
@@ -105,13 +104,12 @@ export function WalletConnectionDialog({
         <DialogHeader>
           <DialogTitle className="text-xl">Connect Wallet</DialogTitle>
           <DialogDescription className="text-neutral-400">
-            {isConnected 
+            {isConnected
               ? `Connected to ${activeChain} with ${activeAddress?.slice(0, 6)}...${activeAddress?.slice(-4)}`
-              : "Choose a network and wallet to connect to OpChan"
-            }
+              : 'Choose a network and wallet to connect to OpChan'}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-4 py-4">
           {!isConnected ? (
             <div className="space-y-4">
@@ -137,7 +135,7 @@ export function WalletConnectionDialog({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '8px'
+                      gap: '8px',
                     }}
                   >
                     Connect Bitcoin Wallet
@@ -177,7 +175,7 @@ export function WalletConnectionDialog({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '8px'
+                      gap: '8px',
                     }}
                   >
                     Connect Ethereum Wallet
@@ -188,14 +186,18 @@ export function WalletConnectionDialog({
           ) : (
             <div className="space-y-3">
               <div className="p-3 bg-neutral-900 rounded-lg border border-neutral-700">
-                <p className="text-sm text-neutral-300 mb-2">Connected Network:</p>
-                <p className="text-sm font-semibold text-white mb-2">{activeChain}</p>
+                <p className="text-sm text-neutral-300 mb-2">
+                  Connected Network:
+                </p>
+                <p className="text-sm font-semibold text-white mb-2">
+                  {activeChain}
+                </p>
                 <p className="text-sm text-neutral-300 mb-2">Address:</p>
                 <p className="text-xs font-mono text-neutral-400 break-all">
                   {activeAddress}
                 </p>
               </div>
-              
+
               <Button
                 onClick={handleDisconnect}
                 variant="outline"
@@ -206,11 +208,13 @@ export function WalletConnectionDialog({
             </div>
           )}
         </div>
-        
+
         <DialogFooter className="flex flex-col sm:flex-row sm:justify-between text-xs text-neutral-500">
           <p>Connect your wallet to use OpChan's features</p>
           {isConnected && (
-            <p className="text-green-400">✓ Wallet connected to {activeChain}</p>
+            <p className="text-green-400">
+              ✓ Wallet connected to {activeChain}
+            </p>
           )}
         </DialogFooter>
       </DialogContent>

@@ -10,19 +10,62 @@ export enum MessageType {
 }
 
 /**
- * Base interface for all message types
+ * Base interface for unsigned messages (before signing)
  */
-export interface BaseMessage {
+export interface UnsignedBaseMessage {
   id: string;
   type: MessageType;
-  timestamp: number | Date;
+  timestamp: number; // Unix timestamp in milliseconds
   author: string;
-  signature?: string; // Message signature for verification
-  browserPubKey?: string; // Public key that signed the message
 }
 
 /**
- * Represents a cell message
+ * Base interface for all signed message types
+ */
+export interface BaseMessage extends UnsignedBaseMessage {
+  signature: string; // Message signature for verification
+  browserPubKey: string; // Public key that signed the message
+}
+
+/**
+ * Unsigned message types (for creation, before signing)
+ */
+export interface UnsignedCellMessage extends UnsignedBaseMessage {
+  type: MessageType.CELL;
+  name: string;
+  description: string;
+  icon?: string;
+}
+
+export interface UnsignedPostMessage extends UnsignedBaseMessage {
+  type: MessageType.POST;
+  cellId: string;
+  title: string;
+  content: string;
+}
+
+export interface UnsignedCommentMessage extends UnsignedBaseMessage {
+  type: MessageType.COMMENT;
+  postId: string;
+  content: string;
+}
+
+export interface UnsignedVoteMessage extends UnsignedBaseMessage {
+  type: MessageType.VOTE;
+  targetId: string; // ID of the post or comment being voted on
+  value: 1 | -1;
+}
+
+export interface UnsignedModerateMessage extends UnsignedBaseMessage {
+  type: MessageType.MODERATE;
+  cellId: string;
+  targetType: 'post' | 'comment' | 'user';
+  targetId: string; // postId, commentId, or user address (for user moderation)
+  reason?: string;
+}
+
+/**
+ * Signed message types (after signature is added)
  */
 export interface CellMessage extends BaseMessage {
   type: MessageType.CELL;
@@ -31,9 +74,6 @@ export interface CellMessage extends BaseMessage {
   icon?: string;
 }
 
-/**
- * Represents a post message
- */
 export interface PostMessage extends BaseMessage {
   type: MessageType.POST;
   cellId: string;
@@ -41,27 +81,18 @@ export interface PostMessage extends BaseMessage {
   content: string;
 }
 
-/**
- * Represents a comment message
- */
 export interface CommentMessage extends BaseMessage {
   type: MessageType.COMMENT;
   postId: string;
   content: string;
 }
 
-/**
- * Represents a vote message
- */
 export interface VoteMessage extends BaseMessage {
   type: MessageType.VOTE;
   targetId: string; // ID of the post or comment being voted on
-  value: 1 | -1; 
+  value: 1 | -1;
 }
 
-/**
- * Represents a moderate message
- */
 export interface ModerateMessage extends BaseMessage {
   type: MessageType.MODERATE;
   cellId: string;
@@ -69,6 +100,23 @@ export interface ModerateMessage extends BaseMessage {
   targetId: string; // postId, commentId, or user address (for user moderation)
   reason?: string;
 }
+
+/**
+ * Union types for message handling
+ */
+export type UnsignedMessage =
+  | UnsignedCellMessage
+  | UnsignedPostMessage
+  | UnsignedCommentMessage
+  | UnsignedVoteMessage
+  | UnsignedModerateMessage;
+
+export type SignedMessage =
+  | CellMessage
+  | PostMessage
+  | CommentMessage
+  | VoteMessage
+  | ModerateMessage;
 
 /**
  * Cache objects for storing messages
@@ -87,4 +135,4 @@ export interface CommentCache {
 
 export interface VoteCache {
   [key: string]: VoteMessage; // key = targetId + authorAddress
-} 
+}

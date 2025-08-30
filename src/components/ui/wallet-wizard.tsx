@@ -1,17 +1,17 @@
-import * as React from "react";
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { CheckCircle, Circle, Loader2 } from "lucide-react";
-import { useAuth } from "@/contexts/useAuth";
-import { WalletConnectionStep } from "./wallet-connection-step";
-import { VerificationStep } from "./verification-step";
-import { DelegationStep } from "./delegation-step";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { CheckCircle, Circle, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/useAuth';
+import { WalletConnectionStep } from './wallet-connection-step';
+import { VerificationStep } from './verification-step';
+import { DelegationStep } from './delegation-step';
 
 interface WalletWizardProps {
   open: boolean;
@@ -28,7 +28,7 @@ export function WalletWizard({
 }: WalletWizardProps) {
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1);
   const [isLoading, setIsLoading] = React.useState(false);
-  const {  isAuthenticated, verificationStatus, isDelegationValid } = useAuth();
+  const { isAuthenticated, verificationStatus, isDelegationValid } = useAuth();
   const hasInitialized = React.useRef(false);
 
   // Reset wizard when opened and determine starting step
@@ -37,9 +37,19 @@ export function WalletWizard({
       // Determine the appropriate starting step based on current state
       if (!isAuthenticated) {
         setCurrentStep(1); // Start at connection step if not authenticated
-      } else if (isAuthenticated && (verificationStatus === 'unverified' || verificationStatus === 'verifying')) {
+      } else if (
+        isAuthenticated &&
+        (verificationStatus === 'unverified' ||
+          verificationStatus === 'verifying')
+      ) {
         setCurrentStep(2); // Start at verification step if authenticated but not verified
-      } else if (isAuthenticated && (verificationStatus === 'verified-owner' || verificationStatus === 'verified-basic' || verificationStatus === 'verified-none') && !isDelegationValid()) {
+      } else if (
+        isAuthenticated &&
+        (verificationStatus === 'verified-owner' ||
+          verificationStatus === 'verified-basic' ||
+          verificationStatus === 'verified-none') &&
+        !isDelegationValid()
+      ) {
         setCurrentStep(3); // Start at delegation step if verified but no valid delegation
       } else {
         setCurrentStep(3); // Default to step 3 if everything is complete
@@ -70,11 +80,26 @@ export function WalletWizard({
       return isAuthenticated ? 'complete' : 'current';
     } else if (step === 2) {
       if (!isAuthenticated) return 'disabled';
-      if (verificationStatus === 'unverified' || verificationStatus === 'verifying') return 'current';
-      if (verificationStatus === 'verified-owner' || verificationStatus === 'verified-basic' || verificationStatus === 'verified-none') return 'complete';
+      if (
+        verificationStatus === 'unverified' ||
+        verificationStatus === 'verifying'
+      )
+        return 'current';
+      if (
+        verificationStatus === 'verified-owner' ||
+        verificationStatus === 'verified-basic' ||
+        verificationStatus === 'verified-none'
+      )
+        return 'complete';
       return 'disabled';
     } else if (step === 3) {
-      if (!isAuthenticated || (verificationStatus !== 'verified-owner' && verificationStatus !== 'verified-basic' && verificationStatus !== 'verified-none')) return 'disabled';
+      if (
+        !isAuthenticated ||
+        (verificationStatus !== 'verified-owner' &&
+          verificationStatus !== 'verified-basic' &&
+          verificationStatus !== 'verified-none')
+      )
+        return 'disabled';
       if (isDelegationValid()) return 'complete';
       return 'current';
     }
@@ -83,10 +108,10 @@ export function WalletWizard({
 
   const renderStepIcon = (step: WizardStep) => {
     const status = getStepStatus(step);
-    
-    if (status === "complete") {
+
+    if (status === 'complete') {
       return <CheckCircle className="h-5 w-5 text-green-500" />;
-    } else if (status === "current") {
+    } else if (status === 'current') {
       return <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />;
     } else {
       return <Circle className="h-5 w-5 text-gray-400" />;
@@ -95,10 +120,14 @@ export function WalletWizard({
 
   const getStepTitle = (step: WizardStep) => {
     switch (step) {
-      case 1: return "Connect Wallet";
-      case 2: return "Verify Ownership";
-      case 3: return "Delegate Key";
-      default: return "";
+      case 1:
+        return 'Connect Wallet';
+      case 2:
+        return 'Verify Ownership';
+      case 3:
+        return 'Delegate Key';
+      default:
+        return '';
     }
   };
 
@@ -114,26 +143,30 @@ export function WalletWizard({
 
         {/* Progress Indicator */}
         <div className="flex items-center justify-between mb-6">
-          {[1, 2, 3].map((step) => (
+          {[1, 2, 3].map(step => (
             <div key={step} className="flex items-center">
               <div className="flex items-center gap-2">
                 {renderStepIcon(step as WizardStep)}
-                <span className={`text-sm ${
-                  getStepStatus(step as WizardStep) === "current" 
-                    ? "text-blue-500 font-medium" 
-                    : getStepStatus(step as WizardStep) === "complete"
-                    ? "text-green-500"
-                    : "text-gray-400"
-                }`}>
+                <span
+                  className={`text-sm ${
+                    getStepStatus(step as WizardStep) === 'current'
+                      ? 'text-blue-500 font-medium'
+                      : getStepStatus(step as WizardStep) === 'complete'
+                        ? 'text-green-500'
+                        : 'text-gray-400'
+                  }`}
+                >
                   {getStepTitle(step as WizardStep)}
                 </span>
               </div>
               {step < 3 && (
-                <div className={`w-8 h-px mx-2 ${
-                  getStepStatus(step as WizardStep) === "complete" 
-                    ? "bg-green-500" 
-                    : "bg-gray-600"
-                }`} />
+                <div
+                  className={`w-8 h-px mx-2 ${
+                    getStepStatus(step as WizardStep) === 'complete'
+                      ? 'bg-green-500'
+                      : 'bg-gray-600'
+                  }`}
+                />
               )}
             </div>
           ))}
@@ -148,7 +181,7 @@ export function WalletWizard({
               setIsLoading={setIsLoading}
             />
           )}
-          
+
           {currentStep === 2 && (
             <VerificationStep
               onComplete={() => handleStepComplete(2)}
@@ -157,7 +190,7 @@ export function WalletWizard({
               setIsLoading={setIsLoading}
             />
           )}
-          
+
           {currentStep === 3 && (
             <DelegationStep
               onComplete={() => handleStepComplete(3)}
@@ -170,9 +203,7 @@ export function WalletWizard({
 
         {/* Footer */}
         <div className="flex justify-between items-center pt-4 border-t border-neutral-700">
-          <p className="text-xs text-neutral-500">
-            Step {currentStep} of 3
-          </p>
+          <p className="text-xs text-neutral-500">Step {currentStep} of 3</p>
           {currentStep > 1 && (
             <Button
               variant="ghost"
@@ -188,4 +219,4 @@ export function WalletWizard({
       </DialogContent>
     </Dialog>
   );
-} 
+}

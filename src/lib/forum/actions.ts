@@ -1,15 +1,19 @@
 import { v4 as uuidv4 } from 'uuid';
 import {
+  MessageType,
+  UnsignedCellMessage,
+  UnsignedCommentMessage,
+  UnsignedPostMessage,
+  UnsignedVoteMessage,
+  UnsignedModerateMessage,
   CellMessage,
   CommentMessage,
-  MessageType,
   PostMessage,
-  VoteMessage,
-  ModerateMessage,
 } from '@/types/waku';
-import { Cell, Comment, Post, User } from '@/types/forum';
+import { Cell, Comment, Post } from '@/types/forum';
+import { User } from '@/types/identity';
 import { transformCell, transformComment, transformPost } from './transformers';
-import { MessageService, AuthService, CryptoService } from '@/lib/services';
+import { MessageService, CryptoService } from '@/lib/services';
 
 type ToastFunction = (props: {
   title: string;
@@ -28,8 +32,7 @@ export const createPost = async (
   currentUser: User | null,
   isAuthenticated: boolean,
   toast: ToastFunction,
-  updateStateFromCache: () => void,
-  authService?: AuthService,
+  updateStateFromCache: () => void
 ): Promise<Post | null> => {
   if (!isAuthenticated || !currentUser) {
     toast({
@@ -41,12 +44,19 @@ export const createPost = async (
   }
 
   // Check if user has basic verification or better, or owns ENS/Ordinal
-  const hasENSOrOrdinal = !!(currentUser.ensOwnership || currentUser.ordinalOwnership);
-  const isVerified = currentUser.verificationStatus === 'verified-owner' || 
-                     currentUser.verificationStatus === 'verified-basic' || 
-                     hasENSOrOrdinal;
-  
-  if (!isVerified && (currentUser.verificationStatus === 'unverified' || currentUser.verificationStatus === 'verifying')) {
+  const hasENSOrOrdinal = !!(
+    currentUser.ensDetails || currentUser.ordinalDetails
+  );
+  const isVerified =
+    currentUser.verificationStatus === 'verified-owner' ||
+    currentUser.verificationStatus === 'verified-basic' ||
+    hasENSOrOrdinal;
+
+  if (
+    !isVerified &&
+    (currentUser.verificationStatus === 'unverified' ||
+      currentUser.verificationStatus === 'verifying')
+  ) {
     toast({
       title: 'Verification Required',
       description: 'Please complete wallet verification to post.',
@@ -56,10 +66,13 @@ export const createPost = async (
   }
 
   try {
-    toast({ title: 'Creating post', description: 'Sending your post to the network...' });
+    toast({
+      title: 'Creating post',
+      description: 'Sending your post to the network...',
+    });
 
     const postId = uuidv4();
-    const postMessage: PostMessage = {
+    const postMessage: UnsignedPostMessage = {
       type: MessageType.POST,
       id: postId,
       cellId,
@@ -70,7 +83,7 @@ export const createPost = async (
     };
 
     const cryptoService = new CryptoService();
-    const messageService = new MessageService(authService!, cryptoService);
+    const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(postMessage);
     if (!result.success) {
       toast({
@@ -82,7 +95,10 @@ export const createPost = async (
     }
 
     updateStateFromCache();
-    toast({ title: 'Post Created', description: 'Your post has been published successfully.' });
+    toast({
+      title: 'Post Created',
+      description: 'Your post has been published successfully.',
+    });
     return transformPost(result.message! as PostMessage);
   } catch (error) {
     console.error('Error creating post:', error);
@@ -101,8 +117,7 @@ export const createComment = async (
   currentUser: User | null,
   isAuthenticated: boolean,
   toast: ToastFunction,
-  updateStateFromCache: () => void,
-  authService?: AuthService,
+  updateStateFromCache: () => void
 ): Promise<Comment | null> => {
   if (!isAuthenticated || !currentUser) {
     toast({
@@ -114,12 +129,19 @@ export const createComment = async (
   }
 
   // Check if user has basic verification or better, or owns ENS/Ordinal
-  const hasENSOrOrdinal = !!(currentUser.ensOwnership || currentUser.ordinalOwnership);
-  const isVerified = currentUser.verificationStatus === 'verified-owner' || 
-                     currentUser.verificationStatus === 'verified-basic' || 
-                     hasENSOrOrdinal;
-  
-  if (!isVerified && (currentUser.verificationStatus === 'unverified' || currentUser.verificationStatus === 'verifying')) {
+  const hasENSOrOrdinal = !!(
+    currentUser.ensDetails || currentUser.ordinalDetails
+  );
+  const isVerified =
+    currentUser.verificationStatus === 'verified-owner' ||
+    currentUser.verificationStatus === 'verified-basic' ||
+    hasENSOrOrdinal;
+
+  if (
+    !isVerified &&
+    (currentUser.verificationStatus === 'unverified' ||
+      currentUser.verificationStatus === 'verifying')
+  ) {
     toast({
       title: 'Verification Required',
       description: 'Please complete wallet verification to comment.',
@@ -129,10 +151,13 @@ export const createComment = async (
   }
 
   try {
-    toast({ title: 'Posting comment', description: 'Sending your comment to the network...' });
+    toast({
+      title: 'Posting comment',
+      description: 'Sending your comment to the network...',
+    });
 
     const commentId = uuidv4();
-    const commentMessage: CommentMessage = {
+    const commentMessage: UnsignedCommentMessage = {
       type: MessageType.COMMENT,
       id: commentId,
       postId,
@@ -142,7 +167,7 @@ export const createComment = async (
     };
 
     const cryptoService = new CryptoService();
-    const messageService = new MessageService(authService!, cryptoService);
+    const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(commentMessage);
     if (!result.success) {
       toast({
@@ -154,7 +179,10 @@ export const createComment = async (
     }
 
     updateStateFromCache();
-    toast({ title: 'Comment Added', description: 'Your comment has been published.' });
+    toast({
+      title: 'Comment Added',
+      description: 'Your comment has been published.',
+    });
     return transformComment(result.message! as CommentMessage);
   } catch (error) {
     console.error('Error creating comment:', error);
@@ -174,8 +202,7 @@ export const createCell = async (
   currentUser: User | null,
   isAuthenticated: boolean,
   toast: ToastFunction,
-  updateStateFromCache: () => void,
-  authService?: AuthService,
+  updateStateFromCache: () => void
 ): Promise<Cell | null> => {
   if (!isAuthenticated || !currentUser) {
     toast({
@@ -187,10 +214,13 @@ export const createCell = async (
   }
 
   try {
-    toast({ title: 'Creating cell', description: 'Sending your cell to the network...' });
+    toast({
+      title: 'Creating cell',
+      description: 'Sending your cell to the network...',
+    });
 
     const cellId = uuidv4();
-    const cellMessage: CellMessage = {
+    const cellMessage: UnsignedCellMessage = {
       type: MessageType.CELL,
       id: cellId,
       name,
@@ -201,7 +231,7 @@ export const createCell = async (
     };
 
     const cryptoService = new CryptoService();
-    const messageService = new MessageService(authService!, cryptoService);
+    const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(cellMessage);
     if (!result.success) {
       toast({
@@ -213,7 +243,10 @@ export const createCell = async (
     }
 
     updateStateFromCache();
-    toast({ title: 'Cell Created', description: 'Your cell has been published.' });
+    toast({
+      title: 'Cell Created',
+      description: 'Your cell has been published.',
+    });
     return transformCell(result.message! as CellMessage);
   } catch (error) {
     console.error('Error creating cell:', error);
@@ -236,8 +269,7 @@ export const vote = async (
   currentUser: User | null,
   isAuthenticated: boolean,
   toast: ToastFunction,
-  updateStateFromCache: () => void,
-  authService?: AuthService,
+  updateStateFromCache: () => void
 ): Promise<boolean> => {
   if (!isAuthenticated || !currentUser) {
     toast({
@@ -249,12 +281,19 @@ export const vote = async (
   }
 
   // Check if user has basic verification or better, or owns ENS/Ordinal
-  const hasENSOrOrdinal = !!(currentUser.ensOwnership || currentUser.ordinalOwnership);
-  const isVerified = currentUser.verificationStatus === 'verified-owner' || 
-                     currentUser.verificationStatus === 'verified-basic' || 
-                     hasENSOrOrdinal;
-  
-  if (!isVerified && (currentUser.verificationStatus === 'unverified' || currentUser.verificationStatus === 'verifying')) {
+  const hasENSOrOrdinal = !!(
+    currentUser.ensDetails || currentUser.ordinalDetails
+  );
+  const isVerified =
+    currentUser.verificationStatus === 'verified-owner' ||
+    currentUser.verificationStatus === 'verified-basic' ||
+    hasENSOrOrdinal;
+
+  if (
+    !isVerified &&
+    (currentUser.verificationStatus === 'unverified' ||
+      currentUser.verificationStatus === 'verifying')
+  ) {
     toast({
       title: 'Verification Required',
       description: 'Please complete wallet verification to vote.',
@@ -265,10 +304,13 @@ export const vote = async (
 
   try {
     const voteType = isUpvote ? 'upvote' : 'downvote';
-    toast({ title: `Sending ${voteType}`, description: 'Recording your vote on the network...' });
+    toast({
+      title: `Sending ${voteType}`,
+      description: 'Recording your vote on the network...',
+    });
 
     const voteId = uuidv4();
-    const voteMessage: VoteMessage = {
+    const voteMessage: UnsignedVoteMessage = {
       type: MessageType.VOTE,
       id: voteId,
       targetId,
@@ -278,19 +320,23 @@ export const vote = async (
     };
 
     const cryptoService = new CryptoService();
-    const messageService = new MessageService(authService!, cryptoService);
+    const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(voteMessage);
     if (!result.success) {
       toast({
         title: 'Vote Failed',
-        description: result.error || 'Failed to register your vote. Please try again.',
+        description:
+          result.error || 'Failed to register your vote. Please try again.',
         variant: 'destructive',
       });
       return false;
     }
 
     updateStateFromCache();
-    toast({ title: 'Vote Recorded', description: `Your ${voteType} has been registered.` });
+    toast({
+      title: 'Vote Recorded',
+      description: `Your ${voteType} has been registered.`,
+    });
     return true;
   } catch (error) {
     console.error('Error voting:', error);
@@ -315,8 +361,7 @@ export const moderatePost = async (
   isAuthenticated: boolean,
   cellOwner: string,
   toast: ToastFunction,
-  updateStateFromCache: () => void,
-  authService?: AuthService,
+  updateStateFromCache: () => void
 ): Promise<boolean> => {
   if (!isAuthenticated || !currentUser) {
     toast({
@@ -327,14 +372,21 @@ export const moderatePost = async (
     return false;
   }
   if (currentUser.address !== cellOwner) {
-    toast({ title: 'Not Authorized', description: 'Only the cell admin can moderate posts.', variant: 'destructive' });
+    toast({
+      title: 'Not Authorized',
+      description: 'Only the cell admin can moderate posts.',
+      variant: 'destructive',
+    });
     return false;
   }
 
   try {
-    toast({ title: 'Moderating Post', description: 'Sending moderation message to the network...' });
+    toast({
+      title: 'Moderating Post',
+      description: 'Sending moderation message to the network...',
+    });
 
-    const modMsg: ModerateMessage = {
+    const modMsg: UnsignedModerateMessage = {
       type: MessageType.MODERATE,
       id: uuidv4(),
       cellId,
@@ -345,19 +397,31 @@ export const moderatePost = async (
       author: currentUser.address,
     };
     const cryptoService = new CryptoService();
-    const messageService = new MessageService(authService!, cryptoService);
+    const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(modMsg);
     if (!result.success) {
-      toast({ title: 'Moderation Failed', description: result.error || 'Failed to moderate post. Please try again.', variant: 'destructive' });
+      toast({
+        title: 'Moderation Failed',
+        description:
+          result.error || 'Failed to moderate post. Please try again.',
+        variant: 'destructive',
+      });
       return false;
     }
 
     updateStateFromCache();
-    toast({ title: 'Post Moderated', description: 'The post has been marked as moderated.' });
+    toast({
+      title: 'Post Moderated',
+      description: 'The post has been marked as moderated.',
+    });
     return true;
   } catch (error) {
     console.error('Error moderating post:', error);
-    toast({ title: 'Moderation Failed', description: 'Failed to moderate post. Please try again.', variant: 'destructive' });
+    toast({
+      title: 'Moderation Failed',
+      description: 'Failed to moderate post. Please try again.',
+      variant: 'destructive',
+    });
     return false;
   }
 };
@@ -370,22 +434,32 @@ export const moderateComment = async (
   isAuthenticated: boolean,
   cellOwner: string,
   toast: ToastFunction,
-  updateStateFromCache: () => void,
-  authService?: AuthService,
+  updateStateFromCache: () => void
 ): Promise<boolean> => {
   if (!isAuthenticated || !currentUser) {
-    toast({ title: 'Authentication Required', description: 'You need to verify Ordinal ownership to moderate comments.', variant: 'destructive' });
+    toast({
+      title: 'Authentication Required',
+      description: 'You need to verify Ordinal ownership to moderate comments.',
+      variant: 'destructive',
+    });
     return false;
   }
   if (currentUser.address !== cellOwner) {
-    toast({ title: 'Not Authorized', description: 'Only the cell admin can moderate comments.', variant: 'destructive' });
+    toast({
+      title: 'Not Authorized',
+      description: 'Only the cell admin can moderate comments.',
+      variant: 'destructive',
+    });
     return false;
   }
 
   try {
-    toast({ title: 'Moderating Comment', description: 'Sending moderation message to the network...' });
+    toast({
+      title: 'Moderating Comment',
+      description: 'Sending moderation message to the network...',
+    });
 
-    const modMsg: ModerateMessage = {
+    const modMsg: UnsignedModerateMessage = {
       type: MessageType.MODERATE,
       id: uuidv4(),
       cellId,
@@ -396,19 +470,31 @@ export const moderateComment = async (
       author: currentUser.address,
     };
     const cryptoService = new CryptoService();
-    const messageService = new MessageService(authService!, cryptoService);
+    const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(modMsg);
     if (!result.success) {
-      toast({ title: 'Moderation Failed', description: result.error || 'Failed to moderate comment. Please try again.', variant: 'destructive' });
+      toast({
+        title: 'Moderation Failed',
+        description:
+          result.error || 'Failed to moderate comment. Please try again.',
+        variant: 'destructive',
+      });
       return false;
     }
 
     updateStateFromCache();
-    toast({ title: 'Comment Moderated', description: 'The comment has been marked as moderated.' });
+    toast({
+      title: 'Comment Moderated',
+      description: 'The comment has been marked as moderated.',
+    });
     return true;
   } catch (error) {
     console.error('Error moderating comment:', error);
-    toast({ title: 'Moderation Failed', description: 'Failed to moderate comment. Please try again.', variant: 'destructive' });
+    toast({
+      title: 'Moderation Failed',
+      description: 'Failed to moderate comment. Please try again.',
+      variant: 'destructive',
+    });
     return false;
   }
 };
@@ -421,19 +507,26 @@ export const moderateUser = async (
   isAuthenticated: boolean,
   cellOwner: string,
   toast: ToastFunction,
-  updateStateFromCache: () => void,
-  authService?: AuthService,
+  updateStateFromCache: () => void
 ): Promise<boolean> => {
   if (!isAuthenticated || !currentUser) {
-    toast({ title: 'Authentication Required', description: 'You need to verify Ordinal ownership to moderate users.', variant: 'destructive' });
+    toast({
+      title: 'Authentication Required',
+      description: 'You need to verify Ordinal ownership to moderate users.',
+      variant: 'destructive',
+    });
     return false;
   }
   if (currentUser.address !== cellOwner) {
-    toast({ title: 'Not Authorized', description: 'Only the cell admin can moderate users.', variant: 'destructive' });
+    toast({
+      title: 'Not Authorized',
+      description: 'Only the cell admin can moderate users.',
+      variant: 'destructive',
+    });
     return false;
   }
 
-  const modMsg: ModerateMessage = {
+  const modMsg: UnsignedModerateMessage = {
     type: MessageType.MODERATE,
     id: uuidv4(),
     cellId,
@@ -442,18 +535,23 @@ export const moderateUser = async (
     reason,
     author: currentUser.address,
     timestamp: Date.now(),
-    signature: '',
-    browserPubKey: currentUser.browserPubKey,
   };
   const cryptoService = new CryptoService();
-  const messageService = new MessageService(authService!, cryptoService);
+  const messageService = new MessageService(cryptoService);
   const result = await messageService.sendMessage(modMsg);
   if (!result.success) {
-    toast({ title: 'Moderation Failed', description: result.error || 'Failed to moderate user. Please try again.', variant: 'destructive' });
+    toast({
+      title: 'Moderation Failed',
+      description: result.error || 'Failed to moderate user. Please try again.',
+      variant: 'destructive',
+    });
     return false;
   }
 
   updateStateFromCache();
-  toast({ title: 'User Moderated', description: `User ${userAddress} has been moderated in this cell.` });
+  toast({
+    title: 'User Moderated',
+    description: `User ${userAddress} has been moderated in this cell.`,
+  });
   return true;
 };

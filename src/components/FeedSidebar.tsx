@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
 import { CypherImage } from '@/components/ui/CypherImage';
-import {CreateCellDialog} from '@/components/CreateCellDialog';
+import { CreateCellDialog } from '@/components/CreateCellDialog';
+import { EVerificationStatus } from '@/types/identity';
 
 const FeedSidebar: React.FC = () => {
   const { cells, posts } = useForum();
@@ -18,19 +19,20 @@ const FeedSidebar: React.FC = () => {
   const trendingCells = cells
     .map(cell => {
       const cellPosts = posts.filter(post => post.cellId === cell.id);
-      const recentPosts = cellPosts.filter(post => 
-        Date.now() - post.timestamp < 24 * 60 * 60 * 1000 // Last 24 hours
+      const recentPosts = cellPosts.filter(
+        post => Date.now() - post.timestamp < 24 * 60 * 60 * 1000 // Last 24 hours
       );
-      const totalScore = cellPosts.reduce((sum, post) => 
-        sum + (post.upvotes.length - post.downvotes.length), 0
+      const totalScore = cellPosts.reduce(
+        (sum, post) => sum + (post.upvotes.length - post.downvotes.length),
+        0
       );
-      
+
       return {
         ...cell,
         postCount: cellPosts.length,
         recentPostCount: recentPosts.length,
         totalScore,
-        activity: recentPosts.length + (totalScore * 0.1) // Simple activity score
+        activity: recentPosts.length + totalScore * 0.1, // Simple activity score
       };
     })
     .sort((a, b) => b.activity - a.activity)
@@ -44,10 +46,22 @@ const FeedSidebar: React.FC = () => {
 
     // Ethereum wallet with ENS
     if (currentUser.walletType === 'ethereum') {
-      if (currentUser.ensName && (verificationStatus === 'verified-owner' || currentUser.ensOwnership)) {
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✓ Owns ENS: {currentUser.ensName}</Badge>;
+      if (
+        currentUser.ensDetails?.ensName &&
+        (verificationStatus === EVerificationStatus.VERIFIED_OWNER ||
+          currentUser.ensDetails)
+      ) {
+        return (
+          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            ✓ Owns ENS: {currentUser.ensDetails.ensName}
+          </Badge>
+        );
       } else if (verificationStatus === 'verified-basic') {
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">✓ Connected Wallet</Badge>;
+        return (
+          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            ✓ Connected Wallet
+          </Badge>
+        );
       } else {
         return <Badge variant="outline">Read-only (No ENS detected)</Badge>;
       }
@@ -55,10 +69,21 @@ const FeedSidebar: React.FC = () => {
 
     // Bitcoin wallet with Ordinal
     if (currentUser.walletType === 'bitcoin') {
-      if (verificationStatus === 'verified-owner' || currentUser.ordinalOwnership) {
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✓ Owns Ordinal</Badge>;
+      if (
+        verificationStatus === 'verified-owner' ||
+        currentUser.ordinalDetails?.ordinalId
+      ) {
+        return (
+          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            ✓ Owns Ordinal
+          </Badge>
+        );
       } else if (verificationStatus === 'verified-basic') {
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">✓ Connected Wallet</Badge>;
+        return (
+          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            ✓ Connected Wallet
+          </Badge>
+        );
       } else {
         return <Badge variant="outline">Read-only (No Ordinal detected)</Badge>;
       }
@@ -67,7 +92,11 @@ const FeedSidebar: React.FC = () => {
     // Fallback cases
     switch (verificationStatus) {
       case 'verified-basic':
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">✓ Connected Wallet</Badge>;
+        return (
+          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            ✓ Connected Wallet
+          </Badge>
+        );
       case 'verified-none':
         return <Badge variant="outline">Read Only</Badge>;
       case 'verifying':
@@ -83,11 +112,14 @@ const FeedSidebar: React.FC = () => {
       {currentUser && (
         <Card className="bg-cyber-muted/20 border-cyber-muted">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-cyber-accent">Your Account</CardTitle>
+            <CardTitle className="text-sm font-medium text-cyber-accent">
+              Your Account
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="text-xs text-cyber-neutral">
-              {currentUser.address.slice(0, 8)}...{currentUser.address.slice(-6)}
+              {currentUser.address.slice(0, 8)}...
+              {currentUser.address.slice(-6)}
             </div>
             {getVerificationBadge()}
           </CardContent>
@@ -97,7 +129,7 @@ const FeedSidebar: React.FC = () => {
       {/* Create Cell */}
       <Card className="bg-cyber-muted/20 border-cyber-muted">
         <CardContent className="p-4">
-          <Button 
+          <Button
             onClick={() => setShowCreateCell(true)}
             className="w-full"
             disabled={verificationStatus !== 'verified-owner'}
@@ -107,10 +139,9 @@ const FeedSidebar: React.FC = () => {
           </Button>
           {verificationStatus !== 'verified-owner' && (
             <p className="text-xs text-cyber-neutral mt-2 text-center">
-              {currentUser?.walletType === 'ethereum' 
+              {currentUser?.walletType === 'ethereum'
                 ? 'Own an ENS name to create cells'
-                : 'Own a Bitcoin Ordinal to create cells'
-              }
+                : 'Own a Bitcoin Ordinal to create cells'}
             </p>
           )}
         </CardContent>
@@ -129,8 +160,8 @@ const FeedSidebar: React.FC = () => {
             <p className="text-xs text-cyber-neutral">No cells yet</p>
           ) : (
             trendingCells.map((cell, index) => (
-              <Link 
-                key={cell.id} 
+              <Link
+                key={cell.id}
                 to={`/cell/${cell.id}`}
                 className="flex items-center space-x-3 p-2 rounded-sm hover:bg-cyber-muted/50 transition-colors"
               >
@@ -138,8 +169,8 @@ const FeedSidebar: React.FC = () => {
                   <span className="text-xs font-medium text-cyber-neutral w-4">
                     {index + 1}
                   </span>
-                  <CypherImage 
-                    src={cell.icon} 
+                  <CypherImage
+                    src={cell.icon}
                     alt={cell.name}
                     className="w-6 h-6 rounded-sm flex-shrink-0"
                     generateUniqueFallback={true}
@@ -178,7 +209,7 @@ const FeedSidebar: React.FC = () => {
           ) : (
             <div className="space-y-1">
               {cells.slice(0, 8).map(cell => (
-                <Link 
+                <Link
                   key={cell.id}
                   to={`/cell/${cell.id}`}
                   className="block text-sm text-cyber-neutral hover:text-cyber-accent transition-colors"
@@ -187,7 +218,7 @@ const FeedSidebar: React.FC = () => {
                 </Link>
               ))}
               {cells.length > 8 && (
-                <Link 
+                <Link
                   to="/"
                   className="block text-xs text-cyber-neutral hover:text-cyber-accent transition-colors"
                 >
@@ -214,8 +245,8 @@ const FeedSidebar: React.FC = () => {
       </Card>
 
       {/* Create Cell Dialog */}
-      <CreateCellDialog 
-        open={showCreateCell} 
+      <CreateCellDialog
+        open={showCreateCell}
         onOpenChange={setShowCreateCell}
       />
     </div>

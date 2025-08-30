@@ -17,16 +17,17 @@ export function DelegationStep({
   isLoading,
   setIsLoading,
 }: DelegationStepProps) {
-  const { 
-    currentUser, 
-    delegateKey, 
-    isDelegationValid, 
+  const {
+    currentUser,
+    delegateKey,
+    isDelegationValid,
     delegationTimeRemaining,
     isAuthenticating,
-    clearDelegation
+    clearDelegation,
   } = useAuth();
-  
-  const [selectedDuration, setSelectedDuration] = React.useState<DelegationDuration>('7days');
+
+  const [selectedDuration, setSelectedDuration] =
+    React.useState<DelegationDuration>('7days');
   const [delegationResult, setDelegationResult] = React.useState<{
     success: boolean;
     message: string;
@@ -35,33 +36,33 @@ export function DelegationStep({
 
   const handleDelegate = async () => {
     if (!currentUser) return;
-    
+
     setIsLoading(true);
     setDelegationResult(null);
-    
+
     try {
       const success = await delegateKey(selectedDuration);
-      
+
       if (success) {
-        const expiryDate = currentUser.delegationExpiry 
+        const expiryDate = currentUser.delegationExpiry
           ? new Date(currentUser.delegationExpiry).toLocaleString()
           : `${selectedDuration === '7days' ? '1 week' : '30 days'} from now`;
-          
+
         setDelegationResult({
           success: true,
-          message: "Key delegation successful!",
-          expiry: expiryDate
+          message: 'Key delegation successful!',
+          expiry: expiryDate,
         });
       } else {
         setDelegationResult({
           success: false,
-          message: "Key delegation failed."
+          message: 'Key delegation failed.',
         });
       }
     } catch (error) {
       setDelegationResult({
         success: false,
-        message: `Delegation failed. Please try again: ${error}`
+        message: `Delegation failed. Please try again: ${error}`,
       });
     } finally {
       setIsLoading(false);
@@ -77,21 +78,29 @@ export function DelegationStep({
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 space-y-4">
-          <div className={`p-4 rounded-lg border ${
-            delegationResult.success 
-              ? 'bg-green-900/20 border-green-500/30' 
-              : 'bg-yellow-900/20 border-yellow-500/30'
-          }`}>
+          <div
+            className={`p-4 rounded-lg border ${
+              delegationResult.success
+                ? 'bg-green-900/20 border-green-500/30'
+                : 'bg-yellow-900/20 border-yellow-500/30'
+            }`}
+          >
             <div className="flex items-center gap-2 mb-2">
               {delegationResult.success ? (
                 <CheckCircle className="h-5 w-5 text-green-500" />
               ) : (
                 <AlertCircle className="h-5 w-5 text-yellow-500" />
               )}
-              <span className={`font-medium ${
-                delegationResult.success ? 'text-green-400' : 'text-yellow-400'
-              }`}>
-                {delegationResult.success ? 'Delegation Complete' : 'Delegation Result'}
+              <span
+                className={`font-medium ${
+                  delegationResult.success
+                    ? 'text-green-400'
+                    : 'text-yellow-400'
+                }`}
+              >
+                {delegationResult.success
+                  ? 'Delegation Complete'
+                  : 'Delegation Result'}
               </span>
             </div>
             <p className="text-sm text-neutral-300 mb-2">
@@ -104,7 +113,7 @@ export function DelegationStep({
             )}
           </div>
         </div>
-        
+
         {/* Action Button */}
         <div className="mt-auto">
           <Button
@@ -126,17 +135,30 @@ export function DelegationStep({
         <div className="text-center space-y-2">
           <div className="flex justify-center">
             <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              <svg
+                className="w-8 h-8 text-neutral-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                />
               </svg>
             </div>
           </div>
-          <h3 className="text-lg font-semibold text-neutral-100">Key Delegation</h3>
+          <h3 className="text-lg font-semibold text-neutral-100">
+            Key Delegation
+          </h3>
           <p className="text-sm text-neutral-400">
-            Delegate signing authority to your browser for convenient forum interactions
+            Delegate signing authority to your browser for convenient forum
+            interactions
           </p>
         </div>
-        
+
         <div className="space-y-3">
           {/* Status */}
           <div className="flex items-center gap-2">
@@ -145,22 +167,30 @@ export function DelegationStep({
             ) : (
               <AlertCircle className="h-4 w-4 text-yellow-500" />
             )}
-            <span className={`text-sm font-medium ${
-              isDelegationValid() ? 'text-green-400' : 'text-yellow-400'
-            }`}>
+            <span
+              className={`text-sm font-medium ${
+                isDelegationValid() ? 'text-green-400' : 'text-yellow-400'
+              }`}
+            >
               {isDelegationValid() ? 'Delegated' : 'Required'}
             </span>
             {isDelegationValid() && (
               <span className="text-xs text-neutral-400">
-                {Math.floor(delegationTimeRemaining() / (1000 * 60 * 60))}h {Math.floor((delegationTimeRemaining() % (1000 * 60 * 60)) / (1000 * 60))}m remaining
+                {Math.floor(delegationTimeRemaining() / (1000 * 60 * 60))}h{' '}
+                {Math.floor(
+                  (delegationTimeRemaining() % (1000 * 60 * 60)) / (1000 * 60)
+                )}
+                m remaining
               </span>
             )}
           </div>
-          
+
           {/* Duration Selection */}
           {!isDelegationValid() && (
             <div className="space-y-3">
-              <label className="text-sm font-medium text-neutral-300">Delegation Duration:</label>
+              <label className="text-sm font-medium text-neutral-300">
+                Delegation Duration:
+              </label>
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -168,7 +198,9 @@ export function DelegationStep({
                     name="duration"
                     value="7days"
                     checked={selectedDuration === '7days'}
-                    onChange={(e) => setSelectedDuration(e.target.value as DelegationDuration)}
+                    onChange={e =>
+                      setSelectedDuration(e.target.value as DelegationDuration)
+                    }
                     className="w-4 h-4 text-green-600 bg-neutral-800 border-neutral-600 focus:ring-green-500 focus:ring-2"
                   />
                   <span className="text-sm text-neutral-300">1 Week</span>
@@ -179,7 +211,9 @@ export function DelegationStep({
                     name="duration"
                     value="30days"
                     checked={selectedDuration === '30days'}
-                    onChange={(e) => setSelectedDuration(e.target.value as DelegationDuration)}
+                    onChange={e =>
+                      setSelectedDuration(e.target.value as DelegationDuration)
+                    }
                     className="w-4 h-4 text-green-600 bg-neutral-800 border-neutral-600 focus:ring-green-500 focus:ring-2"
                   />
                   <span className="text-sm text-neutral-300">30 Days</span>
@@ -187,7 +221,7 @@ export function DelegationStep({
               </div>
             </div>
           )}
-          
+
           {/* Delegated Browser Public Key */}
           {isDelegationValid() && currentUser?.browserPubKey && (
             <div className="text-xs text-neutral-400">
@@ -196,16 +230,14 @@ export function DelegationStep({
               </div>
             </div>
           )}
-          
+
           {/* Wallet Address */}
           {currentUser && (
             <div className="text-xs text-neutral-400">
-              <div className="font-mono break-all">
-                {currentUser.address}
-              </div>
+              <div className="font-mono break-all">{currentUser.address}</div>
             </div>
           )}
-          
+
           {/* Delete Button for Active Delegations */}
           {isDelegationValid() && (
             <div className="flex justify-end">
@@ -222,7 +254,7 @@ export function DelegationStep({
           )}
         </div>
       </div>
-      
+
       {/* Action Buttons */}
       <div className="mt-auto space-y-2">
         {isDelegationValid() ? (
@@ -242,7 +274,7 @@ export function DelegationStep({
             {isAuthenticating ? 'Delegating...' : 'Delegate Key'}
           </Button>
         )}
-        
+
         <Button
           onClick={onBack}
           variant="outline"
@@ -254,4 +286,4 @@ export function DelegationStep({
       </div>
     </div>
   );
-} 
+}

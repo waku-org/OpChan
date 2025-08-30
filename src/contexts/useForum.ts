@@ -7,4 +7,4 @@ export const useForum = () => {
     throw new Error('useForum must be used within a ForumProvider');
   }
   return context;
-}; 
+};

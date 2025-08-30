@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Post } from '@/types';
+import { Post } from '@/types/forum';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
 import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
@@ -14,24 +14,30 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
-  const { getCellById, votePost, isVoting, userVerificationStatus } = useForum();
+  const { getCellById, votePost, isVoting, userVerificationStatus } =
+    useForum();
   const { isAuthenticated, currentUser } = useAuth();
-  
+
   const cell = getCellById(post.cellId);
   const cellName = cell?.name || 'unknown';
-  
+
   // Calculate vote score
   const score = post.upvotes.length - post.downvotes.length;
-  
+
   // Check user's vote status
-  const userUpvoted = currentUser ? post.upvotes.some(vote => vote.author === currentUser.address) : false;
-  const userDownvoted = currentUser ? post.downvotes.some(vote => vote.author === currentUser.address) : false;
-  
+  const userUpvoted = currentUser
+    ? post.upvotes.some(vote => vote.author === currentUser.address)
+    : false;
+  const userDownvoted = currentUser
+    ? post.downvotes.some(vote => vote.author === currentUser.address)
+    : false;
+
   // Truncate content for preview
-  const contentPreview = post.content.length > 200 
-    ? post.content.substring(0, 200) + '...' 
-    : post.content;
-  
+  const contentPreview =
+    post.content.length > 200
+      ? post.content.substring(0, 200) + '...'
+      : post.content;
+
   const handleVote = async (e: React.MouseEvent, isUpvote: boolean) => {
     e.preventDefault(); // Prevent navigation when clicking vote buttons
     if (!isAuthenticated) return;
@@ -43,32 +49,40 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
       <div className="flex">
         {/* Voting column */}
         <div className="flex flex-col items-center p-2 bg-cyber-muted/50 border-r border-cyber-muted">
-          <button 
+          <button
             className={`p-1 rounded hover:bg-cyber-muted transition-colors ${
-              userUpvoted ? 'text-cyber-accent' : 'text-cyber-neutral hover:text-cyber-accent'
+              userUpvoted
+                ? 'text-cyber-accent'
+                : 'text-cyber-neutral hover:text-cyber-accent'
             }`}
-            onClick={(e) => handleVote(e, true)}
+            onClick={e => handleVote(e, true)}
             disabled={!isAuthenticated || isVoting}
-            title={isAuthenticated ? "Upvote" : "Connect wallet to vote"}
+            title={isAuthenticated ? 'Upvote' : 'Connect wallet to vote'}
           >
             <ArrowUp className="w-5 h-5" />
           </button>
-          
-          <span className={`text-sm font-medium px-1 ${
-            score > 0 ? 'text-cyber-accent' : 
-            score < 0 ? 'text-blue-400' : 
-            'text-cyber-neutral'
-          }`}>
+
+          <span
+            className={`text-sm font-medium px-1 ${
+              score > 0
+                ? 'text-cyber-accent'
+                : score < 0
+                  ? 'text-blue-400'
+                  : 'text-cyber-neutral'
+            }`}
+          >
             {score}
           </span>
-          
-          <button 
+
+          <button
             className={`p-1 rounded hover:bg-cyber-muted transition-colors ${
-              userDownvoted ? 'text-blue-400' : 'text-cyber-neutral hover:text-blue-400'
+              userDownvoted
+                ? 'text-blue-400'
+                : 'text-cyber-neutral hover:text-blue-400'
             }`}
-            onClick={(e) => handleVote(e, false)}
+            onClick={e => handleVote(e, false)}
             disabled={!isAuthenticated || isVoting}
-            title={isAuthenticated ? "Downvote" : "Connect wallet to vote"}
+            title={isAuthenticated ? 'Downvote' : 'Connect wallet to vote'}
           >
             <ArrowDown className="w-5 h-5" />
           </button>
@@ -79,22 +93,28 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
           <Link to={`/post/${post.id}`} className="block hover:opacity-80">
             {/* Post metadata */}
             <div className="flex items-center text-xs text-cyber-neutral mb-2 space-x-2">
-              <span className="font-medium text-cyber-accent">r/{cellName}</span>
+              <span className="font-medium text-cyber-accent">
+                r/{cellName}
+              </span>
               <span>•</span>
               <span>Posted by u/</span>
-              <AuthorDisplay 
+              <AuthorDisplay
                 address={post.authorAddress}
                 userVerificationStatus={userVerificationStatus}
                 className="text-xs"
                 showBadge={false}
               />
               <span>•</span>
-              <span>{formatDistanceToNow(new Date(post.timestamp), { addSuffix: true })}</span>
+              <span>
+                {formatDistanceToNow(new Date(post.timestamp), {
+                  addSuffix: true,
+                })}
+              </span>
               {post.relevanceScore !== undefined && (
                 <>
                   <span>•</span>
-                  <RelevanceIndicator 
-                    score={post.relevanceScore} 
+                  <RelevanceIndicator
+                    score={post.relevanceScore}
                     details={post.relevanceDetails}
                     type="post"
                     className="text-xs"

@@ -21,6 +21,19 @@
     "noImplicitAny": true,
     "noFallthroughCasesInSwitch": true,
 
+    /* Import/Module Strictness */
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+
+    /* Import Resolution Strictness */
+    "verbatimModuleSyntax": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

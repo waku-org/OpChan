@@ -11,25 +11,36 @@ export const refreshData = async (
   isNetworkConnected: boolean,
   toast: ToastFunction,
   updateStateFromCache: () => void,
-  setError: (error: string | null) => void,
+  setError: (error: string | null) => void
 ): Promise<void> => {
   try {
-    toast({ title: 'Refreshing data', description: 'SDS handles message syncing automatically...' });
-    
+    toast({
+      title: 'Refreshing data',
+      description: 'SDS handles message syncing automatically...',
+    });
+
     if (!isNetworkConnected) {
-      toast({ 
-        title: 'Network disconnected', 
-        description: 'Unable to refresh data. Please wait for network connection to be restored.',
-        variant: 'destructive' 
+      toast({
+        title: 'Network disconnected',
+        description:
+          'Unable to refresh data. Please wait for network connection to be restored.',
+        variant: 'destructive',
       });
       return;
     }
-    
+
     updateStateFromCache();
-    toast({ title: 'Data refreshed', description: 'Your view has been updated with the latest messages.' });
+    toast({
+      title: 'Data refreshed',
+      description: 'Your view has been updated with the latest messages.',
+    });
   } catch (err) {
     console.error('Error refreshing data:', err);
-    toast({ title: 'Refresh failed', description: 'Could not sync with network. Please try again.', variant: 'destructive' });
+    toast({
+      title: 'Refresh failed',
+      description: 'Could not sync with network. Please try again.',
+      variant: 'destructive',
+    });
     setError('Failed to refresh data. Please try again later.');
   }
 };
@@ -37,33 +48,44 @@ export const refreshData = async (
 export const initializeNetwork = async (
   toast: ToastFunction,
   updateStateFromCache: () => void,
-  setError: (error: string | null) => void,
+  setError: (error: string | null) => void
 ): Promise<void> => {
   try {
-    toast({ title: 'Loading data', description: 'Connecting to the Waku network...' });
-    
+    toast({
+      title: 'Loading data',
+      description: 'Connecting to the Waku network...',
+    });
+
     // Load data from cache immediately - health monitoring will handle network status
     updateStateFromCache();
-    
+
     // Check current network status and provide appropriate feedback
     if (messageManager.isReady) {
-      toast({ title: 'Connected', description: 'Successfully connected to Waku network.' });
+      toast({
+        title: 'Connected',
+        description: 'Successfully connected to Waku network.',
+      });
     } else {
-      toast({ 
-        title: 'Connecting...', 
-        description: 'Establishing network connection. You can view cached data while we connect.',
-        variant: 'default' 
+      toast({
+        title: 'Connecting...',
+        description:
+          'Establishing network connection. You can view cached data while we connect.',
+        variant: 'default',
       });
     }
   } catch (err) {
     console.error('Error loading forum data:', err);
     setError('Failed to load forum data. Please try again later.');
-    toast({ title: 'Load error', description: 'Failed to load forum data. Please try refreshing.', variant: 'destructive' });
+    toast({
+      title: 'Load error',
+      description: 'Failed to load forum data. Please try refreshing.',
+      variant: 'destructive',
+    });
   }
 };
 
 export const setupPeriodicQueries = (
-  updateStateFromCache: () => void,
+  updateStateFromCache: () => void
 ): { cleanup: () => void } => {
   const uiRefreshInterval = setInterval(updateStateFromCache, 5000);
   return {
@@ -75,18 +97,30 @@ export const setupPeriodicQueries = (
 
 export const monitorNetworkHealth = (
   setIsNetworkConnected: (isConnected: boolean) => void,
-  toast: ToastFunction,
+  toast: ToastFunction
 ): { unsubscribe: () => void } => {
   setIsNetworkConnected(messageManager.isReady);
   const unsubscribe = messageManager.onHealthChange((isReady, health) => {
     setIsNetworkConnected(isReady);
-    
+
     if (health === HealthStatus.SufficientlyHealthy) {
-      toast({ title: 'Network connected', description: 'Connected to the Waku network with excellent connectivity' });
+      toast({
+        title: 'Network connected',
+        description:
+          'Connected to the Waku network with excellent connectivity',
+      });
     } else if (health === HealthStatus.MinimallyHealthy) {
-      toast({ title: 'Network connected', description: 'Connected to Waku network. Some features may be limited.', variant: 'default' });
+      toast({
+        title: 'Network connected',
+        description: 'Connected to Waku network. Some features may be limited.',
+        variant: 'default',
+      });
     } else {
-      toast({ title: 'Network disconnected', description: 'Lost connection to the Waku network', variant: 'destructive' });
+      toast({
+        title: 'Network disconnected',
+        description: 'Lost connection to the Waku network',
+        variant: 'destructive',
+      });
     }
   });
   return { unsubscribe };

@@ -1,10 +1,10 @@
 import React from 'react';
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Loader2 } from "lucide-react";
-import { useForum } from "@/contexts/useForum";
-import { useAuth } from "@/contexts/useAuth";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Loader2 } from 'lucide-react';
+import { useForum } from '@/contexts/useForum';
+import { useAuth } from '@/contexts/useAuth';
 import {
   Form,
   FormControl,
@@ -12,28 +12,34 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { urlLoads } from "@/lib/utils/urlLoads";
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { urlLoads } from '@/lib/utils/urlLoads';
 
 const formSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters").max(50, "Title must be less than 50 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters").max(200, "Description must be less than 200 characters"),
+  title: z
+    .string()
+    .min(3, 'Title must be at least 3 characters')
+    .max(50, 'Title must be less than 50 characters'),
+  description: z
+    .string()
+    .min(10, 'Description must be at least 10 characters')
+    .max(200, 'Description must be less than 200 characters'),
   icon: z
     .string()
     .optional()
-    .refine((val) => !val || val.length === 0 || URL.canParse(val), {
-      message: "Must be a valid URL"
+    .refine(val => !val || val.length === 0 || URL.canParse(val), {
+      message: 'Must be a valid URL',
     }),
 });
 
@@ -42,20 +48,23 @@ interface CreateCellDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function CreateCellDialog({ open: externalOpen, onOpenChange }: CreateCellDialogProps = {}) {
+export function CreateCellDialog({
+  open: externalOpen,
+  onOpenChange,
+}: CreateCellDialogProps = {}) {
   const { createCell, isPostingCell } = useForum();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [internalOpen, setInternalOpen] = React.useState(false);
-  
+
   const open = externalOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
-  
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      description: "",
+      title: '',
+      description: '',
       icon: undefined,
     },
   });
@@ -66,15 +75,20 @@ export function CreateCellDialog({ open: externalOpen, onOpenChange }: CreateCel
       const ok = await urlLoads(values.icon, 5000);
       if (!ok) {
         toast({
-          title: "Icon URL Error",
-          description: "Icon URL could not be loaded. Please check the URL and try again.",
-          variant: "destructive",
+          title: 'Icon URL Error',
+          description:
+            'Icon URL could not be loaded. Please check the URL and try again.',
+          variant: 'destructive',
         });
         return;
       }
     }
 
-    const cell = await createCell(values.title, values.description, values.icon || undefined);
+    const cell = await createCell(
+      values.title,
+      values.description,
+      values.icon || undefined
+    );
     if (cell) {
       setOpen(false);
       form.reset();
@@ -87,7 +101,9 @@ export function CreateCellDialog({ open: externalOpen, onOpenChange }: CreateCel
     <Dialog open={open} onOpenChange={setOpen}>
       {!onOpenChange && (
         <DialogTrigger asChild>
-          <Button variant="outline" className="w-full">Create New Cell</Button>
+          <Button variant="outline" className="w-full">
+            Create New Cell
+          </Button>
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-[425px]">
@@ -103,7 +119,11 @@ export function CreateCellDialog({ open: externalOpen, onOpenChange }: CreateCel
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter cell title" {...field} disabled={isPostingCell} />
+                    <Input
+                      placeholder="Enter cell title"
+                      {...field}
+                      disabled={isPostingCell}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -116,7 +136,7 @@ export function CreateCellDialog({ open: externalOpen, onOpenChange }: CreateCel
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="Enter cell description"
                       {...field}
                       disabled={isPostingCell}
@@ -133,11 +153,11 @@ export function CreateCellDialog({ open: externalOpen, onOpenChange }: CreateCel
                 <FormItem>
                   <FormLabel>Icon URL (optional)</FormLabel>
                   <FormControl>
-                    <Input 
+                    <Input
                       placeholder="Enter icon URL (optional)"
                       type="url"
                       {...field}
-                      value={field.value || ""}
+                      value={field.value || ''}
                       disabled={isPostingCell}
                     />
                   </FormControl>
@@ -145,11 +165,7 @@ export function CreateCellDialog({ open: externalOpen, onOpenChange }: CreateCel
                 </FormItem>
               )}
             />
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={isPostingCell}
-            >
+            <Button type="submit" className="w-full" disabled={isPostingCell}>
               {isPostingCell && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}

@@ -1,6 +1,9 @@
-import { createLightNode, LightNode, WakuEvent, HealthStatus } from "@waku/sdk";
+import { createLightNode, LightNode, WakuEvent, HealthStatus } from '@waku/sdk';
 
-export type HealthChangeCallback = (isReady: boolean, health: HealthStatus) => void;
+export type HealthChangeCallback = (
+  isReady: boolean,
+  health: HealthStatus
+) => void;
 
 export class WakuNodeManager {
   private node: LightNode | null = null;
@@ -25,15 +28,17 @@ export class WakuNodeManager {
   private setupHealthMonitoring(): void {
     if (!this.node) return;
 
-    this.node.events.addEventListener(WakuEvent.Health, (event) => {
+    this.node.events.addEventListener(WakuEvent.Health, event => {
       const health = event.detail;
       this._currentHealth = health;
-      
+
       console.log(`Waku health status: ${health}`);
-      
+
       const wasReady = this._isReady;
-      this._isReady = health === HealthStatus.SufficientlyHealthy || health === HealthStatus.MinimallyHealthy;
-      
+      this._isReady =
+        health === HealthStatus.SufficientlyHealthy ||
+        health === HealthStatus.MinimallyHealthy;
+
       if (wasReady !== this._isReady) {
         this.notifyHealthChange();
       }
@@ -41,12 +46,14 @@ export class WakuNodeManager {
   }
 
   private notifyHealthChange(): void {
-    this.healthListeners.forEach(listener => listener(this._isReady, this._currentHealth));
+    this.healthListeners.forEach(listener =>
+      listener(this._isReady, this._currentHealth)
+    );
   }
 
   public getNode(): LightNode {
     if (!this.node) {
-      throw new Error("Node not initialized");
+      throw new Error('Node not initialized');
     }
     return this.node;
   }
@@ -73,10 +80,10 @@ export class WakuNodeManager {
 
   public onHealthChange(callback: HealthChangeCallback): () => void {
     this.healthListeners.add(callback);
-    
+
     // Immediately call with current status
     callback(this._isReady, this._currentHealth);
-    
+
     // Return unsubscribe function
     return () => {
       this.healthListeners.delete(callback);

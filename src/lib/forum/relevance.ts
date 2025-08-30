@@ -1,23 +1,30 @@
-import { Post, Comment, Cell, User, RelevanceScoreDetails, UserVerificationStatus } from '@/types/forum';
+import {
+  Post,
+  Comment,
+  Cell,
+  RelevanceScoreDetails,
+  UserVerificationStatus,
+} from '@/types/forum';
+import { User } from '@/types/identity';
 import { VoteMessage } from '@/types/waku';
 
 export class RelevanceCalculator {
   private static readonly BASE_SCORES = {
     POST: 10,
     COMMENT: 5,
-    CELL: 15
+    CELL: 15,
   };
-  
+
   private static readonly ENGAGEMENT_SCORES = {
     UPVOTE: 1,
-    COMMENT: 0.5
+    COMMENT: 0.5,
   };
-  
+
   private static readonly VERIFICATION_BONUS = 1.25; // 25% increase for ENS/Ordinal owners
   private static readonly BASIC_VERIFICATION_BONUS = 1.1; // 10% increase for basic verified users
   private static readonly VERIFIED_UPVOTE_BONUS = 0.1;
   private static readonly VERIFIED_COMMENTER_BONUS = 0.05;
-  
+
   private static readonly DECAY_RATE = 0.1; // λ = 0.1
   private static readonly MODERATION_PENALTY = 0.5; // 50% reduction
 
@@ -37,29 +44,31 @@ export class RelevanceCalculator {
     const engagementScore = this.applyEngagementScore(upvotes, comments);
     score += engagementScore;
 
-    const { bonus: authorVerificationBonus, isVerified } = this.applyAuthorVerificationBonus(
-      score, 
-      post.authorAddress, 
-      userVerificationStatus
-    );
+    const { bonus: authorVerificationBonus, isVerified } =
+      this.applyAuthorVerificationBonus(
+        score,
+        post.authorAddress,
+        userVerificationStatus
+      );
     score += authorVerificationBonus;
 
-    const { bonus: verifiedUpvoteBonus, verifiedUpvotes } = this.applyVerifiedUpvoteBonus(
-      upvotes, 
-      userVerificationStatus
-    );
+    const { bonus: verifiedUpvoteBonus, verifiedUpvotes } =
+      this.applyVerifiedUpvoteBonus(upvotes, userVerificationStatus);
     score += verifiedUpvoteBonus;
 
-    const { bonus: verifiedCommenterBonus, verifiedCommenters } = this.applyVerifiedCommenterBonus(
-      comments, 
-      userVerificationStatus
-    );
+    const { bonus: verifiedCommenterBonus, verifiedCommenters } =
+      this.applyVerifiedCommenterBonus(comments, userVerificationStatus);
     score += verifiedCommenterBonus;
 
-    const { decayedScore, multiplier: timeDecayMultiplier, daysOld } = this.applyTimeDecay(score, post.timestamp);
+    const {
+      decayedScore,
+      multiplier: timeDecayMultiplier,
+      daysOld,
+    } = this.applyTimeDecay(score, post.timestamp);
     score = decayedScore;
 
-    const { penalizedScore, penalty: moderationPenalty } = this.applyModerationPenalty(score, post.moderated || false);
+    const { penalizedScore, penalty: moderationPenalty } =
+      this.applyModerationPenalty(score, post.moderated || false);
     score = penalizedScore;
 
     const finalScore = Math.max(0, score); // Ensure non-negative score
@@ -81,8 +90,8 @@ export class RelevanceCalculator {
         verifiedUpvotes,
         verifiedCommenters,
         daysOld,
-        isModerated: post.moderated || false
-      }
+        isModerated: post.moderated || false,
+      },
     };
   }
 
@@ -102,23 +111,27 @@ export class RelevanceCalculator {
     const engagementScore = this.applyEngagementScore(upvotes, []);
     score += engagementScore;
 
-    const { bonus: authorVerificationBonus, isVerified } = this.applyAuthorVerificationBonus(
-      score, 
-      comment.authorAddress, 
-      userVerificationStatus
-    );
+    const { bonus: authorVerificationBonus, isVerified } =
+      this.applyAuthorVerificationBonus(
+        score,
+        comment.authorAddress,
+        userVerificationStatus
+      );
     score += authorVerificationBonus;
 
-    const { bonus: verifiedUpvoteBonus, verifiedUpvotes } = this.applyVerifiedUpvoteBonus(
-      upvotes, 
-      userVerificationStatus
-    );
+    const { bonus: verifiedUpvoteBonus, verifiedUpvotes } =
+      this.applyVerifiedUpvoteBonus(upvotes, userVerificationStatus);
     score += verifiedUpvoteBonus;
 
-    const { decayedScore, multiplier: timeDecayMultiplier, daysOld } = this.applyTimeDecay(score, comment.timestamp);
+    const {
+      decayedScore,
+      multiplier: timeDecayMultiplier,
+      daysOld,
+    } = this.applyTimeDecay(score, comment.timestamp);
     score = decayedScore;
 
-    const { penalizedScore, penalty: moderationPenalty } = this.applyModerationPenalty(score, comment.moderated || false);
+    const { penalizedScore, penalty: moderationPenalty } =
+      this.applyModerationPenalty(score, comment.moderated || false);
     score = penalizedScore;
 
     const finalScore = Math.max(0, score); // Ensure non-negative score
@@ -140,8 +153,8 @@ export class RelevanceCalculator {
         verifiedUpvotes,
         verifiedCommenters: 0,
         daysOld,
-        isModerated: comment.moderated || false
-      }
+        isModerated: comment.moderated || false,
+      },
     };
   }
 
@@ -150,7 +163,7 @@ export class RelevanceCalculator {
    */
   calculateCellScore(
     cell: Cell,
-    posts: Post[],
+    posts: Post[]
   ): { score: number; details: RelevanceScoreDetails } {
     // Apply base score
     let score = this.applyBaseScore('CELL');
@@ -161,16 +174,24 @@ export class RelevanceCalculator {
     const totalUpvotes = cellPosts.reduce((sum, post) => {
       return sum + (post.upvotes?.length || 0);
     }, 0);
-    
-    const activityScore = cellPosts.length * RelevanceCalculator.ENGAGEMENT_SCORES.COMMENT;
+
+    const activityScore =
+      cellPosts.length * RelevanceCalculator.ENGAGEMENT_SCORES.COMMENT;
     const engagementBonus = totalUpvotes * 0.1; // Small bonus for cell activity
     const engagementScore = activityScore + engagementBonus;
     score += engagementScore;
 
-    const mostRecentPost = cellPosts.reduce((latest, post) => {
-      return post.timestamp > latest.timestamp ? post : latest;
-    }, { timestamp: Date.now() });
-    const { decayedScore, multiplier: timeDecayMultiplier, daysOld } = this.applyTimeDecay(score, mostRecentPost.timestamp);
+    const mostRecentPost = cellPosts.reduce(
+      (latest, post) => {
+        return post.timestamp > latest.timestamp ? post : latest;
+      },
+      { timestamp: Date.now() }
+    );
+    const {
+      decayedScore,
+      multiplier: timeDecayMultiplier,
+      daysOld,
+    } = this.applyTimeDecay(score, mostRecentPost.timestamp);
     score = decayedScore;
 
     const finalScore = Math.max(0, score); // Ensure non-negative score
@@ -192,18 +213,20 @@ export class RelevanceCalculator {
         verifiedUpvotes: 0,
         verifiedCommenters: 0,
         daysOld,
-        isModerated: false
-      }
+        isModerated: false,
+      },
     };
   }
-
-
 
   /**
    * Check if a user is verified (has ENS or ordinal ownership, or basic verification)
    */
   isUserVerified(user: User): boolean {
-    return !!(user.ensOwnership || user.ordinalOwnership || user.verificationStatus === 'verified-basic');
+    return !!(
+      user.ensDetails ||
+      user.ordinalDetails ||
+      user.verificationStatus === 'verified-basic'
+    );
   }
 
   /**
@@ -211,130 +234,140 @@ export class RelevanceCalculator {
    */
   buildUserVerificationStatus(users: User[]): UserVerificationStatus {
     const status: UserVerificationStatus = {};
-    
+
     users.forEach(user => {
       status[user.address] = {
         isVerified: this.isUserVerified(user),
-        hasENS: !!user.ensOwnership,
-        hasOrdinal: !!user.ordinalOwnership,
-        ensName: user.ensName,
-        verificationStatus: user.verificationStatus
+        hasENS: !!user.ensDetails,
+        hasOrdinal: !!user.ordinalDetails,
+        ensName: user.ensDetails?.ensName,
+        verificationStatus: user.verificationStatus,
       };
     });
-    
+
     return status;
   }
 
-    /**
+  /**
    * Apply base score to the current score
    */
-    private applyBaseScore(type: 'POST' | 'COMMENT' | 'CELL'): number {
-        return RelevanceCalculator.BASE_SCORES[type];
-      }
-    
-      /**
-       * Apply engagement score based on upvotes and comments
-       */
-      private applyEngagementScore(
-        upvotes: VoteMessage[], 
-        comments: Comment[] = []
-      ): number {
-        const upvoteScore = upvotes.length * RelevanceCalculator.ENGAGEMENT_SCORES.UPVOTE;
-        const commentScore = comments.length * RelevanceCalculator.ENGAGEMENT_SCORES.COMMENT;
-        return upvoteScore + commentScore;
-      }
-    
-      /**
-       * Apply verification bonus for verified authors
-       */
-      private applyAuthorVerificationBonus(
-        score: number, 
-        authorAddress: string, 
-        userVerificationStatus: UserVerificationStatus
-      ): { bonus: number; isVerified: boolean } {
-        const authorStatus = userVerificationStatus[authorAddress];
-        const isVerified = authorStatus?.isVerified || false;
-        
-        if (!isVerified) {
-          return { bonus: 0, isVerified: false };
-        }
+  private applyBaseScore(type: 'POST' | 'COMMENT' | 'CELL'): number {
+    return RelevanceCalculator.BASE_SCORES[type];
+  }
 
-        // Apply different bonuses based on verification level
-        let bonus = 0;
-        if (authorStatus?.verificationStatus === 'verified-owner') {
-          // Full bonus for ENS/Ordinal owners
-          bonus = score * (RelevanceCalculator.VERIFICATION_BONUS - 1);
-        } else if (authorStatus?.verificationStatus === 'verified-basic') {
-          // Lower bonus for basic verified users
-          bonus = score * (RelevanceCalculator.BASIC_VERIFICATION_BONUS - 1);
-        }
+  /**
+   * Apply engagement score based on upvotes and comments
+   */
+  private applyEngagementScore(
+    upvotes: VoteMessage[],
+    comments: Comment[] = []
+  ): number {
+    const upvoteScore =
+      upvotes.length * RelevanceCalculator.ENGAGEMENT_SCORES.UPVOTE;
+    const commentScore =
+      comments.length * RelevanceCalculator.ENGAGEMENT_SCORES.COMMENT;
+    return upvoteScore + commentScore;
+  }
 
-        return { bonus, isVerified: true };
+  /**
+   * Apply verification bonus for verified authors
+   */
+  private applyAuthorVerificationBonus(
+    score: number,
+    authorAddress: string,
+    userVerificationStatus: UserVerificationStatus
+  ): { bonus: number; isVerified: boolean } {
+    const authorStatus = userVerificationStatus[authorAddress];
+    const isVerified = authorStatus?.isVerified || false;
+
+    if (!isVerified) {
+      return { bonus: 0, isVerified: false };
+    }
+
+    // Apply different bonuses based on verification level
+    let bonus = 0;
+    if (authorStatus?.verificationStatus === 'verified-owner') {
+      // Full bonus for ENS/Ordinal owners
+      bonus = score * (RelevanceCalculator.VERIFICATION_BONUS - 1);
+    } else if (authorStatus?.verificationStatus === 'verified-basic') {
+      // Lower bonus for basic verified users
+      bonus = score * (RelevanceCalculator.BASIC_VERIFICATION_BONUS - 1);
+    }
+
+    return { bonus, isVerified: true };
+  }
+
+  /**
+   * Apply verified upvote bonus
+   */
+  private applyVerifiedUpvoteBonus(
+    upvotes: VoteMessage[],
+    userVerificationStatus: UserVerificationStatus
+  ): { bonus: number; verifiedUpvotes: number } {
+    const verifiedUpvotes = upvotes.filter(vote => {
+      const voterStatus = userVerificationStatus[vote.author];
+      return voterStatus?.isVerified;
+    });
+
+    const bonus =
+      verifiedUpvotes.length * RelevanceCalculator.VERIFIED_UPVOTE_BONUS;
+    return { bonus, verifiedUpvotes: verifiedUpvotes.length };
+  }
+
+  /**
+   * Apply verified commenter bonus
+   */
+  private applyVerifiedCommenterBonus(
+    comments: Comment[],
+    userVerificationStatus: UserVerificationStatus
+  ): { bonus: number; verifiedCommenters: number } {
+    const verifiedCommenters = new Set<string>();
+
+    comments.forEach(comment => {
+      const commenterStatus = userVerificationStatus[comment.authorAddress];
+      if (commenterStatus?.isVerified) {
+        verifiedCommenters.add(comment.authorAddress);
       }
-    
-      /**
-       * Apply verified upvote bonus
-       */
-      private applyVerifiedUpvoteBonus(
-        upvotes: VoteMessage[],
-        userVerificationStatus: UserVerificationStatus
-      ): { bonus: number; verifiedUpvotes: number } {
-        const verifiedUpvotes = upvotes.filter(vote => {
-          const voterStatus = userVerificationStatus[vote.author];
-          return voterStatus?.isVerified;
-        });
-        
-        const bonus = verifiedUpvotes.length * RelevanceCalculator.VERIFIED_UPVOTE_BONUS;
-        return { bonus, verifiedUpvotes: verifiedUpvotes.length };
-      }
-    
-      /**
-       * Apply verified commenter bonus
-       */
-      private applyVerifiedCommenterBonus(
-        comments: Comment[],
-        userVerificationStatus: UserVerificationStatus
-      ): { bonus: number; verifiedCommenters: number } {
-        const verifiedCommenters = new Set<string>();
-        
-        comments.forEach(comment => {
-          const commenterStatus = userVerificationStatus[comment.authorAddress];
-          if (commenterStatus?.isVerified) {
-            verifiedCommenters.add(comment.authorAddress);
-          }
-        });
-        
-        const bonus = verifiedCommenters.size * RelevanceCalculator.VERIFIED_COMMENTER_BONUS;
-        return { bonus, verifiedCommenters: verifiedCommenters.size };
-      }
-    
-      /**
-       * Apply time decay to a score
-       */
-      private applyTimeDecay(score: number, timestamp: number): { 
-        decayedScore: number; 
-        multiplier: number; 
-        daysOld: number 
-      } {
-        const daysOld = (Date.now() - timestamp) / (1000 * 60 * 60 * 24);
-        const multiplier = Math.exp(-RelevanceCalculator.DECAY_RATE * daysOld);
-        const decayedScore = score * multiplier;
-        
-        return { decayedScore, multiplier, daysOld };
-      }
-    
-      /**
-       * Apply moderation penalty
-       */
-      private applyModerationPenalty(
-        score: number, 
-        isModerated: boolean
-      ): { penalizedScore: number; penalty: number } {
-        if (isModerated) {
-          const penalizedScore = score * RelevanceCalculator.MODERATION_PENALTY;
-          return { penalizedScore, penalty: RelevanceCalculator.MODERATION_PENALTY };
-        }
-        
-        return { penalizedScore: score, penalty: 1 };
-      }
+    });
+
+    const bonus =
+      verifiedCommenters.size * RelevanceCalculator.VERIFIED_COMMENTER_BONUS;
+    return { bonus, verifiedCommenters: verifiedCommenters.size };
+  }
+
+  /**
+   * Apply time decay to a score
+   */
+  private applyTimeDecay(
+    score: number,
+    timestamp: number
+  ): {
+    decayedScore: number;
+    multiplier: number;
+    daysOld: number;
+  } {
+    const daysOld = (Date.now() - timestamp) / (1000 * 60 * 60 * 24);
+    const multiplier = Math.exp(-RelevanceCalculator.DECAY_RATE * daysOld);
+    const decayedScore = score * multiplier;
+
+    return { decayedScore, multiplier, daysOld };
+  }
+
+  /**
+   * Apply moderation penalty
+   */
+  private applyModerationPenalty(
+    score: number,
+    isModerated: boolean
+  ): { penalizedScore: number; penalty: number } {
+    if (isModerated) {
+      const penalizedScore = score * RelevanceCalculator.MODERATION_PENALTY;
+      return {
+        penalizedScore,
+        penalty: RelevanceCalculator.MODERATION_PENALTY,
+      };
+    }
+
+    return { penalizedScore: score, penalty: 1 };
+  }
 }
