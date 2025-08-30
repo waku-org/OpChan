@@ -76,7 +76,7 @@ export class ReliableMessaging {
     });
   }
 
-  public async sendMessage(message: OpchanMessage, statusCallback?: MessageStatusCallback): Promise<string> {
+  public async sendMessage(message: OpchanMessage, statusCallback?: MessageStatusCallback): Promise<void> {
     const channel = this.channels.get(message.type);
     if (!channel) {
       throw new Error(`No reliable channel for message type: ${message.type}`);
@@ -90,8 +90,7 @@ export class ReliableMessaging {
     }
 
     try {
-      await channel.send(encodedMessage);
-      return messageId;
+      return channel.send(encodedMessage);
     } catch (error) {
       this.messageCallbacks.delete(messageId);
       throw error;

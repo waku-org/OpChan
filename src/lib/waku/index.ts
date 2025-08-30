@@ -90,11 +90,12 @@ class MessageManager {
     return this.nodeManager.onHealthChange(callback);
   }
 
-  public async sendMessage(message: OpchanMessage, statusCallback?: MessageStatusCallback): Promise<string> {
+  //TODO: return event handlers?
+  public async sendMessage(message: OpchanMessage, statusCallback?: MessageStatusCallback): Promise<void> {
     if (!this.messageService) {
       throw new Error("MessageManager not fully initialized");
     }
-    return this.messageService.sendMessage(message, statusCallback);
+    this.messageService.sendMessage(message, statusCallback);
   }
 
   public onMessageReceived(callback: (message: OpchanMessage) => void): () => void {

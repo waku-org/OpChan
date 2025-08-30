@@ -28,7 +28,7 @@ export class MessageService {
     }
   }
 
-  public async sendMessage(message: OpchanMessage, statusCallback?: MessageStatusCallback): Promise<string> {
+  public async sendMessage(message: OpchanMessage, statusCallback?: MessageStatusCallback): Promise<void> {
     if (!this.reliableMessaging) {
       throw new Error("Reliable messaging not initialized");
     }
@@ -41,23 +41,21 @@ export class MessageService {
     this.cacheService.updateCache(message);
     
     // Send via reliable messaging with status tracking
-    const messageId = await this.reliableMessaging.sendMessage(message, {
-      onSent: (id) => {
-        console.log(`Message ${id} sent`);
-        statusCallback?.onSent?.(id);
-      },
-      onAcknowledged: (id) => {
-        console.log(`Message ${id} acknowledged`);
-        statusCallback?.onAcknowledged?.(id);
-      },
-      onError: (id, error) => {
-        console.error(`Message ${id} failed:`, error);
-        statusCallback?.onError?.(id, error);
-      }
-    });
-    
-    return messageId;
-  }
+      await this.reliableMessaging.sendMessage(message, {
+        onSent: (id) => {
+          console.log(`Message ${id} sent`);
+          statusCallback?.onSent?.(id);
+        },
+        onAcknowledged: (id) => {
+          console.log(`Message ${id} acknowledged`);
+          statusCallback?.onAcknowledged?.(id);
+        },
+        onError: (id, error) => {
+          console.error(`Message ${id} failed:`, error);
+          statusCallback?.onError?.(id, error);
+        }
+      });
+    }
 
   public onMessageReceived(callback: MessageReceivedCallback): () => void {
     this.messageReceivedCallbacks.add(callback);
