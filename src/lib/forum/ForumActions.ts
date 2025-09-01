@@ -115,7 +115,7 @@ export class ForumActions {
     updateStateFromCache: () => void
   ): Promise<ActionResult<Comment>> {
     const { postId, content, currentUser, isAuthenticated } = params;
-    
+
     if (!isAuthenticated || !currentUser) {
       return {
         success: false,
@@ -192,7 +192,7 @@ export class ForumActions {
     updateStateFromCache: () => void
   ): Promise<ActionResult<Cell>> {
     const { name, description, icon, currentUser, isAuthenticated } = params;
-    
+
     if (!isAuthenticated || !currentUser) {
       return {
         success: false,
@@ -251,7 +251,7 @@ export class ForumActions {
     updateStateFromCache: () => void
   ): Promise<ActionResult<boolean>> {
     const { targetId, isUpvote, currentUser, isAuthenticated } = params;
-    
+
     if (!isAuthenticated || !currentUser) {
       return {
         success: false,
@@ -323,8 +323,9 @@ export class ForumActions {
     params: PostModerationParams,
     updateStateFromCache: () => void
   ): Promise<ActionResult<boolean>> {
-    const { cellId, postId, reason, currentUser, isAuthenticated, cellOwner } = params;
-    
+    const { cellId, postId, reason, currentUser, isAuthenticated, cellOwner } =
+      params;
+
     if (!isAuthenticated || !currentUser) {
       return {
         success: false,
@@ -377,8 +378,15 @@ export class ForumActions {
     params: CommentModerationParams,
     updateStateFromCache: () => void
   ): Promise<ActionResult<boolean>> {
-    const { cellId, commentId, reason, currentUser, isAuthenticated, cellOwner } = params;
-    
+    const {
+      cellId,
+      commentId,
+      reason,
+      currentUser,
+      isAuthenticated,
+      cellOwner,
+    } = params;
+
     if (!isAuthenticated || !currentUser) {
       return {
         success: false,
@@ -432,8 +440,15 @@ export class ForumActions {
     params: UserModerationParams,
     updateStateFromCache: () => void
   ): Promise<ActionResult<boolean>> {
-    const { cellId, userAddress, reason, currentUser, isAuthenticated, cellOwner } = params;
-    
+    const {
+      cellId,
+      userAddress,
+      reason,
+      currentUser,
+      isAuthenticated,
+      cellOwner,
+    } = params;
+
     if (!isAuthenticated || !currentUser) {
       return {
         success: false,
