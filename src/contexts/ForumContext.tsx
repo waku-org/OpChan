@@ -284,17 +284,32 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     content: string
   ): Promise<Post | null> => {
     setIsPostingPost(true);
+    toast({
+      title: 'Creating post',
+      description: 'Sending your post to the network...',
+    });
+
     const result = await createPost(
-      cellId,
-      title,
-      content,
-      currentUser,
-      isAuthenticated,
-      toast,
+      { cellId, title, content, currentUser, isAuthenticated },
       updateStateFromCache
     );
+
     setIsPostingPost(false);
-    return result;
+
+    if (result.success) {
+      toast({
+        title: 'Post Created',
+        description: 'Your post has been published successfully.',
+      });
+      return result.data || null;
+    } else {
+      toast({
+        title: 'Post Failed',
+        description: result.error || 'Failed to create post. Please try again.',
+        variant: 'destructive',
+      });
+      return null;
+    }
   };
 
   const handleCreateComment = async (
@@ -302,16 +317,35 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     content: string
   ): Promise<Comment | null> => {
     setIsPostingComment(true);
+    toast({
+      title: 'Posting comment',
+      description: 'Sending your comment to the network...',
+    });
+
     const result = await createComment(
       postId,
       content,
       currentUser,
       isAuthenticated,
-      toast,
       updateStateFromCache
     );
+
     setIsPostingComment(false);
-    return result;
+
+    if (result.success) {
+      toast({
+        title: 'Comment Added',
+        description: 'Your comment has been published.',
+      });
+      return result.data || null;
+    } else {
+      toast({
+        title: 'Comment Failed',
+        description: result.error || 'Failed to add comment. Please try again.',
+        variant: 'destructive',
+      });
+      return null;
+    }
   };
 
   const handleVotePost = async (
@@ -319,16 +353,37 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     isUpvote: boolean
   ): Promise<boolean> => {
     setIsVoting(true);
+    const voteType = isUpvote ? 'upvote' : 'downvote';
+    toast({
+      title: `Sending ${voteType}`,
+      description: 'Recording your vote on the network...',
+    });
+
     const result = await vote(
       postId,
       isUpvote,
       currentUser,
       isAuthenticated,
-      toast,
       updateStateFromCache
     );
+
     setIsVoting(false);
-    return result;
+
+    if (result.success) {
+      toast({
+        title: 'Vote Recorded',
+        description: `Your ${voteType} has been registered.`,
+      });
+      return result.data || false;
+    } else {
+      toast({
+        title: 'Vote Failed',
+        description:
+          result.error || 'Failed to register your vote. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
   const handleVoteComment = async (
@@ -336,16 +391,37 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     isUpvote: boolean
   ): Promise<boolean> => {
     setIsVoting(true);
+    const voteType = isUpvote ? 'upvote' : 'downvote';
+    toast({
+      title: `Sending ${voteType}`,
+      description: 'Recording your vote on the network...',
+    });
+
     const result = await vote(
       commentId,
       isUpvote,
       currentUser,
       isAuthenticated,
-      toast,
       updateStateFromCache
     );
+
     setIsVoting(false);
-    return result;
+
+    if (result.success) {
+      toast({
+        title: 'Vote Recorded',
+        description: `Your ${voteType} has been registered.`,
+      });
+      return result.data || false;
+    } else {
+      toast({
+        title: 'Vote Failed',
+        description:
+          result.error || 'Failed to register your vote. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
   const handleCreateCell = async (
@@ -354,17 +430,36 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     icon?: string
   ): Promise<Cell | null> => {
     setIsPostingCell(true);
+    toast({
+      title: 'Creating cell',
+      description: 'Sending your cell to the network...',
+    });
+
     const result = await createCell(
       name,
       description,
       icon,
       currentUser,
       isAuthenticated,
-      toast,
       updateStateFromCache
     );
+
     setIsPostingCell(false);
-    return result;
+
+    if (result.success) {
+      toast({
+        title: 'Cell Created',
+        description: 'Your cell has been published.',
+      });
+      return result.data || null;
+    } else {
+      toast({
+        title: 'Cell Failed',
+        description: result.error || 'Failed to create cell. Please try again.',
+        variant: 'destructive',
+      });
+      return null;
+    }
   };
 
   const handleModeratePost = async (
@@ -373,16 +468,36 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     reason: string | undefined,
     cellOwner: string
   ) => {
-    return moderatePost(
+    toast({
+      title: 'Moderating Post',
+      description: 'Sending moderation message to the network...',
+    });
+
+    const result = await moderatePost(
       cellId,
       postId,
       reason,
       currentUser,
       isAuthenticated,
       cellOwner,
-      toast,
       updateStateFromCache
     );
+
+    if (result.success) {
+      toast({
+        title: 'Post Moderated',
+        description: 'The post has been marked as moderated.',
+      });
+      return result.data || false;
+    } else {
+      toast({
+        title: 'Moderation Failed',
+        description:
+          result.error || 'Failed to moderate post. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
   const handleModerateComment = async (
@@ -391,16 +506,36 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     reason: string | undefined,
     cellOwner: string
   ) => {
-    return moderateComment(
+    toast({
+      title: 'Moderating Comment',
+      description: 'Sending moderation message to the network...',
+    });
+
+    const result = await moderateComment(
       cellId,
       commentId,
       reason,
       currentUser,
       isAuthenticated,
       cellOwner,
-      toast,
       updateStateFromCache
     );
+
+    if (result.success) {
+      toast({
+        title: 'Comment Moderated',
+        description: 'The comment has been marked as moderated.',
+      });
+      return result.data || false;
+    } else {
+      toast({
+        title: 'Moderation Failed',
+        description:
+          result.error || 'Failed to moderate comment. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
   const handleModerateUser = async (
@@ -409,16 +544,31 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     reason: string | undefined,
     cellOwner: string
   ) => {
-    return moderateUser(
+    const result = await moderateUser(
       cellId,
       userAddress,
       reason,
       currentUser,
       isAuthenticated,
       cellOwner,
-      toast,
       updateStateFromCache
     );
+
+    if (result.success) {
+      toast({
+        title: 'User Moderated',
+        description: `User ${userAddress} has been moderated in this cell.`,
+      });
+      return result.data || false;
+    } else {
+      toast({
+        title: 'Moderation Failed',
+        description:
+          result.error || 'Failed to moderate user. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
   return (

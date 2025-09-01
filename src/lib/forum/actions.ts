@@ -11,36 +11,39 @@ import {
   PostMessage,
 } from '@/types/waku';
 import { Cell, Comment, Post } from '@/types/forum';
-import { User } from '@/types/identity';
+import { EVerificationStatus, User } from '@/types/identity';
 import { transformCell, transformComment, transformPost } from './transformers';
 import { MessageService, CryptoService } from '@/lib/services';
 
-type ToastFunction = (props: {
-  title: string;
-  description: string;
-  variant?: 'default' | 'destructive';
-}) => void;
+// Result types for action functions
+type ActionResult<T> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+};
 
 /* ------------------------------------------------------------------
    POST / COMMENT / CELL CREATION
 -------------------------------------------------------------------*/
 
+interface PostCreationParams {
+  cellId: string;
+  title: string;
+  content: string;
+  currentUser: User | null;
+  isAuthenticated: boolean;
+}
+
 export const createPost = async (
-  cellId: string,
-  title: string,
-  content: string,
-  currentUser: User | null,
-  isAuthenticated: boolean,
-  toast: ToastFunction,
+  { cellId, title, content, currentUser, isAuthenticated }: PostCreationParams,
   updateStateFromCache: () => void
-): Promise<Post | null> => {
+): Promise<ActionResult<Post>> => {
   if (!isAuthenticated || !currentUser) {
-    toast({
-      title: 'Authentication Required',
-      description: 'You need to connect your wallet to post.',
-      variant: 'destructive',
-    });
-    return null;
+    return {
+      success: false,
+      error:
+        'Authentication required. You need to connect your wallet to post.',
+    };
   }
 
   // Check if user has basic verification or better, or owns ENS/Ordinal
@@ -48,29 +51,23 @@ export const createPost = async (
     currentUser.ensDetails || currentUser.ordinalDetails
   );
   const isVerified =
-    currentUser.verificationStatus === 'verified-owner' ||
-    currentUser.verificationStatus === 'verified-basic' ||
+    currentUser.verificationStatus === EVerificationStatus.VERIFIED_OWNER ||
+    currentUser.verificationStatus === EVerificationStatus.VERIFIED_BASIC ||
     hasENSOrOrdinal;
 
   if (
     !isVerified &&
-    (currentUser.verificationStatus === 'unverified' ||
-      currentUser.verificationStatus === 'verifying')
+    (currentUser.verificationStatus === EVerificationStatus.UNVERIFIED ||
+      currentUser.verificationStatus === EVerificationStatus.VERIFYING)
   ) {
-    toast({
-      title: 'Verification Required',
-      description: 'Please complete wallet verification to post.',
-      variant: 'destructive',
-    });
-    return null;
+    return {
+      success: false,
+      error:
+        'Verification required. Please complete wallet verification to post.',
+    };
   }
 
   try {
-    toast({
-      title: 'Creating post',
-      description: 'Sending your post to the network...',
-    });
-
     const postId = uuidv4();
     const postMessage: UnsignedPostMessage = {
       type: MessageType.POST,
@@ -86,28 +83,30 @@ export const createPost = async (
     const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(postMessage);
     if (!result.success) {
-      toast({
-        title: 'Post Failed',
-        description: result.error || 'Failed to create post. Please try again.',
-        variant: 'destructive',
-      });
-      return null;
+      return {
+        success: false,
+        error: result.error || 'Failed to create post. Please try again.',
+      };
     }
 
     updateStateFromCache();
-    toast({
-      title: 'Post Created',
-      description: 'Your post has been published successfully.',
-    });
-    return transformPost(result.message! as PostMessage);
+    const transformedPost = transformPost(result.message! as PostMessage);
+    if (!transformedPost) {
+      return {
+        success: false,
+        error: 'Failed to transform post data.',
+      };
+    }
+    return {
+      success: true,
+      data: transformedPost,
+    };
   } catch (error) {
     console.error('Error creating post:', error);
-    toast({
-      title: 'Post Failed',
-      description: 'Failed to create post. Please try again.',
-      variant: 'destructive',
-    });
-    return null;
+    return {
+      success: false,
+      error: 'Failed to create post. Please try again.',
+    };
   }
 };
 
@@ -116,16 +115,14 @@ export const createComment = async (
   content: string,
   currentUser: User | null,
   isAuthenticated: boolean,
-  toast: ToastFunction,
   updateStateFromCache: () => void
-): Promise<Comment | null> => {
+): Promise<ActionResult<Comment>> => {
   if (!isAuthenticated || !currentUser) {
-    toast({
-      title: 'Authentication Required',
-      description: 'You need to connect your wallet to comment.',
-      variant: 'destructive',
-    });
-    return null;
+    return {
+      success: false,
+      error:
+        'Authentication required. You need to connect your wallet to comment.',
+    };
   }
 
   // Check if user has basic verification or better, or owns ENS/Ordinal
@@ -133,29 +130,23 @@ export const createComment = async (
     currentUser.ensDetails || currentUser.ordinalDetails
   );
   const isVerified =
-    currentUser.verificationStatus === 'verified-owner' ||
-    currentUser.verificationStatus === 'verified-basic' ||
+    currentUser.verificationStatus === EVerificationStatus.VERIFIED_OWNER ||
+    currentUser.verificationStatus === EVerificationStatus.VERIFIED_BASIC ||
     hasENSOrOrdinal;
 
   if (
     !isVerified &&
-    (currentUser.verificationStatus === 'unverified' ||
-      currentUser.verificationStatus === 'verifying')
+    (currentUser.verificationStatus === EVerificationStatus.UNVERIFIED ||
+      currentUser.verificationStatus === EVerificationStatus.VERIFYING)
   ) {
-    toast({
-      title: 'Verification Required',
-      description: 'Please complete wallet verification to comment.',
-      variant: 'destructive',
-    });
-    return null;
+    return {
+      success: false,
+      error:
+        'Verification required. Please complete wallet verification to comment.',
+    };
   }
 
   try {
-    toast({
-      title: 'Posting comment',
-      description: 'Sending your comment to the network...',
-    });
-
     const commentId = uuidv4();
     const commentMessage: UnsignedCommentMessage = {
       type: MessageType.COMMENT,
@@ -170,28 +161,32 @@ export const createComment = async (
     const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(commentMessage);
     if (!result.success) {
-      toast({
-        title: 'Comment Failed',
-        description: result.error || 'Failed to add comment. Please try again.',
-        variant: 'destructive',
-      });
-      return null;
+      return {
+        success: false,
+        error: result.error || 'Failed to add comment. Please try again.',
+      };
     }
 
     updateStateFromCache();
-    toast({
-      title: 'Comment Added',
-      description: 'Your comment has been published.',
-    });
-    return transformComment(result.message! as CommentMessage);
+    const transformedComment = transformComment(
+      result.message! as CommentMessage
+    );
+    if (!transformedComment) {
+      return {
+        success: false,
+        error: 'Failed to transform comment data.',
+      };
+    }
+    return {
+      success: true,
+      data: transformedComment,
+    };
   } catch (error) {
     console.error('Error creating comment:', error);
-    toast({
-      title: 'Comment Failed',
-      description: 'Failed to add comment. Please try again.',
-      variant: 'destructive',
-    });
-    return null;
+    return {
+      success: false,
+      error: 'Failed to add comment. Please try again.',
+    };
   }
 };
 
@@ -201,24 +196,17 @@ export const createCell = async (
   icon: string | undefined,
   currentUser: User | null,
   isAuthenticated: boolean,
-  toast: ToastFunction,
   updateStateFromCache: () => void
-): Promise<Cell | null> => {
+): Promise<ActionResult<Cell>> => {
   if (!isAuthenticated || !currentUser) {
-    toast({
-      title: 'Authentication Required',
-      description: 'You need to verify Ordinal ownership to create a cell.',
-      variant: 'destructive',
-    });
-    return null;
+    return {
+      success: false,
+      error:
+        'Authentication required. You need to verify Ordinal ownership to create a cell.',
+    };
   }
 
   try {
-    toast({
-      title: 'Creating cell',
-      description: 'Sending your cell to the network...',
-    });
-
     const cellId = uuidv4();
     const cellMessage: UnsignedCellMessage = {
       type: MessageType.CELL,
@@ -234,28 +222,30 @@ export const createCell = async (
     const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(cellMessage);
     if (!result.success) {
-      toast({
-        title: 'Cell Failed',
-        description: result.error || 'Failed to create cell. Please try again.',
-        variant: 'destructive',
-      });
-      return null;
+      return {
+        success: false,
+        error: result.error || 'Failed to create cell. Please try again.',
+      };
     }
 
     updateStateFromCache();
-    toast({
-      title: 'Cell Created',
-      description: 'Your cell has been published.',
-    });
-    return transformCell(result.message! as CellMessage);
+    const transformedCell = transformCell(result.message! as CellMessage);
+    if (!transformedCell) {
+      return {
+        success: false,
+        error: 'Failed to transform cell data.',
+      };
+    }
+    return {
+      success: true,
+      data: transformedCell,
+    };
   } catch (error) {
     console.error('Error creating cell:', error);
-    toast({
-      title: 'Cell Failed',
-      description: 'Failed to create cell. Please try again.',
-      variant: 'destructive',
-    });
-    return null;
+    return {
+      success: false,
+      error: 'Failed to create cell. Please try again.',
+    };
   }
 };
 
@@ -268,16 +258,14 @@ export const vote = async (
   isUpvote: boolean,
   currentUser: User | null,
   isAuthenticated: boolean,
-  toast: ToastFunction,
   updateStateFromCache: () => void
-): Promise<boolean> => {
+): Promise<ActionResult<boolean>> => {
   if (!isAuthenticated || !currentUser) {
-    toast({
-      title: 'Authentication Required',
-      description: 'You need to connect your wallet to vote.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error:
+        'Authentication required. You need to connect your wallet to vote.',
+    };
   }
 
   // Check if user has basic verification or better, or owns ENS/Ordinal
@@ -285,30 +273,23 @@ export const vote = async (
     currentUser.ensDetails || currentUser.ordinalDetails
   );
   const isVerified =
-    currentUser.verificationStatus === 'verified-owner' ||
-    currentUser.verificationStatus === 'verified-basic' ||
+    currentUser.verificationStatus === EVerificationStatus.VERIFIED_OWNER ||
+    currentUser.verificationStatus === EVerificationStatus.VERIFIED_BASIC ||
     hasENSOrOrdinal;
 
   if (
     !isVerified &&
-    (currentUser.verificationStatus === 'unverified' ||
-      currentUser.verificationStatus === 'verifying')
+    (currentUser.verificationStatus === EVerificationStatus.UNVERIFIED ||
+      currentUser.verificationStatus === EVerificationStatus.VERIFYING)
   ) {
-    toast({
-      title: 'Verification Required',
-      description: 'Please complete wallet verification to vote.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error:
+        'Verification required. Please complete wallet verification to vote.',
+    };
   }
 
   try {
-    const voteType = isUpvote ? 'upvote' : 'downvote';
-    toast({
-      title: `Sending ${voteType}`,
-      description: 'Recording your vote on the network...',
-    });
-
     const voteId = uuidv4();
     const voteMessage: UnsignedVoteMessage = {
       type: MessageType.VOTE,
@@ -323,29 +304,24 @@ export const vote = async (
     const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(voteMessage);
     if (!result.success) {
-      toast({
-        title: 'Vote Failed',
-        description:
+      return {
+        success: false,
+        error:
           result.error || 'Failed to register your vote. Please try again.',
-        variant: 'destructive',
-      });
-      return false;
+      };
     }
 
     updateStateFromCache();
-    toast({
-      title: 'Vote Recorded',
-      description: `Your ${voteType} has been registered.`,
-    });
-    return true;
+    return {
+      success: true,
+      data: true,
+    };
   } catch (error) {
     console.error('Error voting:', error);
-    toast({
-      title: 'Vote Failed',
-      description: 'Failed to register your vote. Please try again.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error: 'Failed to register your vote. Please try again.',
+    };
   }
 };
 
@@ -360,32 +336,23 @@ export const moderatePost = async (
   currentUser: User | null,
   isAuthenticated: boolean,
   cellOwner: string,
-  toast: ToastFunction,
   updateStateFromCache: () => void
-): Promise<boolean> => {
+): Promise<ActionResult<boolean>> => {
   if (!isAuthenticated || !currentUser) {
-    toast({
-      title: 'Authentication Required',
-      description: 'You need to verify Ordinal ownership to moderate posts.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error:
+        'Authentication required. You need to verify Ordinal ownership to moderate posts.',
+    };
   }
   if (currentUser.address !== cellOwner) {
-    toast({
-      title: 'Not Authorized',
-      description: 'Only the cell admin can moderate posts.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error: 'Not authorized. Only the cell admin can moderate posts.',
+    };
   }
 
   try {
-    toast({
-      title: 'Moderating Post',
-      description: 'Sending moderation message to the network...',
-    });
-
     const modMsg: UnsignedModerateMessage = {
       type: MessageType.MODERATE,
       id: uuidv4(),
@@ -400,29 +367,23 @@ export const moderatePost = async (
     const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(modMsg);
     if (!result.success) {
-      toast({
-        title: 'Moderation Failed',
-        description:
-          result.error || 'Failed to moderate post. Please try again.',
-        variant: 'destructive',
-      });
-      return false;
+      return {
+        success: false,
+        error: result.error || 'Failed to moderate post. Please try again.',
+      };
     }
 
     updateStateFromCache();
-    toast({
-      title: 'Post Moderated',
-      description: 'The post has been marked as moderated.',
-    });
-    return true;
+    return {
+      success: true,
+      data: true,
+    };
   } catch (error) {
     console.error('Error moderating post:', error);
-    toast({
-      title: 'Moderation Failed',
-      description: 'Failed to moderate post. Please try again.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error: 'Failed to moderate post. Please try again.',
+    };
   }
 };
 
@@ -433,32 +394,23 @@ export const moderateComment = async (
   currentUser: User | null,
   isAuthenticated: boolean,
   cellOwner: string,
-  toast: ToastFunction,
   updateStateFromCache: () => void
-): Promise<boolean> => {
+): Promise<ActionResult<boolean>> => {
   if (!isAuthenticated || !currentUser) {
-    toast({
-      title: 'Authentication Required',
-      description: 'You need to verify Ordinal ownership to moderate comments.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error:
+        'Authentication required. You need to verify Ordinal ownership to moderate comments.',
+    };
   }
   if (currentUser.address !== cellOwner) {
-    toast({
-      title: 'Not Authorized',
-      description: 'Only the cell admin can moderate comments.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error: 'Not authorized. Only the cell admin can moderate comments.',
+    };
   }
 
   try {
-    toast({
-      title: 'Moderating Comment',
-      description: 'Sending moderation message to the network...',
-    });
-
     const modMsg: UnsignedModerateMessage = {
       type: MessageType.MODERATE,
       id: uuidv4(),
@@ -473,29 +425,23 @@ export const moderateComment = async (
     const messageService = new MessageService(cryptoService);
     const result = await messageService.sendMessage(modMsg);
     if (!result.success) {
-      toast({
-        title: 'Moderation Failed',
-        description:
-          result.error || 'Failed to moderate comment. Please try again.',
-        variant: 'destructive',
-      });
-      return false;
+      return {
+        success: false,
+        error: result.error || 'Failed to moderate comment. Please try again.',
+      };
     }
 
     updateStateFromCache();
-    toast({
-      title: 'Comment Moderated',
-      description: 'The comment has been marked as moderated.',
-    });
-    return true;
+    return {
+      success: true,
+      data: true,
+    };
   } catch (error) {
     console.error('Error moderating comment:', error);
-    toast({
-      title: 'Moderation Failed',
-      description: 'Failed to moderate comment. Please try again.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error: 'Failed to moderate comment. Please try again.',
+    };
   }
 };
 
@@ -506,52 +452,53 @@ export const moderateUser = async (
   currentUser: User | null,
   isAuthenticated: boolean,
   cellOwner: string,
-  toast: ToastFunction,
   updateStateFromCache: () => void
-): Promise<boolean> => {
+): Promise<ActionResult<boolean>> => {
   if (!isAuthenticated || !currentUser) {
-    toast({
-      title: 'Authentication Required',
-      description: 'You need to verify Ordinal ownership to moderate users.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error:
+        'Authentication required. You need to verify Ordinal ownership to moderate users.',
+    };
   }
   if (currentUser.address !== cellOwner) {
-    toast({
-      title: 'Not Authorized',
-      description: 'Only the cell admin can moderate users.',
-      variant: 'destructive',
-    });
-    return false;
+    return {
+      success: false,
+      error: 'Not authorized. Only the cell admin can moderate users.',
+    };
   }
 
-  const modMsg: UnsignedModerateMessage = {
-    type: MessageType.MODERATE,
-    id: uuidv4(),
-    cellId,
-    targetType: 'user',
-    targetId: userAddress,
-    reason,
-    author: currentUser.address,
-    timestamp: Date.now(),
-  };
-  const cryptoService = new CryptoService();
-  const messageService = new MessageService(cryptoService);
-  const result = await messageService.sendMessage(modMsg);
-  if (!result.success) {
-    toast({
-      title: 'Moderation Failed',
-      description: result.error || 'Failed to moderate user. Please try again.',
-      variant: 'destructive',
-    });
-    return false;
-  }
+  try {
+    const modMsg: UnsignedModerateMessage = {
+      type: MessageType.MODERATE,
+      id: uuidv4(),
+      cellId,
+      targetType: 'user',
+      targetId: userAddress,
+      reason,
+      author: currentUser.address,
+      timestamp: Date.now(),
+    };
+    const cryptoService = new CryptoService();
+    const messageService = new MessageService(cryptoService);
+    const result = await messageService.sendMessage(modMsg);
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error || 'Failed to moderate user. Please try again.',
+      };
+    }
 
-  updateStateFromCache();
-  toast({
-    title: 'User Moderated',
-    description: `User ${userAddress} has been moderated in this cell.`,
-  });
-  return true;
+    updateStateFromCache();
+    return {
+      success: true,
+      data: true,
+    };
+  } catch (error) {
+    console.error('Error moderating user:', error);
+    return {
+      success: false,
+      error: 'Failed to moderate user. Please try again.',
+    };
+  }
 };
