@@ -1,4 +1,4 @@
-import { RelevanceCalculator } from '../relevance';
+import { RelevanceCalculator } from '../RelevanceCalculator';
 import { Post, Comment, UserVerificationStatus } from '@/types/forum';
 import { User, EVerificationStatus, DisplayPreference } from '@/types/identity';
 import { VoteMessage, MessageType } from '@/types/waku';

@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { CypherImage } from './ui/CypherImage';
 import { RelevanceIndicator } from './ui/relevance-indicator';
-import { sortCells, SortOption } from '@/lib/forum/sorting';
+import { sortCells, SortOption } from '@/lib/utils/sorting';
 
 const CellList = () => {
   const { cells, isInitialLoading, posts, refreshData, isRefreshing } =

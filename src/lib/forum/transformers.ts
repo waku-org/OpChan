@@ -6,7 +6,7 @@ import {
   VoteMessage,
 } from '@/types/waku';
 import messageManager from '@/lib/waku';
-import { RelevanceCalculator } from './relevance';
+import { RelevanceCalculator } from './RelevanceCalculator';
 import { UserVerificationStatus } from '@/types/forum';
 import { MessageValidator } from '@/lib/utils/MessageValidator';
 

@@ -9,15 +9,7 @@ import { Cell, Post, Comment, OpchanMessage } from '@/types/forum';
 import { User, EVerificationStatus, DisplayPreference } from '@/types/identity';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/useAuth';
-import {
-  createPost,
-  createComment,
-  vote,
-  createCell,
-  moderatePost,
-  moderateComment,
-  moderateUser,
-} from '@/lib/forum/actions';
+import { ForumActions } from '@/lib/forum/ForumActions';
 import {
   setupPeriodicQueries,
   monitorNetworkHealth,
@@ -25,7 +17,7 @@ import {
 } from '@/lib/waku/network';
 import messageManager from '@/lib/waku';
 import { getDataFromCache } from '@/lib/forum/transformers';
-import { RelevanceCalculator } from '@/lib/forum/relevance';
+import { RelevanceCalculator } from '@/lib/forum/RelevanceCalculator';
 import { UserVerificationStatus } from '@/types/forum';
 import { CryptoService } from '@/lib/services';
 import { getEnsName } from '@wagmi/core';
@@ -107,6 +99,10 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const { currentUser, isAuthenticated } = useAuth();
 
   const cryptoService = useMemo(() => new CryptoService(), []);
+  const forumActions = useMemo(
+    () => new ForumActions(cryptoService),
+    [cryptoService]
+  );
 
   // Transform message cache data to the expected types
   const updateStateFromCache = useCallback(() => {
@@ -289,7 +285,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       description: 'Sending your post to the network...',
     });
 
-    const result = await createPost(
+    const result = await forumActions.createPost(
       { cellId, title, content, currentUser, isAuthenticated },
       updateStateFromCache
     );
@@ -322,11 +318,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       description: 'Sending your comment to the network...',
     });
 
-    const result = await createComment(
-      postId,
-      content,
-      currentUser,
-      isAuthenticated,
+    const result = await forumActions.createComment(
+      { postId, content, currentUser, isAuthenticated },
       updateStateFromCache
     );
 
@@ -359,11 +352,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       description: 'Recording your vote on the network...',
     });
 
-    const result = await vote(
-      postId,
-      isUpvote,
-      currentUser,
-      isAuthenticated,
+    const result = await forumActions.vote(
+      { targetId: postId, isUpvote, currentUser, isAuthenticated },
       updateStateFromCache
     );
 
@@ -397,11 +387,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       description: 'Recording your vote on the network...',
     });
 
-    const result = await vote(
-      commentId,
-      isUpvote,
-      currentUser,
-      isAuthenticated,
+    const result = await forumActions.vote(
+      { targetId: commentId, isUpvote, currentUser, isAuthenticated },
       updateStateFromCache
     );
 
@@ -435,12 +422,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       description: 'Sending your cell to the network...',
     });
 
-    const result = await createCell(
-      name,
-      description,
-      icon,
-      currentUser,
-      isAuthenticated,
+    const result = await forumActions.createCell(
+      { name, description, icon, currentUser, isAuthenticated },
       updateStateFromCache
     );
 
@@ -473,13 +456,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       description: 'Sending moderation message to the network...',
     });
 
-    const result = await moderatePost(
-      cellId,
-      postId,
-      reason,
-      currentUser,
-      isAuthenticated,
-      cellOwner,
+    const result = await forumActions.moderatePost(
+      { cellId, postId, reason, currentUser, isAuthenticated, cellOwner },
       updateStateFromCache
     );
 
@@ -511,13 +489,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       description: 'Sending moderation message to the network...',
     });
 
-    const result = await moderateComment(
-      cellId,
-      commentId,
-      reason,
-      currentUser,
-      isAuthenticated,
-      cellOwner,
+    const result = await forumActions.moderateComment(
+      { cellId, commentId, reason, currentUser, isAuthenticated, cellOwner },
       updateStateFromCache
     );
 
@@ -544,13 +517,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     reason: string | undefined,
     cellOwner: string
   ) => {
-    const result = await moderateUser(
-      cellId,
-      userAddress,
-      reason,
-      currentUser,
-      isAuthenticated,
-      cellOwner,
+    const result = await forumActions.moderateUser(
+      { cellId, userAddress, reason, currentUser, isAuthenticated, cellOwner },
       updateStateFromCache
     );
 

@@ -13,7 +13,7 @@ import PostCard from '@/components/PostCard';
 import FeedSidebar from '@/components/FeedSidebar';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
-import { sortPosts, SortOption } from '@/lib/forum/sorting';
+import { sortPosts, SortOption } from '@/lib/utils/sorting';
 
 const FeedPage: React.FC = () => {
   const { posts, comments, isInitialLoading, isRefreshing, refreshData } =
