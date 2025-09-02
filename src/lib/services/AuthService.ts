@@ -1,9 +1,9 @@
-import { WalletService } from '../identity/wallets/index';
+import walletService from './WalletService';
 import { UseAppKitAccountReturn } from '@reown/appkit/react';
 import { AppKit } from '@reown/appkit';
 import { CryptoService, DelegationDuration } from './CryptoService';
 import { EVerificationStatus, User, DisplayPreference } from '@/types/identity';
-import { WalletInfo } from '../identity/wallets/ReOwnWalletService';
+import { WalletInfo } from './WalletService';
 
 export interface AuthResult {
   success: boolean;
@@ -37,11 +37,11 @@ export interface AuthServiceInterface {
 }
 
 export class AuthService implements AuthServiceInterface {
-  private walletService: WalletService;
+  private walletService: typeof walletService;
   private cryptoService: CryptoService;
 
   constructor(cryptoService: CryptoService) {
-    this.walletService = new WalletService();
+    this.walletService = walletService;
     this.cryptoService = cryptoService;
   }
 

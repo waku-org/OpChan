@@ -3,8 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { Shield, Crown } from 'lucide-react';
 import { UserVerificationStatus } from '@/types/forum';
 import { getEnsName } from '@wagmi/core';
-import { config } from '@/lib/identity/wallets/config';
-import { OrdinalAPI } from '@/lib/identity/ordinal';
+import { config } from '@/lib/services/WalletService/config';
+import { OrdinalAPI } from '@/lib/services/Ordinal';
 
 interface AuthorDisplayProps {
   address: string;

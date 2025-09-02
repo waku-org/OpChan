@@ -14,7 +14,7 @@
 10. Cell admin can mark posts and comments as moderated.
 11. Cell admin can mark users as moderated.
 12. Users can identify themselves by signing with their Web3 key.
-13. Posts, comments and cells have a relevance index, which can be used to order or hide them in the UX. 
+13. Posts, comments and cells have a relevance index, which can be used to order or hide them in the UX.
 14. The relevance index is lowered for post and comments which are moderated, or from a moderated user.
 15. The relevance index is increased if the author owns an ENS or Logos ordinal.
 16. The relevance index is increased if the post or comment is upvoted by an ENS or Logos ordinal owner.

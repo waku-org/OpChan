@@ -2,7 +2,7 @@ import { UseAppKitAccountReturn } from '@reown/appkit/react';
 import {
   CryptoService,
   DelegationDuration,
-} from '../../services/CryptoService';
+} from '../CryptoService';
 import { AppKit } from '@reown/appkit';
 import { getEnsName } from '@wagmi/core';
 import { ChainNamespace } from '@reown/appkit-common';
@@ -16,7 +16,7 @@ export interface WalletInfo {
   isConnected: boolean;
 }
 
-export class ReOwnWalletService {
+class WalletService {
   private cryptoService: CryptoService;
   private bitcoinAccount?: UseAppKitAccountReturn;
   private ethereumAccount?: UseAppKitAccountReturn;
@@ -247,3 +247,6 @@ export class ReOwnWalletService {
     return null;
   }
 }
+
+const walletService = new WalletService();
+export default walletService;

@@ -23,9 +23,9 @@ import PostPage from './pages/PostPage';
 import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import Index from './pages/Index';
-import { appkitConfig } from './lib/identity/wallets/config';
+import { appkitConfig } from './lib/services/WalletService/config';
 import { WagmiProvider } from 'wagmi';
-import { config } from './lib/identity/wallets/config';
+import { config } from './lib/services/WalletService/config';
 import { AppKitProvider } from '@reown/appkit/react';
 
 // Create a client

@@ -1,1 +1,0 @@
-export { ReOwnWalletService as WalletService } from './ReOwnWalletService';
