@@ -9,6 +9,13 @@ import { DelegationStorage } from './storage';
 // Set up ed25519 with sha512
 ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
 
+// Enhanced status interface that consolidates all delegation information
+export interface DelegationFullStatus extends DelegationStatus {
+  publicKey?: string;
+  address?: string;
+  walletType?: 'bitcoin' | 'ethereum';
+}
+
 export class DelegationManager {
   // Duration options in hours
   private static readonly DURATION_HOURS = {
@@ -24,166 +31,112 @@ export class DelegationManager {
   }
 
   // ============================================================================
-  // KEYPAIR GENERATION
+  // PUBLIC API
   // ============================================================================
 
   /**
-   * Generate a new browser-based keypair for signing messages
+   * Create a complete delegation with a single method call
+   * @param address - Wallet address to delegate from
+   * @param walletType - Type of wallet (bitcoin/ethereum)
+   * @param duration - How long the delegation should last
+   * @param signFunction - Function to sign the delegation message with the wallet
+   * @returns Promise<boolean> - Success status
    */
-  generateKeypair(): { publicKey: string; privateKey: string } {
-    const privateKey = ed.utils.randomPrivateKey();
-    const privateKeyHex = bytesToHex(privateKey);
-
-    const publicKey = ed.getPublicKey(privateKey);
-    const publicKeyHex = bytesToHex(publicKey);
-
-    return {
-      privateKey: privateKeyHex,
-      publicKey: publicKeyHex,
-    };
-  }
-
-  /**
-   * Create a delegation message to be signed by the wallet
-   */
-  createDelegationMessage(
-    browserPublicKey: string,
-    walletAddress: string,
-    expiryTimestamp: number
-  ): string {
-    return `I, ${walletAddress}, delegate authority to this pubkey: ${browserPublicKey} until ${expiryTimestamp}`;
-  }
-
-  // ============================================================================
-  // DELEGATION LIFECYCLE
-  // ============================================================================
-
-  /**
-   * Create and store a delegation
-   */
-  createDelegation(
-    walletAddress: string,
-    signature: string,
-    browserPublicKey: string,
-    browserPrivateKey: string,
+  async delegate(
+    address: string,
+    walletType: 'bitcoin' | 'ethereum',
     duration: DelegationDuration = '7days',
-    walletType: 'bitcoin' | 'ethereum'
-  ): void {
-    const expiryHours = DelegationManager.getDurationHours(duration);
-    const expiryTimestamp = Date.now() + expiryHours * 60 * 60 * 1000;
+    signFunction: (message: string) => Promise<string>
+  ): Promise<boolean> {
+    try {
+      // Generate new keypair
+      const keypair = this.generateKeypair();
+      
+      // Create delegation message with expiry
+      const expiryHours = DelegationManager.getDurationHours(duration);
+      const expiryTimestamp = Date.now() + expiryHours * 60 * 60 * 1000;
+      const delegationMessage = this.createDelegationMessage(
+        keypair.publicKey,
+        address,
+        expiryTimestamp
+      );
 
-    const delegationInfo: DelegationInfo = {
-      signature,
-      expiryTimestamp,
-      browserPublicKey,
-      browserPrivateKey,
-      walletAddress,
-      walletType,
-    };
+      // Sign the delegation message with wallet
+      const signature = await signFunction(delegationMessage);
 
-    DelegationStorage.store(delegationInfo);
+      // Create and store the delegation
+      const delegationInfo: DelegationInfo = {
+        signature,
+        expiryTimestamp,
+        browserPublicKey: keypair.publicKey,
+        browserPrivateKey: keypair.privateKey,
+        walletAddress: address,
+        walletType,
+      };
+
+      DelegationStorage.store(delegationInfo);
+      return true;
+    } catch (error) {
+      console.error('Error creating delegation:', error);
+      return false;
+    }
   }
 
   /**
-   * Check if a delegation is valid
+   * Get comprehensive delegation status
+   * @param currentAddress - Optional address to validate against
+   * @param currentWalletType - Optional wallet type to validate against
+   * @returns Complete delegation status information
    */
-  isDelegationValid(
+  getStatus(
     currentAddress?: string,
     currentWalletType?: 'bitcoin' | 'ethereum'
-  ): boolean {
+  ): DelegationFullStatus {
     const delegation = DelegationStorage.retrieve();
-    if (!delegation) return false;
+    
+    if (!delegation) {
+      return {
+        hasDelegation: false,
+        isValid: false,
+      };
+    }
 
     // Check if delegation has expired
     const now = Date.now();
-    if (now >= delegation.expiryTimestamp) return false;
-
-    // If a current address is provided, validate it matches the delegation
-    if (currentAddress && delegation.walletAddress !== currentAddress) {
-      return false;
-    }
-
-    // If a current wallet type is provided, validate it matches the delegation
-    if (currentWalletType && delegation.walletType !== currentWalletType) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * Get the time remaining on the current delegation in milliseconds
-   */
-  getDelegationTimeRemaining(): number {
-    const delegation = DelegationStorage.retrieve();
-    if (!delegation) return 0;
-
-    const now = Date.now();
-    return Math.max(0, delegation.expiryTimestamp - now);
-  }
-
-  /**
-   * Get the browser public key from the current delegation
-   */
-  getBrowserPublicKey(): string | null {
-    const delegation = DelegationStorage.retrieve();
-    if (!delegation) return null;
-    return delegation.browserPublicKey;
-  }
-
-  /**
-   * Get delegation status
-   */
-  getDelegationStatus(
-    currentAddress?: string,
-    currentWalletType?: 'bitcoin' | 'ethereum'
-  ): DelegationStatus {
-    const hasDelegation = this.getBrowserPublicKey() !== null;
-    const isValid = this.isDelegationValid(currentAddress, currentWalletType);
-    const timeRemaining = this.getDelegationTimeRemaining();
+    const hasExpired = now >= delegation.expiryTimestamp;
+    
+    // Check address/wallet type matching if provided
+    const addressMatches = !currentAddress || delegation.walletAddress === currentAddress;
+    const walletTypeMatches = !currentWalletType || delegation.walletType === currentWalletType;
+    
+    const isValid = !hasExpired && addressMatches && walletTypeMatches;
+    const timeRemaining = Math.max(0, delegation.expiryTimestamp - now);
 
     return {
-      hasDelegation,
+      hasDelegation: true,
       isValid,
       timeRemaining: timeRemaining > 0 ? timeRemaining : undefined,
+      publicKey: delegation.browserPublicKey,
+      address: delegation.walletAddress,
+      walletType: delegation.walletType,
     };
   }
 
   /**
    * Clear the stored delegation
    */
-  clearDelegation(): void {
+  clear(): void {
     DelegationStorage.clear();
   }
 
-  // ============================================================================
-  // MESSAGE SIGNING & VERIFICATION
-  // ============================================================================
-
   /**
-   * Sign a raw string message using the browser-generated private key
+   * Sign a message with the delegated browser key
+   * @param message - Unsigned message to sign
+   * @returns Signed message or null if delegation invalid
    */
-  signRawMessage(message: string): string | null {
-    const delegation = DelegationStorage.retrieve();
-    if (!delegation || !this.isDelegationValid()) return null;
-
-    try {
-      const privateKeyBytes = hexToBytes(delegation.browserPrivateKey);
-      const messageBytes = new TextEncoder().encode(message);
-
-      const signature = ed.sign(messageBytes, privateKeyBytes);
-      return bytesToHex(signature);
-    } catch (error) {
-      console.error('Error signing with browser key:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Sign an unsigned message with the delegated browser key
-   */
-  signMessageWithDelegatedKey(message: UnsignedMessage): OpchanMessage | null {
-    if (!this.isDelegationValid()) {
+  signMessage(message: UnsignedMessage): OpchanMessage | null {
+    const status = this.getStatus();
+    if (!status.isValid) {
       console.error('No valid key delegation found. Cannot sign message.');
       return null;
     }
@@ -198,7 +151,7 @@ export class DelegationManager {
       browserPubKey: undefined,
     });
 
-    const signature = this.signRawMessage(messageToSign);
+    const signature = this.signRaw(messageToSign);
     if (!signature) return null;
 
     return {
@@ -209,9 +162,11 @@ export class DelegationManager {
   }
 
   /**
-   * Verify an OpchanMessage signature
+   * Verify a message signature
+   * @param message - Signed message to verify
+   * @returns True if signature is valid
    */
-  verifyMessage(message: OpchanMessage): boolean {
+  verify(message: OpchanMessage): boolean {
     // Check for required signature fields
     if (!message.signature || !message.browserPubKey) {
       const messageId = message.id || `${message.type}-${message.timestamp}`;
@@ -227,7 +182,7 @@ export class DelegationManager {
     });
 
     // Verify the signature
-    const isValid = this.verifyRawSignature(
+    const isValid = this.verifyRaw(
       signedContent,
       message.signature,
       message.browserPubKey
@@ -241,10 +196,60 @@ export class DelegationManager {
     return isValid;
   }
 
+  // ============================================================================
+  // PRIVATE HELPERS
+  // ============================================================================
+
+  /**
+   * Generate a new browser-based keypair for signing messages
+   */
+  private generateKeypair(): { publicKey: string; privateKey: string } {
+    const privateKey = ed.utils.randomPrivateKey();
+    const privateKeyHex = bytesToHex(privateKey);
+
+    const publicKey = ed.getPublicKey(privateKey);
+    const publicKeyHex = bytesToHex(publicKey);
+
+    return {
+      privateKey: privateKeyHex,
+      publicKey: publicKeyHex,
+    };
+  }
+
+  /**
+   * Create a delegation message to be signed by the wallet
+   */
+  private createDelegationMessage(
+    browserPublicKey: string,
+    walletAddress: string,
+    expiryTimestamp: number
+  ): string {
+    return `I, ${walletAddress}, delegate authority to this pubkey: ${browserPublicKey} until ${expiryTimestamp}`;
+  }
+
+  /**
+   * Sign a raw string message using the browser-generated private key
+   */
+  private signRaw(message: string): string | null {
+    const delegation = DelegationStorage.retrieve();
+    if (!delegation) return null;
+
+    try {
+      const privateKeyBytes = hexToBytes(delegation.browserPrivateKey);
+      const messageBytes = new TextEncoder().encode(message);
+
+      const signature = ed.sign(messageBytes, privateKeyBytes);
+      return bytesToHex(signature);
+    } catch (error) {
+      console.error('Error signing with browser key:', error);
+      return null;
+    }
+  }
+
   /**
    * Verify a signature made with the browser key
    */
-  private verifyRawSignature(
+  private verifyRaw(
     message: string,
     signature: string,
     publicKey: string

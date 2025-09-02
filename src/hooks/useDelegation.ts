@@ -11,8 +11,7 @@ export const useDelegation = () => {
 
   const {
     delegateKey: contextDelegateKey,
-    isDelegationValid: contextIsDelegationValid,
-    delegationTimeRemaining: contextDelegationTimeRemaining,
+    getDelegationStatus: contextGetDelegationStatus,
     clearDelegation: contextClearDelegation,
     isAuthenticating,
   } = context;
@@ -29,17 +28,19 @@ export const useDelegation = () => {
   }, [contextClearDelegation]);
 
   const delegationStatus = useMemo(() => {
-    const isValid = contextIsDelegationValid();
-    const timeRemaining = contextDelegationTimeRemaining();
+    const status = contextGetDelegationStatus();
 
     return {
-      hasDelegation: timeRemaining > 0,
-      isValid,
-      timeRemaining: timeRemaining > 0 ? timeRemaining : undefined,
+      hasDelegation: status.hasDelegation,
+      isValid: status.isValid,
+      timeRemaining: status.timeRemaining,
       expiresAt:
-        timeRemaining > 0 ? new Date(Date.now() + timeRemaining) : undefined,
+        status.timeRemaining ? new Date(Date.now() + status.timeRemaining) : undefined,
+      publicKey: status.publicKey,
+      address: status.address,
+      walletType: status.walletType,
     };
-  }, [contextIsDelegationValid, contextDelegationTimeRemaining]);
+  }, [contextGetDelegationStatus]);
 
   const formatTimeRemaining = useCallback((timeMs: number): string => {
     const hours = Math.floor(timeMs / (1000 * 60 * 60));

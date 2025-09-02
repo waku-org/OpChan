@@ -3,7 +3,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { OpchanMessage } from '@/types/forum';
 import { User, EVerificationStatus, DisplayPreference } from '@/types/identity';
 import { WalletManager } from '@/lib/wallet';
-import { DelegationManager, DelegationDuration } from '@/lib/delegation';
+import { DelegationManager, DelegationDuration, DelegationFullStatus } from '@/lib/delegation';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 
 export type VerificationStatus =
@@ -22,8 +22,7 @@ interface AuthContextType {
   disconnectWallet: () => void;
   verifyOwnership: () => Promise<boolean>;
   delegateKey: (duration?: DelegationDuration) => Promise<boolean>;
-  isDelegationValid: () => boolean;
-  delegationTimeRemaining: () => number;
+  getDelegationStatus: () => DelegationFullStatus;
   clearDelegation: () => void;
   signMessage: (message: OpchanMessage) => Promise<OpchanMessage | null>;
   verifyMessage: (message: OpchanMessage) => boolean;
@@ -166,32 +165,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      // Generate new keypair
-      const keypair = delegationManager.generateKeypair();
-
-      // Create delegation message with expiry
-      const expiryHours = DelegationManager.getDurationHours(duration);
-      const expiryTimestamp = Date.now() + expiryHours * 60 * 60 * 1000;
-      const delegationMessage = delegationManager.createDelegationMessage(
-        keypair.publicKey,
+      // Use the simplified delegation method
+      return await delegationManager.delegate(
         user.address,
-        expiryTimestamp
-      );
-
-      // Sign the delegation message with wallet
-      const signature = await walletManager.signMessage(delegationMessage);
-
-      // Create and store the delegation
-      delegationManager.createDelegation(
-        user.address,
-        signature,
-        keypair.publicKey,
-        keypair.privateKey,
+        user.walletType,
         duration,
-        user.walletType
+        (message) => walletManager.signMessage(message)
       );
-
-      return true;
     } catch (error) {
       console.error(
         `Error creating key delegation for ${user.walletType}:`,
@@ -419,15 +399,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Update user with delegation info
-      const browserPublicKey = delegationManager.getBrowserPublicKey();
-      const delegationStatus = delegationManager.getDelegationStatus(
+      const delegationStatus = delegationManager.getStatus(
         currentUser.address,
         currentUser.walletType
       );
 
       const updatedUser = {
         ...currentUser,
-        browserPubKey: browserPublicKey || undefined,
+        browserPubKey: delegationStatus.publicKey || undefined,
         delegationSignature: delegationStatus.isValid ? 'valid' : undefined,
         delegationExpiry: delegationStatus.timeRemaining
           ? Date.now() + delegationStatus.timeRemaining
@@ -467,16 +446,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const isDelegationValid = (): boolean => {
-    return delegationManager.isDelegationValid();
-  };
-
-  const delegationTimeRemaining = (): number => {
-    return delegationManager.getDelegationTimeRemaining();
+  const getDelegationStatus = (): DelegationFullStatus => {
+    return delegationManager.getStatus(currentUser?.address, currentUser?.walletType);
   };
 
   const clearDelegation = (): void => {
-    delegationManager.clearDelegation();
+    delegationManager.clear();
 
     // Update the current user to remove delegation info
     if (currentUser) {
@@ -500,10 +475,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signMessage: async (
       message: OpchanMessage
     ): Promise<OpchanMessage | null> => {
-      return delegationManager.signMessageWithDelegatedKey(message);
+      return delegationManager.signMessage(message);
     },
     verifyMessage: (message: OpchanMessage): boolean => {
-      return delegationManager.verifyMessage(message);
+      return delegationManager.verify(message);
     },
   };
 
@@ -516,8 +491,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     disconnectWallet,
     verifyOwnership,
     delegateKey,
-    isDelegationValid,
-    delegationTimeRemaining,
+    getDelegationStatus,
     clearDelegation,
     signMessage: messageSigning.signMessage,
     verifyMessage: messageSigning.verifyMessage,
