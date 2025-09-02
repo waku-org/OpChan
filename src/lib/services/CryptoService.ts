@@ -75,13 +75,6 @@ export class CryptoService implements CryptoServiceInterface {
     return CryptoService.DURATION_HOURS[duration];
   }
 
-  /**
-   * Get available duration options
-   */
-  static getAvailableDurations(): DelegationDuration[] {
-    return Object.keys(CryptoService.DURATION_HOURS) as DelegationDuration[];
-  }
-
   // ============================================================================
   // KEYPAIR GENERATION
   // ============================================================================
@@ -239,26 +232,6 @@ export class CryptoService implements CryptoServiceInterface {
   }
 
   /**
-   * Verifies a signature made with the browser key
-   */
-  private verifyRawSignature(
-    message: string,
-    signature: string,
-    publicKey: string
-  ): boolean {
-    try {
-      const messageBytes = new TextEncoder().encode(message);
-      const signatureBytes = hexToBytes(signature);
-      const publicKeyBytes = hexToBytes(publicKey);
-
-      return ed.verify(signatureBytes, messageBytes, publicKeyBytes);
-    } catch (error) {
-      console.error('Error verifying signature:', error);
-      return false;
-    }
-  }
-
-  /**
    * Signs an unsigned message with the delegated browser key
    */
   signMessage(message: UnsignedMessage): OpchanMessage | null {
@@ -318,5 +291,25 @@ export class CryptoService implements CryptoServiceInterface {
     }
 
     return isValid;
+  }
+
+  /**
+   * Verifies a signature made with the browser key
+   */
+  private verifyRawSignature(
+    message: string,
+    signature: string,
+    publicKey: string
+  ): boolean {
+    try {
+      const messageBytes = new TextEncoder().encode(message);
+      const signatureBytes = hexToBytes(signature);
+      const publicKeyBytes = hexToBytes(publicKey);
+
+      return ed.verify(signatureBytes, messageBytes, publicKeyBytes);
+    } catch (error) {
+      console.error('Error verifying signature:', error);
+      return false;
+    }
   }
 }

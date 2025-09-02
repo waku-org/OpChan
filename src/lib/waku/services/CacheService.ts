@@ -34,7 +34,6 @@ export class CacheService {
   }
 
   public updateCache(message: unknown): boolean {
-    // MANDATORY: Validate message signature and required fields
     if (!this.validator.isValidMessage(message)) {
       const partialMsg = message as {
         id?: unknown;

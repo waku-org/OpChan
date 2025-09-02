@@ -21,7 +21,7 @@ import { RelevanceCalculator } from '@/lib/forum/RelevanceCalculator';
 import { UserVerificationStatus } from '@/types/forum';
 import { CryptoService } from '@/lib/services';
 import { getEnsName } from '@wagmi/core';
-import { config } from '@/lib/identity/wallets/appkit';
+import { config } from '@/lib/identity/wallets/config';
 
 interface ForumContextType {
   cells: Cell[];

@@ -6,7 +6,7 @@ import {
 import { AppKit } from '@reown/appkit';
 import { getEnsName } from '@wagmi/core';
 import { ChainNamespace } from '@reown/appkit-common';
-import { config } from './appkit';
+import { config } from './config';
 import { Provider } from '@reown/appkit-controllers';
 
 export interface WalletInfo {
@@ -179,33 +179,6 @@ export class ReOwnWalletService {
       console.error(`Error creating key delegation for ${walletType}:`, error);
       return false;
     }
-  }
-
-  /**
-   * Sign a message using the delegated key (if available) or fall back to wallet signing
-   */
-  async signMessageWithDelegation(
-    messageBytes: Uint8Array,
-    walletType: 'bitcoin' | 'ethereum'
-  ): Promise<string> {
-    const account = this.getActiveAccount(walletType);
-    if (!account?.address) {
-      throw new Error(`No ${walletType} wallet connected`);
-    }
-
-    // Check if we have a valid delegation for this specific wallet
-    if (this.cryptoService.isDelegationValid(account.address, walletType)) {
-      // Use delegated key for signing
-      const messageString = new TextDecoder().decode(messageBytes);
-      const signature = this.cryptoService.signRawMessage(messageString);
-
-      if (signature) {
-        return signature;
-      }
-    }
-
-    // Fall back to wallet signing
-    return this.signMessage(messageBytes, walletType);
   }
 
   /**
