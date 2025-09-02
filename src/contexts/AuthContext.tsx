@@ -1,9 +1,9 @@
-import React, { createContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { OpchanMessage } from '@/types/forum';
 import { User, EVerificationStatus, DisplayPreference } from '@/types/identity';
-import { AuthService, CryptoService, DelegationDuration } from '@/lib/services';
-import { AuthResult } from '@/lib/services/AuthService';
+import { WalletManager } from '@/lib/wallet';
+import { DelegationManager, DelegationDuration } from '@/lib/delegation';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 
 export type VerificationStatus =
@@ -53,26 +53,152 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const activeAccount = isBitcoinConnected ? bitcoinAccount : ethereumAccount;
   const address = activeAccount.address;
 
-  // Create service instances that persist between renders
-  const cryptoServiceRef = useRef(new CryptoService());
-  const authServiceRef = useRef(new AuthService(cryptoServiceRef.current));
+  // Create manager instances that persist between renders
+  const walletManager = useMemo(() => new WalletManager(), []);
+  const delegationManager = useMemo(() => new DelegationManager(), []);
 
-  // Set AppKit instance and accounts in AuthService
+  // Set AppKit instance and accounts in WalletManager
   useEffect(() => {
     if (modal) {
-      authServiceRef.current.setAppKit(modal);
+      walletManager.setAppKit(modal);
     }
-  }, []);
+  }, [walletManager]);
 
   useEffect(() => {
-    authServiceRef.current.setAccounts(bitcoinAccount, ethereumAccount);
-  }, [bitcoinAccount, ethereumAccount]);
+    walletManager.setAccounts(bitcoinAccount, ethereumAccount);
+  }, [bitcoinAccount, ethereumAccount, walletManager]);
+
+  // Helper functions for user persistence
+  const loadStoredUser = (): User | null => {
+    const storedUser = localStorage.getItem('opchan-user');
+    if (!storedUser) return null;
+
+    try {
+      const user = JSON.parse(storedUser);
+      const lastChecked = user.lastChecked || 0;
+      const expiryTime = 24 * 60 * 60 * 1000;
+
+      if (Date.now() - lastChecked < expiryTime) {
+        return user;
+      } else {
+        localStorage.removeItem('opchan-user');
+        return null;
+      }
+    } catch (e) {
+      console.error('Failed to parse stored user data', e);
+      localStorage.removeItem('opchan-user');
+      return null;
+    }
+  };
+
+  const saveUser = (user: User): void => {
+    localStorage.setItem('opchan-user', JSON.stringify(user));
+  };
+
+  // Helper function for ownership verification
+  const verifyUserOwnership = async (user: User): Promise<User> => {
+    if (user.walletType === 'bitcoin') {
+      // TODO: revert when the API is ready
+      // const response = await ordinalApi.getOperatorDetails(user.address);
+      // const hasOperators = response.has_operators;
+      const hasOperators = true;
+
+      return {
+        ...user,
+        ordinalDetails: hasOperators
+          ? { ordinalId: 'mock', ordinalDetails: 'Mock ordinal for testing' }
+          : undefined,
+        verificationStatus: hasOperators
+          ? EVerificationStatus.VERIFIED_OWNER
+          : EVerificationStatus.VERIFIED_BASIC,
+        lastChecked: Date.now(),
+      };
+    } else if (user.walletType === 'ethereum') {
+      try {
+        const walletInfo = await walletManager.getWalletInfo();
+        const hasENS = !!walletInfo?.ensName;
+        const ensName = walletInfo?.ensName;
+
+        return {
+          ...user,
+          ensDetails: hasENS && ensName ? { ensName } : undefined,
+          verificationStatus: hasENS
+            ? EVerificationStatus.VERIFIED_OWNER
+            : EVerificationStatus.VERIFIED_BASIC,
+          lastChecked: Date.now(),
+        };
+      } catch (error) {
+        console.error('Error verifying ENS ownership:', error);
+        return {
+          ...user,
+          ensDetails: undefined,
+          verificationStatus: EVerificationStatus.VERIFIED_BASIC,
+          lastChecked: Date.now(),
+        };
+      }
+    } else {
+      throw new Error('Unknown wallet type');
+    }
+  };
+
+  // Helper function for key delegation
+  const createUserDelegation = async (
+    user: User,
+    duration: DelegationDuration = '7days'
+  ): Promise<boolean> => {
+    try {
+      const walletType = user.walletType;
+      const isAvailable = walletManager.isWalletConnected(walletType);
+
+      if (!isAvailable) {
+        throw new Error(
+          `${walletType} wallet is not available or connected. Please ensure it is connected.`
+        );
+      }
+
+      // Generate new keypair
+      const keypair = delegationManager.generateKeypair();
+
+      // Create delegation message with expiry
+      const expiryHours = DelegationManager.getDurationHours(duration);
+      const expiryTimestamp = Date.now() + expiryHours * 60 * 60 * 1000;
+      const delegationMessage = delegationManager.createDelegationMessage(
+        keypair.publicKey,
+        user.address,
+        expiryTimestamp
+      );
+
+      // Sign the delegation message with wallet
+      const signature = await walletManager.signMessage(
+        delegationMessage,
+        walletType
+      );
+
+      // Create and store the delegation
+      delegationManager.createDelegation(
+        user.address,
+        signature,
+        keypair.publicKey,
+        keypair.privateKey,
+        duration,
+        walletType
+      );
+
+      return true;
+    } catch (error) {
+      console.error(
+        `Error creating key delegation for ${user.walletType}:`,
+        error
+      );
+      return false;
+    }
+  };
 
   // Sync with AppKit wallet state
   useEffect(() => {
     if (isConnected && address) {
       // Check if we have a stored user for this address
-      const storedUser = authServiceRef.current.loadStoredUser();
+      const storedUser = loadStoredUser();
 
       if (storedUser && storedUser.address === address) {
         // Use stored user data
@@ -90,35 +216,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // For Ethereum wallets, try to check ENS ownership immediately
         if (isEthereumConnected) {
-          authServiceRef.current
+          walletManager
             .getWalletInfo()
             .then(walletInfo => {
               if (walletInfo?.ensName) {
                 const updatedUser = {
                   ...newUser,
-                  ensOwnership: true,
-                  ensName: walletInfo.ensName,
+                  ensDetails: { ensName: walletInfo.ensName },
                   verificationStatus: EVerificationStatus.VERIFIED_OWNER,
                 };
                 setCurrentUser(updatedUser);
                 setVerificationStatus('verified-owner');
-                authServiceRef.current.saveUser(updatedUser);
+                saveUser(updatedUser);
               } else {
                 setCurrentUser(newUser);
                 setVerificationStatus('verified-basic');
-                authServiceRef.current.saveUser(newUser);
+                saveUser(newUser);
               }
             })
             .catch(() => {
               // Fallback to basic verification if ENS check fails
               setCurrentUser(newUser);
               setVerificationStatus('verified-basic');
-              authServiceRef.current.saveUser(newUser);
+              saveUser(newUser);
             });
         } else {
           setCurrentUser(newUser);
           setVerificationStatus('verified-basic');
-          authServiceRef.current.saveUser(newUser);
+          saveUser(newUser);
         }
 
         const chainName = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
@@ -142,7 +267,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser(null);
       setVerificationStatus('unverified');
     }
-  }, [isConnected, address, isBitcoinConnected, isEthereumConnected, toast]);
+  }, [
+    isConnected,
+    address,
+    isBitcoinConnected,
+    isEthereumConnected,
+    toast,
+    walletManager,
+  ]);
 
   const { disconnect } = useDisconnect();
 
@@ -165,13 +297,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const getVerificationStatus = (user: User): VerificationStatus => {
     if (user.walletType === 'bitcoin') {
-      return user.ordinalDetails
-        ? EVerificationStatus.VERIFIED_OWNER
-        : EVerificationStatus.VERIFIED_BASIC;
+      return user.ordinalDetails ? 'verified-owner' : 'verified-basic';
     } else if (user.walletType === 'ethereum') {
-      return user.ensDetails
-        ? EVerificationStatus.VERIFIED_OWNER
-        : EVerificationStatus.VERIFIED_BASIC;
+      return user.ensDetails ? 'verified-owner' : 'verified-basic';
     }
     return 'unverified';
   };
@@ -197,16 +325,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: `Checking your wallet for ${verificationType} ownership...`,
       });
 
-      const result: AuthResult =
-        await authServiceRef.current.verifyOwnership(currentUser);
-
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-
-      const updatedUser = result.user!;
+      const updatedUser = await verifyUserOwnership(currentUser);
       setCurrentUser(updatedUser);
-      authServiceRef.current.saveUser(updatedUser);
+      saveUser(updatedUser);
 
       // Update verification status
       setVerificationStatus(getVerificationStatus(updatedUser));
@@ -284,18 +405,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: `This will let you post, comment, and vote without approving each action for ${durationText}.`,
       });
 
-      const result: AuthResult = await authServiceRef.current.delegateKey(
-        currentUser,
-        duration
-      );
-
-      if (!result.success) {
-        throw new Error(result.error);
+      const success = await createUserDelegation(currentUser, duration);
+      if (!success) {
+        throw new Error('Failed to create key delegation');
       }
 
-      const updatedUser = result.user!;
+      // Update user with delegation info
+      const browserPublicKey = delegationManager.getBrowserPublicKey();
+      const delegationStatus = delegationManager.getDelegationStatus(
+        currentUser.address,
+        currentUser.walletType
+      );
+
+      const updatedUser = {
+        ...currentUser,
+        browserPubKey: browserPublicKey || undefined,
+        delegationSignature: delegationStatus.isValid ? 'valid' : undefined,
+        delegationExpiry: delegationStatus.timeRemaining
+          ? Date.now() + delegationStatus.timeRemaining
+          : undefined,
+      };
+
       setCurrentUser(updatedUser);
-      authServiceRef.current.saveUser(updatedUser);
+      saveUser(updatedUser);
 
       // Format date for user-friendly display
       const expiryDate = new Date(updatedUser.delegationExpiry!);
@@ -328,15 +460,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isDelegationValid = (): boolean => {
-    return cryptoServiceRef.current.isDelegationValid();
+    return delegationManager.isDelegationValid();
   };
 
   const delegationTimeRemaining = (): number => {
-    return cryptoServiceRef.current.getDelegationTimeRemaining();
+    return delegationManager.getDelegationTimeRemaining();
   };
 
   const clearDelegation = (): void => {
-    cryptoServiceRef.current.clearDelegation();
+    delegationManager.clearDelegation();
 
     // Update the current user to remove delegation info
     if (currentUser) {
@@ -346,7 +478,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         browserPublicKey: undefined,
       };
       setCurrentUser(updatedUser);
-      authServiceRef.current.saveUser(updatedUser);
+      saveUser(updatedUser);
     }
 
     toast({
@@ -360,10 +492,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signMessage: async (
       message: OpchanMessage
     ): Promise<OpchanMessage | null> => {
-      return cryptoServiceRef.current.signMessage(message);
+      return delegationManager.signMessageWithDelegatedKey(message);
     },
     verifyMessage: (message: OpchanMessage): boolean => {
-      return cryptoServiceRef.current.verifyMessage(message);
+      return delegationManager.verifyMessage(message);
     },
   };
 

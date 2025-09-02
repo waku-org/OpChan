@@ -13,7 +13,8 @@ import {
 import { Cell, Comment, Post } from '@/types/forum';
 import { EVerificationStatus, User } from '@/types/identity';
 import { transformCell, transformComment, transformPost } from './transformers';
-import { MessageService, CryptoService } from '@/lib/services';
+import { MessageService } from '@/lib/services';
+import { DelegationManager } from '@/lib/delegation';
 
 type ActionResult<T> = {
   success: boolean;
@@ -22,12 +23,12 @@ type ActionResult<T> = {
 };
 
 export class ForumActions {
-  private cryptoService: CryptoService;
+  private delegationManager: DelegationManager;
   private messageService: MessageService;
 
-  constructor(cryptoService?: CryptoService) {
-    this.cryptoService = cryptoService || new CryptoService();
-    this.messageService = new MessageService(this.cryptoService);
+  constructor(delegationManager?: DelegationManager) {
+    this.delegationManager = delegationManager || new DelegationManager();
+    this.messageService = new MessageService(this.delegationManager);
   }
 
   /* ------------------------------------------------------------------

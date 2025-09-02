@@ -1,6 +1,6 @@
 import { OpchanMessage } from '@/types/forum';
 import { UnsignedMessage } from '@/types/waku';
-import { CryptoService } from './CryptoService';
+import { DelegationManager } from '@/lib/delegation';
 import messageManager from '@/lib/waku';
 
 export interface MessageResult {
@@ -15,10 +15,10 @@ export interface MessageServiceInterface {
 }
 
 export class MessageService implements MessageServiceInterface {
-  private cryptoService: CryptoService;
+  private delegationManager: DelegationManager;
 
-  constructor(cryptoService: CryptoService) {
-    this.cryptoService = cryptoService;
+  constructor(delegationManager: DelegationManager) {
+    this.delegationManager = delegationManager;
   }
 
   /**
@@ -26,12 +26,13 @@ export class MessageService implements MessageServiceInterface {
    */
   async sendMessage(message: UnsignedMessage): Promise<MessageResult> {
     try {
-      const signedMessage = this.cryptoService.signMessage(message);
+      const signedMessage =
+        this.delegationManager.signMessageWithDelegatedKey(message);
 
       if (!signedMessage) {
         // Check if delegation exists but is expired
         const isDelegationExpired =
-          this.cryptoService.isDelegationValid() === false;
+          this.delegationManager.isDelegationValid() === false;
 
         return {
           success: false,
@@ -81,6 +82,6 @@ export class MessageService implements MessageServiceInterface {
    * Verify a message signature
    */
   verifyMessage(message: OpchanMessage): boolean {
-    return this.cryptoService.verifyMessage(message);
+    return this.delegationManager.verifyMessage(message);
   }
 }

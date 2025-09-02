@@ -1,5 +1,5 @@
 import { OpchanMessage } from '@/types/forum';
-import { CryptoService } from '@/lib/services/CryptoService';
+import { DelegationManager } from '@/lib/delegation';
 
 /**
  * Type for potential message objects with partial structure
@@ -18,10 +18,10 @@ interface PartialMessage {
  * Ensures all messages have valid signatures and browserPubKey
  */
 export class MessageValidator {
-  private cryptoService: CryptoService;
+  private delegationManager: DelegationManager;
 
-  constructor(cryptoService?: CryptoService) {
-    this.cryptoService = cryptoService || new CryptoService();
+  constructor(delegationManager?: DelegationManager) {
+    this.delegationManager = delegationManager || new DelegationManager();
   }
 
   /**
@@ -34,7 +34,7 @@ export class MessageValidator {
     }
 
     // Verify signature - we know it's safe to cast here since hasRequiredFields passed
-    return this.cryptoService.verifyMessage(message as OpchanMessage);
+    return this.delegationManager.verifyMessage(message as OpchanMessage);
   }
 
   /**
@@ -123,7 +123,7 @@ export class MessageValidator {
           continue;
         }
 
-        if (!this.cryptoService.verifyMessage(message as OpchanMessage)) {
+        if (!this.delegationManager.verifyMessage(message as OpchanMessage)) {
           invalidCount.invalidSignature++;
           continue;
         }
@@ -166,7 +166,7 @@ export class MessageValidator {
       );
     }
 
-    if (!this.cryptoService.verifyMessage(message as OpchanMessage)) {
+    if (!this.delegationManager.verifyMessage(message as OpchanMessage)) {
       const partialMsg = message as PartialMessage;
       throw new Error(
         `Message validation failed: Invalid signature (messageId: ${partialMsg?.id})`
@@ -242,7 +242,7 @@ export class MessageValidator {
       }
 
       if (hasRequiredFields) {
-        hasValidSignature = this.cryptoService.verifyMessage(
+        hasValidSignature = this.delegationManager.verifyMessage(
           message as OpchanMessage
         );
         if (!hasValidSignature) {

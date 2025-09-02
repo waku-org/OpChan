@@ -1,67 +1,15 @@
-/**
- * CryptoService - Unified cryptographic operations
- *
- * Combines key delegation and message signing functionality into a single,
- * cohesive service focused on all cryptographic operations.
- */
-
 import * as ed from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha512';
 import { bytesToHex, hexToBytes } from '@/lib/utils';
-import { LOCAL_STORAGE_KEYS } from '@/lib/waku/constants';
 import { OpchanMessage } from '@/types/forum';
 import { UnsignedMessage } from '@/types/waku';
+import { DelegationDuration, DelegationInfo, DelegationStatus } from './types';
+import { DelegationStorage } from './storage';
 
-export interface DelegationSignature {
-  signature: string; // Signature from wallet
-  expiryTimestamp: number; // When this delegation expires
-  browserPublicKey: string; // Browser-generated public key that was delegated to
-  walletAddress: string; // Wallet address that signed the delegation
-  walletType: 'bitcoin' | 'ethereum'; // Type of wallet that created the delegation
-}
-
-export interface DelegationInfo extends DelegationSignature {
-  browserPrivateKey: string;
-}
-
+// Set up ed25519 with sha512
 ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
 
-export type DelegationDuration = '7days' | '30days';
-
-export interface CryptoServiceInterface {
-  // Delegation management
-  createDelegation(
-    walletAddress: string,
-    signature: string,
-    browserPublicKey: string,
-    browserPrivateKey: string,
-    duration: DelegationDuration,
-    walletType: 'bitcoin' | 'ethereum'
-  ): void;
-  isDelegationValid(
-    currentAddress?: string,
-    currentWalletType?: 'bitcoin' | 'ethereum'
-  ): boolean;
-  getDelegationTimeRemaining(): number;
-  getBrowserPublicKey(): string | null;
-  clearDelegation(): void;
-
-  // Keypair generation
-  generateKeypair(): { publicKey: string; privateKey: string };
-  createDelegationMessage(
-    browserPublicKey: string,
-    walletAddress: string,
-    expiryTimestamp: number
-  ): string;
-
-  // Message operations
-  signMessage(message: UnsignedMessage): OpchanMessage | null;
-  verifyMessage(message: OpchanMessage): boolean;
-}
-
-export class CryptoService implements CryptoServiceInterface {
-  private static readonly STORAGE_KEY = LOCAL_STORAGE_KEYS.KEY_DELEGATION;
-
+export class DelegationManager {
   // Duration options in hours
   private static readonly DURATION_HOURS = {
     '7days': 24 * 7, // 168 hours
@@ -72,7 +20,7 @@ export class CryptoService implements CryptoServiceInterface {
    * Get the number of hours for a given duration
    */
   static getDurationHours(duration: DelegationDuration): number {
-    return CryptoService.DURATION_HOURS[duration];
+    return DelegationManager.DURATION_HOURS[duration];
   }
 
   // ============================================================================
@@ -80,7 +28,7 @@ export class CryptoService implements CryptoServiceInterface {
   // ============================================================================
 
   /**
-   * Generates a new browser-based keypair for signing messages
+   * Generate a new browser-based keypair for signing messages
    */
   generateKeypair(): { publicKey: string; privateKey: string } {
     const privateKey = ed.utils.randomPrivateKey();
@@ -96,7 +44,7 @@ export class CryptoService implements CryptoServiceInterface {
   }
 
   /**
-   * Creates a delegation message to be signed by the wallet
+   * Create a delegation message to be signed by the wallet
    */
   createDelegationMessage(
     browserPublicKey: string,
@@ -107,11 +55,11 @@ export class CryptoService implements CryptoServiceInterface {
   }
 
   // ============================================================================
-  // DELEGATION MANAGEMENT
+  // DELEGATION LIFECYCLE
   // ============================================================================
 
   /**
-   * Creates and stores a delegation
+   * Create and store a delegation
    */
   createDelegation(
     walletAddress: string,
@@ -121,7 +69,7 @@ export class CryptoService implements CryptoServiceInterface {
     duration: DelegationDuration = '7days',
     walletType: 'bitcoin' | 'ethereum'
   ): void {
-    const expiryHours = CryptoService.getDurationHours(duration);
+    const expiryHours = DelegationManager.getDurationHours(duration);
     const expiryTimestamp = Date.now() + expiryHours * 60 * 60 * 1000;
 
     const delegationInfo: DelegationInfo = {
@@ -133,35 +81,17 @@ export class CryptoService implements CryptoServiceInterface {
       walletType,
     };
 
-    localStorage.setItem(
-      CryptoService.STORAGE_KEY,
-      JSON.stringify(delegationInfo)
-    );
+    DelegationStorage.store(delegationInfo);
   }
 
   /**
-   * Retrieves delegation information from local storage
-   */
-  private retrieveDelegation(): DelegationInfo | null {
-    const delegationJson = localStorage.getItem(CryptoService.STORAGE_KEY);
-    if (!delegationJson) return null;
-
-    try {
-      return JSON.parse(delegationJson);
-    } catch (e) {
-      console.error('Failed to parse delegation information', e);
-      return null;
-    }
-  }
-
-  /**
-   * Checks if a delegation is valid
+   * Check if a delegation is valid
    */
   isDelegationValid(
     currentAddress?: string,
     currentWalletType?: 'bitcoin' | 'ethereum'
   ): boolean {
-    const delegation = this.retrieveDelegation();
+    const delegation = DelegationStorage.retrieve();
     if (!delegation) return false;
 
     // Check if delegation has expired
@@ -182,10 +112,10 @@ export class CryptoService implements CryptoServiceInterface {
   }
 
   /**
-   * Gets the time remaining on the current delegation
+   * Get the time remaining on the current delegation in milliseconds
    */
   getDelegationTimeRemaining(): number {
-    const delegation = this.retrieveDelegation();
+    const delegation = DelegationStorage.retrieve();
     if (!delegation) return 0;
 
     const now = Date.now();
@@ -193,19 +123,37 @@ export class CryptoService implements CryptoServiceInterface {
   }
 
   /**
-   * Gets the browser public key from the current delegation
+   * Get the browser public key from the current delegation
    */
   getBrowserPublicKey(): string | null {
-    const delegation = this.retrieveDelegation();
+    const delegation = DelegationStorage.retrieve();
     if (!delegation) return null;
     return delegation.browserPublicKey;
   }
 
   /**
-   * Clears the stored delegation
+   * Get delegation status
+   */
+  getDelegationStatus(
+    currentAddress?: string,
+    currentWalletType?: 'bitcoin' | 'ethereum'
+  ): DelegationStatus {
+    const hasDelegation = this.getBrowserPublicKey() !== null;
+    const isValid = this.isDelegationValid(currentAddress, currentWalletType);
+    const timeRemaining = this.getDelegationTimeRemaining();
+
+    return {
+      hasDelegation,
+      isValid,
+      timeRemaining: timeRemaining > 0 ? timeRemaining : undefined,
+    };
+  }
+
+  /**
+   * Clear the stored delegation
    */
   clearDelegation(): void {
-    localStorage.removeItem(CryptoService.STORAGE_KEY);
+    DelegationStorage.clear();
   }
 
   // ============================================================================
@@ -213,10 +161,10 @@ export class CryptoService implements CryptoServiceInterface {
   // ============================================================================
 
   /**
-   * Signs a raw string message using the browser-generated private key
+   * Sign a raw string message using the browser-generated private key
    */
   signRawMessage(message: string): string | null {
-    const delegation = this.retrieveDelegation();
+    const delegation = DelegationStorage.retrieve();
     if (!delegation || !this.isDelegationValid()) return null;
 
     try {
@@ -232,15 +180,15 @@ export class CryptoService implements CryptoServiceInterface {
   }
 
   /**
-   * Signs an unsigned message with the delegated browser key
+   * Sign an unsigned message with the delegated browser key
    */
-  signMessage(message: UnsignedMessage): OpchanMessage | null {
+  signMessageWithDelegatedKey(message: UnsignedMessage): OpchanMessage | null {
     if (!this.isDelegationValid()) {
       console.error('No valid key delegation found. Cannot sign message.');
       return null;
     }
 
-    const delegation = this.retrieveDelegation();
+    const delegation = DelegationStorage.retrieve();
     if (!delegation) return null;
 
     // Create the message content to sign (without signature fields)
@@ -261,7 +209,7 @@ export class CryptoService implements CryptoServiceInterface {
   }
 
   /**
-   * Verifies an OpchanMessage signature
+   * Verify an OpchanMessage signature
    */
   verifyMessage(message: OpchanMessage): boolean {
     // Check for required signature fields
@@ -294,7 +242,7 @@ export class CryptoService implements CryptoServiceInterface {
   }
 
   /**
-   * Verifies a signature made with the browser key
+   * Verify a signature made with the browser key
    */
   private verifyRawSignature(
     message: string,
@@ -313,3 +261,8 @@ export class CryptoService implements CryptoServiceInterface {
     }
   }
 }
+
+// Export singleton instance
+export const delegationManager = new DelegationManager();
+export * from './types';
+export { DelegationStorage };

@@ -19,9 +19,9 @@ import messageManager from '@/lib/waku';
 import { getDataFromCache } from '@/lib/forum/transformers';
 import { RelevanceCalculator } from '@/lib/forum/RelevanceCalculator';
 import { UserVerificationStatus } from '@/types/forum';
-import { CryptoService } from '@/lib/services';
+import { DelegationManager } from '@/lib/delegation';
 import { getEnsName } from '@wagmi/core';
-import { config } from '@/lib/services/WalletService/config';
+import { config } from '@/lib/wallet/config';
 
 interface ForumContextType {
   cells: Cell[];
@@ -98,17 +98,17 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const { currentUser, isAuthenticated } = useAuth();
 
-  const cryptoService = useMemo(() => new CryptoService(), []);
+  const delegationManager = useMemo(() => new DelegationManager(), []);
   const forumActions = useMemo(
-    () => new ForumActions(cryptoService),
-    [cryptoService]
+    () => new ForumActions(delegationManager),
+    [delegationManager]
   );
 
   // Transform message cache data to the expected types
   const updateStateFromCache = useCallback(() => {
-    // Use the verifyMessage function from cryptoService if available
+    // Use the verifyMessage function from delegationManager if available
     const verifyFn = isAuthenticated
-      ? (message: OpchanMessage) => cryptoService.verifyMessage(message)
+      ? (message: OpchanMessage) => delegationManager.verifyMessage(message)
       : undefined;
 
     // Build user verification status for relevance calculation
@@ -214,7 +214,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       setComments(transformed.comments);
       setUserVerificationStatus(enrichedStatus);
     })();
-  }, [cryptoService, isAuthenticated, currentUser]);
+  }, [delegationManager, isAuthenticated, currentUser]);
 
   const handleRefreshData = async () => {
     setIsRefreshing(true);
