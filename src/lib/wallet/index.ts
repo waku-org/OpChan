@@ -7,177 +7,81 @@ import { Provider } from '@reown/appkit-controllers';
 import { WalletInfo, ActiveWallet } from './types';
 
 export class WalletManager {
-  private appKit?: AppKit;
-  private bitcoinAccount?: UseAppKitAccountReturn;
-  private ethereumAccount?: UseAppKitAccountReturn;
+  private static instance: WalletManager | null = null;
 
-  /**
-   * Set the AppKit instance for accessing adapters
-   */
-  setAppKit(appKit: AppKit): void {
-    this.appKit = appKit;
-  }
+  private appKit: AppKit;
+  private activeAccount: UseAppKitAccountReturn;
+  private activeWalletType: 'bitcoin' | 'ethereum';
+  private namespace: ChainNamespace;
 
-  /**
-   * Set account references from AppKit hooks
-   */
-  setAccounts(
+  private constructor(
+    appKit: AppKit,
     bitcoinAccount: UseAppKitAccountReturn,
     ethereumAccount: UseAppKitAccountReturn
-  ): void {
-    this.bitcoinAccount = bitcoinAccount;
-    this.ethereumAccount = ethereumAccount;
+  ) {
+    this.appKit = appKit;
+
+    // Determine active wallet (Bitcoin takes priority)
+    if (bitcoinAccount.isConnected && bitcoinAccount.address) {
+      this.activeAccount = bitcoinAccount;
+      this.activeWalletType = 'bitcoin';
+      this.namespace = 'bip122';
+    } else if (ethereumAccount.isConnected && ethereumAccount.address) {
+      this.activeAccount = ethereumAccount;
+      this.activeWalletType = 'ethereum';
+      this.namespace = 'eip155';
+    } else {
+      throw new Error('No wallet is connected');
+    }
   }
 
   /**
-   * Get the currently active wallet (Bitcoin takes priority)
+   * Create or get the singleton instance
    */
-  getActiveWallet(): ActiveWallet | null {
-    if (this.bitcoinAccount?.isConnected && this.bitcoinAccount.address) {
-      return {
-        type: 'bitcoin',
-        address: this.bitcoinAccount.address,
-        isConnected: true,
-      };
-    }
-
-    if (this.ethereumAccount?.isConnected && this.ethereumAccount.address) {
-      return {
-        type: 'ethereum',
-        address: this.ethereumAccount.address,
-        isConnected: true,
-      };
-    }
-
-    return null;
-  }
-
-  /**
-   * Check if any wallet is connected
-   */
-  isConnected(): boolean {
-    return (
-      (this.bitcoinAccount?.isConnected ?? false) ||
-      (this.ethereumAccount?.isConnected ?? false)
+  static create(
+    appKit: AppKit,
+    bitcoinAccount: UseAppKitAccountReturn,
+    ethereumAccount: UseAppKitAccountReturn
+  ): WalletManager {
+    // Always create a new instance to reflect current wallet state
+    WalletManager.instance = new WalletManager(
+      appKit,
+      bitcoinAccount,
+      ethereumAccount
     );
+    return WalletManager.instance;
   }
 
   /**
-   * Check if a specific wallet type is connected
+   * Get the current instance (throws if not created)
    */
-  isWalletConnected(walletType: 'bitcoin' | 'ethereum'): boolean {
-    const account =
-      walletType === 'bitcoin' ? this.bitcoinAccount : this.ethereumAccount;
-    return account?.isConnected ?? false;
-  }
-
-  /**
-   * Get address for a specific wallet type
-   */
-  getAddress(walletType: 'bitcoin' | 'ethereum'): string | undefined {
-    const account =
-      walletType === 'bitcoin' ? this.bitcoinAccount : this.ethereumAccount;
-    return account?.address;
-  }
-
-  /**
-   * Get the appropriate namespace for the wallet type
-   */
-  private getNamespace(walletType: 'bitcoin' | 'ethereum'): ChainNamespace {
-    return walletType === 'bitcoin' ? 'bip122' : 'eip155';
-  }
-
-  /**
-   * Sign a message using the appropriate wallet adapter
-   */
-  async signMessage(
-    message: string,
-    walletType: 'bitcoin' | 'ethereum'
-  ): Promise<string> {
-    if (!this.appKit) {
-      throw new Error('AppKit instance not set. Call setAppKit() first.');
-    }
-
-    const account =
-      walletType === 'bitcoin' ? this.bitcoinAccount : this.ethereumAccount;
-    if (!account?.address) {
-      throw new Error(`No ${walletType} wallet connected`);
-    }
-
-    const namespace = this.getNamespace(walletType);
-
-    try {
-      // Access the adapter through the appKit instance
-      const adapter = this.appKit.chainAdapters?.[namespace];
-
-      if (!adapter) {
-        throw new Error(`No adapter found for namespace: ${namespace}`);
-      }
-
-      // Get the provider for the current connection
-      const provider = this.appKit.getProvider(namespace);
-
-      if (!provider) {
-        throw new Error(`No provider found for namespace: ${namespace}`);
-      }
-
-      // Call the adapter's signMessage method
-      const result = await adapter.signMessage({
-        message,
-        address: account.address,
-        provider: provider as Provider,
-      });
-
-      return result.signature;
-    } catch (error) {
-      console.error(`Error signing message with ${walletType} wallet:`, error);
+  static getInstance(): WalletManager {
+    if (!WalletManager.instance) {
       throw new Error(
-        `Failed to sign message with ${walletType} wallet: ${error instanceof Error ? error.message : 'Unknown error'}`
+        'WalletManager not initialized. Call WalletManager.create() first.'
       );
     }
+    return WalletManager.instance;
   }
 
   /**
-   * Get comprehensive wallet info including ENS resolution for Ethereum
+   * Check if instance exists
    */
-  async getWalletInfo(): Promise<WalletInfo | null> {
-    if (this.bitcoinAccount?.isConnected) {
-      return {
-        address: this.bitcoinAccount.address as string,
-        walletType: 'bitcoin',
-        isConnected: true,
-      };
-    }
+  static hasInstance(): boolean {
+    return WalletManager.instance !== null;
+  }
 
-    if (this.ethereumAccount?.isConnected) {
-      const address = this.ethereumAccount.address as string;
-
-      // Try to resolve ENS name
-      let ensName: string | undefined;
-      try {
-        const resolvedName = await getEnsName(config, {
-          address: address as `0x${string}`,
-        });
-        ensName = resolvedName || undefined;
-      } catch (error) {
-        console.warn('Failed to resolve ENS name:', error);
-      }
-
-      return {
-        address,
-        walletType: 'ethereum',
-        ensName,
-        isConnected: true,
-      };
-    }
-
-    return null;
+  /**
+   * Clear the singleton instance
+   */
+  static clear(): void {
+    WalletManager.instance = null;
   }
 
   /**
    * Resolve ENS name for an Ethereum address
    */
-  async resolveENS(address: string): Promise<string | null> {
+  static async resolveENS(address: string): Promise<string | null> {
     try {
       const ensName = await getEnsName(config, {
         address: address as `0x${string}`,
@@ -188,9 +92,123 @@ export class WalletManager {
       return null;
     }
   }
+
+  /**
+   * Get the currently active wallet
+   */
+  getActiveWallet(): ActiveWallet {
+    return {
+      type: this.activeWalletType,
+      address: this.activeAccount.address!,
+      isConnected: true,
+    };
+  }
+
+  /**
+   * Check if wallet is connected
+   */
+  isConnected(): boolean {
+    return this.activeAccount.isConnected;
+  }
+
+  /**
+   * Get the active wallet type
+   */
+  getWalletType(): 'bitcoin' | 'ethereum' {
+    return this.activeWalletType;
+  }
+
+  /**
+   * Get address of the active wallet
+   */
+  getAddress(): string {
+    return this.activeAccount.address!;
+  }
+
+  /**
+   * Sign a message using the active wallet
+   */
+  async signMessage(message: string): Promise<string> {
+    try {
+      // Access the adapter through the appKit instance
+      const adapter = this.appKit.chainAdapters?.[this.namespace];
+
+      if (!adapter) {
+        throw new Error(`No adapter found for namespace: ${this.namespace}`);
+      }
+
+      // Get the provider for the current connection
+      const provider = this.appKit.getProvider(this.namespace);
+
+      if (!provider) {
+        throw new Error(`No provider found for namespace: ${this.namespace}`);
+      }
+
+      if (!this.activeAccount.address) {
+        throw new Error('No address found for active account');
+      }
+
+      // Call the adapter's signMessage method
+      const result = await adapter.signMessage({
+        message,
+        address: this.activeAccount.address,
+        provider: provider as Provider,
+      });
+
+      return result.signature;
+    } catch (error) {
+      console.error(
+        `Error signing message with ${this.activeWalletType} wallet:`,
+        error
+      );
+      throw new Error(
+        `Failed to sign message with ${this.activeWalletType} wallet: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Get comprehensive wallet info including ENS resolution for Ethereum
+   */
+  async getWalletInfo(): Promise<WalletInfo> {
+    const address = this.activeAccount.address!;
+
+    if (this.activeWalletType === 'bitcoin') {
+      return {
+        address,
+        walletType: 'bitcoin',
+        isConnected: true,
+      };
+    }
+
+    // For Ethereum, try to resolve ENS name
+    let ensName: string | undefined;
+    try {
+      const resolvedName = await getEnsName(config, {
+        address: address as `0x${string}`,
+      });
+      ensName = resolvedName || undefined;
+    } catch (error) {
+      console.warn('Failed to resolve ENS name:', error);
+    }
+
+    return {
+      address,
+      walletType: 'ethereum',
+      ensName,
+      isConnected: true,
+    };
+  }
 }
 
-// Export singleton instance
-export const walletManager = new WalletManager();
+// Convenience exports for singleton access
+export const walletManager = {
+  create: WalletManager.create,
+  getInstance: WalletManager.getInstance,
+  hasInstance: WalletManager.hasInstance,
+  clear: WalletManager.clear,
+  resolveENS: WalletManager.resolveENS,
+};
+
 export * from './types';
 export * from './config';

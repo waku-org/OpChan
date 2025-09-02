@@ -53,20 +53,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const activeAccount = isBitcoinConnected ? bitcoinAccount : ethereumAccount;
   const address = activeAccount.address;
 
-  // Create manager instances that persist between renders
-  const walletManager = useMemo(() => new WalletManager(), []);
+  // Create manager instances
   const delegationManager = useMemo(() => new DelegationManager(), []);
 
-  // Set AppKit instance and accounts in WalletManager
+  // Create wallet manager when we have all dependencies
   useEffect(() => {
-    if (modal) {
-      walletManager.setAppKit(modal);
+    if (modal && (bitcoinAccount.isConnected || ethereumAccount.isConnected)) {
+      try {
+        WalletManager.create(modal, bitcoinAccount, ethereumAccount);
+      } catch (error) {
+        console.warn('Failed to create WalletManager:', error);
+        WalletManager.clear();
+      }
+    } else {
+      WalletManager.clear();
     }
-  }, [walletManager]);
-
-  useEffect(() => {
-    walletManager.setAccounts(bitcoinAccount, ethereumAccount);
-  }, [bitcoinAccount, ethereumAccount, walletManager]);
+  }, [bitcoinAccount, ethereumAccount]);
 
   // Helper functions for user persistence
   const loadStoredUser = (): User | null => {
@@ -115,7 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     } else if (user.walletType === 'ethereum') {
       try {
-        const walletInfo = await walletManager.getWalletInfo();
+        const walletInfo = WalletManager.hasInstance()
+          ? await WalletManager.getInstance().getWalletInfo()
+          : null;
         const hasENS = !!walletInfo?.ensName;
         const ensName = walletInfo?.ensName;
 
@@ -147,12 +151,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     duration: DelegationDuration = '7days'
   ): Promise<boolean> => {
     try {
-      const walletType = user.walletType;
-      const isAvailable = walletManager.isWalletConnected(walletType);
-
-      if (!isAvailable) {
+      if (!WalletManager.hasInstance()) {
         throw new Error(
-          `${walletType} wallet is not available or connected. Please ensure it is connected.`
+          'Wallet not connected. Please ensure your wallet is connected.'
+        );
+      }
+
+      const walletManager = WalletManager.getInstance();
+
+      // Verify wallet type matches
+      if (walletManager.getWalletType() !== user.walletType) {
+        throw new Error(
+          `Expected ${user.walletType} wallet, but ${walletManager.getWalletType()} is connected.`
         );
       }
 
@@ -169,10 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
 
       // Sign the delegation message with wallet
-      const signature = await walletManager.signMessage(
-        delegationMessage,
-        walletType
-      );
+      const signature = await walletManager.signMessage(delegationMessage);
 
       // Create and store the delegation
       delegationManager.createDelegation(
@@ -181,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         keypair.publicKey,
         keypair.privateKey,
         duration,
-        walletType
+        user.walletType
       );
 
       return true;
@@ -216,30 +223,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // For Ethereum wallets, try to check ENS ownership immediately
         if (isEthereumConnected) {
-          walletManager
-            .getWalletInfo()
-            .then(walletInfo => {
-              if (walletInfo?.ensName) {
-                const updatedUser = {
-                  ...newUser,
-                  ensDetails: { ensName: walletInfo.ensName },
-                  verificationStatus: EVerificationStatus.VERIFIED_OWNER,
-                };
-                setCurrentUser(updatedUser);
-                setVerificationStatus('verified-owner');
-                saveUser(updatedUser);
-              } else {
+          try {
+            const walletManager = WalletManager.getInstance();
+            walletManager
+              .getWalletInfo()
+              .then(walletInfo => {
+                if (walletInfo?.ensName) {
+                  const updatedUser = {
+                    ...newUser,
+                    ensDetails: { ensName: walletInfo.ensName },
+                    verificationStatus: EVerificationStatus.VERIFIED_OWNER,
+                  };
+                  setCurrentUser(updatedUser);
+                  setVerificationStatus('verified-owner');
+                  saveUser(updatedUser);
+                } else {
+                  setCurrentUser(newUser);
+                  setVerificationStatus('verified-basic');
+                  saveUser(newUser);
+                }
+              })
+              .catch(() => {
+                // Fallback to basic verification if ENS check fails
                 setCurrentUser(newUser);
                 setVerificationStatus('verified-basic');
                 saveUser(newUser);
-              }
-            })
-            .catch(() => {
-              // Fallback to basic verification if ENS check fails
-              setCurrentUser(newUser);
-              setVerificationStatus('verified-basic');
-              saveUser(newUser);
-            });
+              });
+          } catch {
+            // WalletManager not ready, fallback to basic verification
+            setCurrentUser(newUser);
+            setVerificationStatus('verified-basic');
+            saveUser(newUser);
+          }
         } else {
           setCurrentUser(newUser);
           setVerificationStatus('verified-basic');
@@ -267,14 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser(null);
       setVerificationStatus('unverified');
     }
-  }, [
-    isConnected,
-    address,
-    isBitcoinConnected,
-    isEthereumConnected,
-    toast,
-    walletManager,
-  ]);
+  }, [isConnected, address, isBitcoinConnected, isEthereumConnected, toast]);
 
   const { disconnect } = useDisconnect();
 
