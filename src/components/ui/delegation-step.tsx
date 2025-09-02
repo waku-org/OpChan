@@ -20,8 +20,7 @@ export function DelegationStep({
   const {
     currentUser,
     delegateKey,
-    isDelegationValid,
-    delegationTimeRemaining,
+    getDelegationStatus,
     isAuthenticating,
     clearDelegation,
   } = useAuth();
@@ -162,23 +161,30 @@ export function DelegationStep({
         <div className="space-y-3">
           {/* Status */}
           <div className="flex items-center gap-2">
-            {isDelegationValid() ? (
+            {getDelegationStatus().isValid ? (
               <CheckCircle className="h-4 w-4 text-green-500" />
             ) : (
               <AlertCircle className="h-4 w-4 text-yellow-500" />
             )}
             <span
               className={`text-sm font-medium ${
-                isDelegationValid() ? 'text-green-400' : 'text-yellow-400'
+                getDelegationStatus().isValid
+                  ? 'text-green-400'
+                  : 'text-yellow-400'
               }`}
             >
-              {isDelegationValid() ? 'Delegated' : 'Required'}
+              {getDelegationStatus().isValid ? 'Delegated' : 'Required'}
             </span>
-            {isDelegationValid() && (
+            {getDelegationStatus().isValid && (
               <span className="text-xs text-neutral-400">
-                {Math.floor(delegationTimeRemaining() / (1000 * 60 * 60))}h{' '}
                 {Math.floor(
-                  (delegationTimeRemaining() % (1000 * 60 * 60)) / (1000 * 60)
+                  (getDelegationStatus().timeRemaining || 0) / (1000 * 60 * 60)
+                )}
+                h{' '}
+                {Math.floor(
+                  ((getDelegationStatus().timeRemaining || 0) %
+                    (1000 * 60 * 60)) /
+                    (1000 * 60)
                 )}
                 m remaining
               </span>
@@ -186,7 +192,7 @@ export function DelegationStep({
           </div>
 
           {/* Duration Selection */}
-          {!isDelegationValid() && (
+          {!getDelegationStatus().isValid && (
             <div className="space-y-3">
               <label className="text-sm font-medium text-neutral-300">
                 Delegation Duration:
@@ -223,7 +229,7 @@ export function DelegationStep({
           )}
 
           {/* Delegated Browser Public Key */}
-          {isDelegationValid() && currentUser?.browserPubKey && (
+          {getDelegationStatus().isValid && currentUser?.browserPubKey && (
             <div className="text-xs text-neutral-400">
               <div className="font-mono break-all bg-neutral-800 p-2 rounded">
                 {currentUser.browserPubKey}
@@ -239,7 +245,7 @@ export function DelegationStep({
           )}
 
           {/* Delete Button for Active Delegations */}
-          {isDelegationValid() && (
+          {getDelegationStatus().isValid && (
             <div className="flex justify-end">
               <Button
                 onClick={clearDelegation}
@@ -257,7 +263,7 @@ export function DelegationStep({
 
       {/* Action Buttons */}
       <div className="mt-auto space-y-2">
-        {isDelegationValid() ? (
+        {getDelegationStatus().isValid ? (
           <Button
             onClick={handleComplete}
             className="w-full bg-green-600 hover:bg-green-700 text-white"

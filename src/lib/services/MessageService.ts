@@ -11,7 +11,7 @@ export interface MessageResult {
 
 export interface MessageServiceInterface {
   sendMessage(message: UnsignedMessage): Promise<MessageResult>;
-  verifyMessage(message: OpchanMessage): boolean;
+  verifyMessage(message: OpchanMessage): Promise<boolean>;
 }
 
 export class MessageService implements MessageServiceInterface {
@@ -26,13 +26,12 @@ export class MessageService implements MessageServiceInterface {
    */
   async sendMessage(message: UnsignedMessage): Promise<MessageResult> {
     try {
-      const signedMessage =
-        this.delegationManager.signMessageWithDelegatedKey(message);
+      const signedMessage = this.delegationManager.signMessage(message);
 
       if (!signedMessage) {
         // Check if delegation exists but is expired
-        const isDelegationExpired =
-          this.delegationManager.isDelegationValid() === false;
+        const delegationStatus = this.delegationManager.getStatus();
+        const isDelegationExpired = !delegationStatus.isValid;
 
         return {
           success: false,
@@ -81,7 +80,7 @@ export class MessageService implements MessageServiceInterface {
   /**
    * Verify a message signature
    */
-  verifyMessage(message: OpchanMessage): boolean {
-    return this.delegationManager.verifyMessage(message);
+  async verifyMessage(message: OpchanMessage): Promise<boolean> {
+    return await this.delegationManager.verify(message);
   }
 }

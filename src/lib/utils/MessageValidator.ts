@@ -27,14 +27,14 @@ export class MessageValidator {
   /**
    * Validates that a message has required signature fields and valid signature
    */
-  isValidMessage(message: unknown): message is OpchanMessage {
+  async isValidMessage(message: unknown): Promise<boolean> {
     // Check basic structure
     if (!this.hasRequiredFields(message)) {
       return false;
     }
 
-    // Verify signature - we know it's safe to cast here since hasRequiredFields passed
-    return this.delegationManager.verifyMessage(message as OpchanMessage);
+    // Verify signature and delegation proof - we know it's safe to cast here since hasRequiredFields passed
+    return await this.delegationManager.verify(message as OpchanMessage);
   }
 
   /**
@@ -108,7 +108,7 @@ export class MessageValidator {
   /**
    * Validates a batch of messages and returns only valid ones
    */
-  filterValidMessages(messages: unknown[]): OpchanMessage[] {
+  async filterValidMessages(messages: unknown[]): Promise<OpchanMessage[]> {
     const validMessages: OpchanMessage[] = [];
     const invalidCount = {
       missingFields: 0,
@@ -123,7 +123,7 @@ export class MessageValidator {
           continue;
         }
 
-        if (!this.delegationManager.verifyMessage(message as OpchanMessage)) {
+        if (!(await this.delegationManager.verify(message as OpchanMessage))) {
           invalidCount.invalidSignature++;
           continue;
         }
@@ -158,7 +158,7 @@ export class MessageValidator {
   /**
    * Strict validation that throws errors for invalid messages
    */
-  validateMessage(message: unknown): OpchanMessage {
+  async validateMessage(message: unknown): Promise<OpchanMessage> {
     if (!this.hasRequiredFields(message)) {
       const partialMsg = message as PartialMessage;
       throw new Error(
@@ -166,7 +166,7 @@ export class MessageValidator {
       );
     }
 
-    if (!this.delegationManager.verifyMessage(message as OpchanMessage)) {
+    if (!(await this.delegationManager.verify(message as OpchanMessage))) {
       const partialMsg = message as PartialMessage;
       throw new Error(
         `Message validation failed: Invalid signature (messageId: ${partialMsg?.id})`
@@ -223,12 +223,12 @@ export class MessageValidator {
   /**
    * Creates a validation report for debugging
    */
-  getValidationReport(message: unknown): {
+  async getValidationReport(message: unknown): Promise<{
     isValid: boolean;
     hasRequiredFields: boolean;
     hasValidSignature: boolean;
     errors: string[];
-  } {
+  }> {
     const errors: string[] = [];
     let hasRequiredFields = false;
     let hasValidSignature = false;
@@ -242,7 +242,7 @@ export class MessageValidator {
       }
 
       if (hasRequiredFields) {
-        hasValidSignature = this.delegationManager.verifyMessage(
+        hasValidSignature = await this.delegationManager.verify(
           message as OpchanMessage
         );
         if (!hasValidSignature) {
@@ -271,11 +271,10 @@ export const messageValidator = new MessageValidator();
 
 /**
  * Type guard function for convenient usage
+ * Note: This is not a true type guard since it's async
  */
-export function isValidOpchanMessage(
-  message: unknown
-): message is OpchanMessage {
-  return messageValidator.isValidMessage(message);
+export async function isValidOpchanMessage(message: unknown): Promise<boolean> {
+  return await messageValidator.isValidMessage(message);
 }
 
 /**

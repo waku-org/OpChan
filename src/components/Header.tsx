@@ -27,7 +27,7 @@ import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
 
 const Header = () => {
-  const { currentUser, verificationStatus, isDelegationValid } = useAuth();
+  const { currentUser, verificationStatus, getDelegationStatus } = useAuth();
   const { isNetworkConnected, isRefreshing } = useForum();
   const location = useLocation();
   const { toast } = useToast();
@@ -95,9 +95,9 @@ const Header = () => {
       case 'verified-none':
         return 'Read-Only Access';
       case 'verified-basic':
-        return isDelegationValid() ? 'Full Access' : 'Setup Key';
+        return getDelegationStatus().isValid ? 'Full Access' : 'Setup Key';
       case 'verified-owner':
-        return isDelegationValid() ? 'Premium Access' : 'Setup Key';
+        return getDelegationStatus().isValid ? 'Premium Access' : 'Setup Key';
       default:
         return 'Setup Account';
     }
@@ -112,13 +112,13 @@ const Header = () => {
       case 'verified-none':
         return <CircleSlash className="w-3 h-3" />;
       case 'verified-basic':
-        return isDelegationValid() ? (
+        return getDelegationStatus().isValid ? (
           <CheckCircle className="w-3 h-3" />
         ) : (
-          <Key className="w-3 h-3" />
+          <CheckCircle className="w-3 h-3" />
         );
       case 'verified-owner':
-        return isDelegationValid() ? (
+        return getDelegationStatus().isValid ? (
           <CheckCircle className="w-3 h-3" />
         ) : (
           <Key className="w-3 h-3" />
@@ -137,9 +137,9 @@ const Header = () => {
       case 'verified-none':
         return 'secondary';
       case 'verified-basic':
-        return isDelegationValid() ? 'default' : 'outline';
+        return getDelegationStatus().isValid ? 'default' : 'outline';
       case 'verified-owner':
-        return isDelegationValid() ? 'default' : 'outline';
+        return getDelegationStatus().isValid ? 'default' : 'outline';
       default:
         return 'outline';
     }

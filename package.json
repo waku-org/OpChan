@@ -51,6 +51,7 @@
     "@reown/appkit-wallet-button": "^1.7.17",
     "@tanstack/react-query": "^5.84.1",
     "@waku/sdk": "^0.0.35-67a7287.0",
+    "bitcoinjs-message": "^2.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -71,6 +72,7 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.1.0",
     "vaul": "^0.9.3",
+    "viem": "^2.37.1",
     "wagmi": "^2.16.1",
     "zod": "^3.23.8"
   },

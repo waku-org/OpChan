@@ -28,7 +28,8 @@ export function WalletWizard({
 }: WalletWizardProps) {
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1);
   const [isLoading, setIsLoading] = React.useState(false);
-  const { isAuthenticated, verificationStatus, isDelegationValid } = useAuth();
+  const { isAuthenticated, verificationStatus, getDelegationStatus } =
+    useAuth();
   const hasInitialized = React.useRef(false);
 
   // Reset wizard when opened and determine starting step
@@ -48,7 +49,7 @@ export function WalletWizard({
         (verificationStatus === 'verified-owner' ||
           verificationStatus === 'verified-basic' ||
           verificationStatus === 'verified-none') &&
-        !isDelegationValid()
+        !getDelegationStatus().isValid
       ) {
         setCurrentStep(3); // Start at delegation step if verified but no valid delegation
       } else {
@@ -59,7 +60,7 @@ export function WalletWizard({
     } else if (!open) {
       hasInitialized.current = false;
     }
-  }, [open, isAuthenticated, verificationStatus, isDelegationValid]);
+  }, [open, isAuthenticated, verificationStatus, getDelegationStatus]);
 
   const handleStepComplete = (step: WizardStep) => {
     if (step < 3) {
@@ -100,7 +101,7 @@ export function WalletWizard({
           verificationStatus !== 'verified-none')
       )
         return 'disabled';
-      if (isDelegationValid()) return 'complete';
+      if (getDelegationStatus().isValid) return 'complete';
       return 'current';
     }
     return 'disabled';

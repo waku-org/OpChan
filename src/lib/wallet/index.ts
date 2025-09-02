@@ -1,10 +1,14 @@
 import { UseAppKitAccountReturn } from '@reown/appkit/react';
 import { AppKit } from '@reown/appkit';
-import { getEnsName } from '@wagmi/core';
+import {
+  getEnsName,
+  verifyMessage as verifyEthereumMessage,
+} from '@wagmi/core';
 import { ChainNamespace } from '@reown/appkit-common';
 import { config } from './config';
 import { Provider } from '@reown/appkit-controllers';
 import { WalletInfo, ActiveWallet } from './types';
+import * as bitcoinMessage from 'bitcoinjs-message';
 
 export class WalletManager {
   private static instance: WalletManager | null = null;
@@ -168,6 +172,64 @@ export class WalletManager {
   }
 
   /**
+   * Verify a message signature against a wallet address
+   * @param message - The original message that was signed
+   * @param signature - The signature to verify
+   * @param walletAddress - The expected signer's address
+   * @param walletType - The type of wallet (bitcoin/ethereum)
+   * @returns Promise<boolean> - True if signature is valid
+   */
+  static async verifySignature(
+    message: string,
+    signature: string,
+    walletAddress: string,
+    walletType: 'bitcoin' | 'ethereum'
+  ): Promise<boolean> {
+    try {
+      console.log('WalletManager.verifySignature - verifying signature:', {
+        message,
+        signature,
+        walletAddress,
+        walletType,
+      });
+      if (walletType === 'ethereum') {
+        return await verifyEthereumMessage(config, {
+          address: walletAddress as `0x${string}`,
+          message,
+          signature: signature as `0x${string}`,
+        });
+      } else if (walletType === 'bitcoin') {
+        console.log(
+          'WalletManager.verifySignature - verifying bitcoin signature:',
+          {
+            message,
+            walletAddress,
+            signature,
+          }
+        );
+        const result = bitcoinMessage.verify(message, walletAddress, signature);
+        console.log(
+          'WalletManager.verifySignature - bitcoin signature result:',
+          result
+        );
+        return result;
+      }
+
+      console.error(
+        'WalletManager.verifySignature - unknown wallet type:',
+        walletType
+      );
+      return false;
+    } catch (error) {
+      console.error(
+        'WalletManager.verifySignature - error verifying signature:',
+        error
+      );
+      return false;
+    }
+  }
+
+  /**
    * Get comprehensive wallet info including ENS resolution for Ethereum
    */
   async getWalletInfo(): Promise<WalletInfo> {
@@ -208,6 +270,7 @@ export const walletManager = {
   hasInstance: WalletManager.hasInstance,
   clear: WalletManager.clear,
   resolveENS: WalletManager.resolveENS,
+  verifySignature: WalletManager.verifySignature,
 };
 
 export * from './types';

@@ -91,7 +91,9 @@ export class ForumActions {
       }
 
       updateStateFromCache();
-      const transformedPost = transformPost(result.message! as PostMessage);
+      const transformedPost = await transformPost(
+        result.message! as PostMessage
+      );
       if (!transformedPost) {
         return {
           success: false,
@@ -166,7 +168,7 @@ export class ForumActions {
       }
 
       updateStateFromCache();
-      const transformedComment = transformComment(
+      const transformedComment = await transformComment(
         result.message! as CommentMessage
       );
       if (!transformedComment) {
@@ -223,7 +225,9 @@ export class ForumActions {
       }
 
       updateStateFromCache();
-      const transformedCell = transformCell(result.message! as CellMessage);
+      const transformedCell = await transformCell(
+        result.message! as CellMessage
+      );
       if (!transformedCell) {
         return {
           success: false,

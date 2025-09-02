@@ -4,11 +4,11 @@ import { MessageType } from '../../types/waku';
  * Content topics for different message types
  */
 export const CONTENT_TOPICS: Record<MessageType, string> = {
-  [MessageType.CELL]: '/opchan-sds/1/cell/proto',
-  [MessageType.POST]: '/opchan-sds/1/post/proto',
-  [MessageType.COMMENT]: '/opchan-sds/1/comment/proto',
-  [MessageType.VOTE]: '/opchan-sds/1/vote/proto',
-  [MessageType.MODERATE]: '/opchan-sds/1/moderate/proto',
+  [MessageType.CELL]: '/opchan-sds-ab/1/cell/proto',
+  [MessageType.POST]: '/opchan-sds-ab/1/post/proto',
+  [MessageType.COMMENT]: '/opchan-ab-xyz/1/comment/proto',
+  [MessageType.VOTE]: '/opchan-sds-ab/1/vote/proto',
+  [MessageType.MODERATE]: '/opchan-sds-ab/1/moderate/proto',
 };
 
 /**

@@ -22,8 +22,8 @@ export class MessageService {
 
   private setupMessageHandling(): void {
     if (this.reliableMessaging) {
-      this.reliableMessaging.onMessage(message => {
-        const isNew = this.cacheService.updateCache(message);
+      this.reliableMessaging.onMessage(async message => {
+        const isNew = await this.cacheService.updateCache(message);
         if (isNew) {
           this.messageReceivedCallbacks.forEach(callback => callback(message));
         }
@@ -34,33 +34,43 @@ export class MessageService {
   public async sendMessage(
     message: OpchanMessage,
     statusCallback?: MessageStatusCallback
-  ): Promise<void> {
+  ): Promise<{ success: boolean; message?: OpchanMessage; error?: string }> {
     if (!this.reliableMessaging) {
-      throw new Error('Reliable messaging not initialized');
+      return { success: false, error: 'Reliable messaging not initialized' };
     }
 
     if (!this.nodeManager.isReady) {
-      throw new Error('Network not ready');
+      return { success: false, error: 'Network not ready' };
     }
 
-    // Update cache optimistically
-    this.cacheService.updateCache(message);
+    try {
+      // Update cache optimistically
+      await this.cacheService.updateCache(message);
 
-    // Send via reliable messaging with status tracking
-    await this.reliableMessaging.sendMessage(message, {
-      onSent: id => {
-        console.log(`Message ${id} sent`);
-        statusCallback?.onSent?.(id);
-      },
-      onAcknowledged: id => {
-        console.log(`Message ${id} acknowledged`);
-        statusCallback?.onAcknowledged?.(id);
-      },
-      onError: (id, error) => {
-        console.error(`Message ${id} failed:`, error);
-        statusCallback?.onError?.(id, error);
-      },
-    });
+      // Send via reliable messaging with status tracking
+      await this.reliableMessaging.sendMessage(message, {
+        onSent: id => {
+          console.log(`Message ${id} sent`);
+          statusCallback?.onSent?.(id);
+        },
+        onAcknowledged: id => {
+          console.log(`Message ${id} acknowledged`);
+          statusCallback?.onAcknowledged?.(id);
+        },
+        onError: (id, error) => {
+          console.error(`Message ${id} failed:`, error);
+          statusCallback?.onError?.(id, error);
+        },
+      });
+
+      return { success: true, message };
+    } catch (error) {
+      console.error('Error sending message:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 
   public onMessageReceived(callback: MessageReceivedCallback): () => void {

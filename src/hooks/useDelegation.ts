@@ -34,8 +34,9 @@ export const useDelegation = () => {
       hasDelegation: status.hasDelegation,
       isValid: status.isValid,
       timeRemaining: status.timeRemaining,
-      expiresAt:
-        status.timeRemaining ? new Date(Date.now() + status.timeRemaining) : undefined,
+      expiresAt: status.timeRemaining
+        ? new Date(Date.now() + status.timeRemaining)
+        : undefined,
       publicKey: status.publicKey,
       address: status.address,
       walletType: status.walletType,

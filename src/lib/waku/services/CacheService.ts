@@ -33,8 +33,8 @@ export class CacheService {
     this.validator = new MessageValidator();
   }
 
-  public updateCache(message: unknown): boolean {
-    if (!this.validator.isValidMessage(message)) {
+  public async updateCache(message: unknown): Promise<boolean> {
+    if (!(await this.validator.isValidMessage(message))) {
       const partialMsg = message as {
         id?: unknown;
         type?: unknown;

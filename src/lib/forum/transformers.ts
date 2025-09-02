@@ -13,12 +13,12 @@ import { MessageValidator } from '@/lib/utils/MessageValidator';
 // Global validator instance for transformers
 const messageValidator = new MessageValidator();
 
-export const transformCell = (
+export const transformCell = async (
   cellMessage: CellMessage,
   _verifyMessage?: unknown, // Deprecated parameter, kept for compatibility
   userVerificationStatus?: UserVerificationStatus,
   posts?: Post[]
-): Cell | null => {
+): Promise<Cell | null> => {
   // MANDATORY: All messages must have valid signatures
   // Since CellMessage extends BaseMessage, it already has required signature fields
   // But we still need to verify the signature cryptographically
@@ -30,7 +30,8 @@ export const transformCell = (
   }
 
   // Verify signature using the message validator's crypto service
-  const validationReport = messageValidator.getValidationReport(cellMessage);
+  const validationReport =
+    await messageValidator.getValidationReport(cellMessage);
   if (!validationReport.hasValidSignature) {
     console.warn(
       `Cell message ${cellMessage.id} failed signature validation:`,
@@ -78,11 +79,11 @@ export const transformCell = (
   return transformedCell;
 };
 
-export const transformPost = (
+export const transformPost = async (
   postMessage: PostMessage,
   _verifyMessage?: unknown, // Deprecated parameter, kept for compatibility
   userVerificationStatus?: UserVerificationStatus
-): Post | null => {
+): Promise<Post | null> => {
   // MANDATORY: All messages must have valid signatures
   if (!postMessage.signature || !postMessage.browserPubKey) {
     console.warn(
@@ -92,7 +93,8 @@ export const transformPost = (
   }
 
   // Verify signature using the message validator's crypto service
-  const validationReport = messageValidator.getValidationReport(postMessage);
+  const validationReport =
+    await messageValidator.getValidationReport(postMessage);
   if (!validationReport.hasValidSignature) {
     console.warn(
       `Post message ${postMessage.id} failed signature validation:`,
@@ -105,23 +107,29 @@ export const transformPost = (
     vote => vote.targetId === postMessage.id
   );
   // MANDATORY: Filter out votes with invalid signatures
-  const filteredVotes = votes.filter(vote => {
-    if (!vote.signature || !vote.browserPubKey) {
-      console.warn(`Vote ${vote.id} missing signature fields`);
-      return false;
-    }
-    const voteValidation = messageValidator.getValidationReport(vote);
-    if (!voteValidation.hasValidSignature) {
-      console.warn(
-        `Vote ${vote.id} failed signature validation:`,
-        voteValidation.errors
-      );
-      return false;
-    }
-    return true;
-  });
-  const upvotes = filteredVotes.filter(vote => vote.value === 1);
-  const downvotes = filteredVotes.filter(vote => vote.value === -1);
+  const filteredVotes = await Promise.all(
+    votes.map(async vote => {
+      if (!vote.signature || !vote.browserPubKey) {
+        console.warn(`Vote ${vote.id} missing signature fields`);
+        return null;
+      }
+      const voteValidation = await messageValidator.getValidationReport(vote);
+      if (!voteValidation.hasValidSignature) {
+        console.warn(
+          `Vote ${vote.id} failed signature validation:`,
+          voteValidation.errors
+        );
+        return null;
+      }
+      return vote;
+    })
+  ).then(votes => votes.filter((vote): vote is VoteMessage => vote !== null));
+  const upvotes = filteredVotes.filter(
+    (vote): vote is VoteMessage => vote !== null && vote.value === 1
+  );
+  const downvotes = filteredVotes.filter(
+    (vote): vote is VoteMessage => vote !== null && vote.value === -1
+  );
 
   const modMsg = messageManager.messageCache.moderations[postMessage.id];
   const isPostModerated = !!modMsg && modMsg.targetType === 'post';
@@ -171,11 +179,13 @@ export const transformPost = (
     const relevanceCalculator = new RelevanceCalculator();
 
     // Get comments for this post
-    const comments = Object.values(messageManager.messageCache.comments)
-      .map(comment =>
+    const comments = await Promise.all(
+      Object.values(messageManager.messageCache.comments).map(comment =>
         transformComment(comment, undefined, userVerificationStatus)
       )
-      .filter(Boolean) as Comment[];
+    ).then(comments =>
+      comments.filter((comment): comment is Comment => comment !== null)
+    );
     const postComments = comments.filter(
       comment => comment.postId === postMessage.id
     );
@@ -215,11 +225,11 @@ export const transformPost = (
   return transformedPost;
 };
 
-export const transformComment = (
+export const transformComment = async (
   commentMessage: CommentMessage,
   _verifyMessage?: unknown, // Deprecated parameter, kept for compatibility
   userVerificationStatus?: UserVerificationStatus
-): Comment | null => {
+): Promise<Comment | null> => {
   // MANDATORY: All messages must have valid signatures
   if (!commentMessage.signature || !commentMessage.browserPubKey) {
     console.warn(
@@ -229,7 +239,8 @@ export const transformComment = (
   }
 
   // Verify signature using the message validator's crypto service
-  const validationReport = messageValidator.getValidationReport(commentMessage);
+  const validationReport =
+    await messageValidator.getValidationReport(commentMessage);
   if (!validationReport.hasValidSignature) {
     console.warn(
       `Comment message ${commentMessage.id} failed signature validation:`,
@@ -241,23 +252,29 @@ export const transformComment = (
     vote => vote.targetId === commentMessage.id
   );
   // MANDATORY: Filter out votes with invalid signatures
-  const filteredVotes = votes.filter(vote => {
-    if (!vote.signature || !vote.browserPubKey) {
-      console.warn(`Vote ${vote.id} missing signature fields`);
-      return false;
-    }
-    const voteValidation = messageValidator.getValidationReport(vote);
-    if (!voteValidation.hasValidSignature) {
-      console.warn(
-        `Vote ${vote.id} failed signature validation:`,
-        voteValidation.errors
-      );
-      return false;
-    }
-    return true;
-  });
-  const upvotes = filteredVotes.filter(vote => vote.value === 1);
-  const downvotes = filteredVotes.filter(vote => vote.value === -1);
+  const filteredVotes = await Promise.all(
+    votes.map(async vote => {
+      if (!vote.signature || !vote.browserPubKey) {
+        console.warn(`Vote ${vote.id} missing signature fields`);
+        return null;
+      }
+      const voteValidation = await messageValidator.getValidationReport(vote);
+      if (!voteValidation.hasValidSignature) {
+        console.warn(
+          `Vote ${vote.id} failed signature validation:`,
+          voteValidation.errors
+        );
+        return null;
+      }
+      return vote;
+    })
+  ).then(votes => votes.filter((vote): vote is typeof vote => vote !== null));
+  const upvotes = filteredVotes.filter(
+    (vote): vote is VoteMessage => vote !== null && vote.value === 1
+  );
+  const downvotes = filteredVotes.filter(
+    (vote): vote is VoteMessage => vote !== null && vote.value === -1
+  );
 
   const modMsg = messageManager.messageCache.moderations[commentMessage.id];
   const isCommentModerated = !!modMsg && modMsg.targetType === 'comment';
@@ -307,7 +324,7 @@ export const transformComment = (
 
     const relevanceResult = relevanceCalculator.calculateCommentScore(
       transformedComment,
-      filteredVotes,
+      filteredVotes.filter((vote): vote is VoteMessage => vote !== null),
       userVerificationStatus
     );
 
@@ -321,10 +338,10 @@ export const transformComment = (
   return transformedComment;
 };
 
-export const transformVote = (
+export const transformVote = async (
   voteMessage: VoteMessage,
   _verifyMessage?: unknown // Deprecated parameter, kept for compatibility
-): VoteMessage | null => {
+): Promise<VoteMessage | null> => {
   // MANDATORY: All messages must have valid signatures
   if (!voteMessage.signature || !voteMessage.browserPubKey) {
     console.warn(
@@ -334,7 +351,8 @@ export const transformVote = (
   }
 
   // Verify signature using the message validator's crypto service
-  const validationReport = messageValidator.getValidationReport(voteMessage);
+  const validationReport =
+    await messageValidator.getValidationReport(voteMessage);
   if (!validationReport.hasValidSignature) {
     console.warn(
       `Vote message ${voteMessage.id} failed signature validation:`,
@@ -346,24 +364,32 @@ export const transformVote = (
   return voteMessage;
 };
 
-export const getDataFromCache = (
+export const getDataFromCache = async (
   _verifyMessage?: unknown, // Deprecated parameter, kept for compatibility
   userVerificationStatus?: UserVerificationStatus
-) => {
+): Promise<{ cells: Cell[]; posts: Post[]; comments: Comment[] }> => {
   // First transform posts and comments to get relevance scores
   // All validation is now handled internally by the transform functions
-  const posts = Object.values(messageManager.messageCache.posts)
-    .map(post => transformPost(post, undefined, userVerificationStatus))
-    .filter(Boolean) as Post[];
+  const posts = await Promise.all(
+    Object.values(messageManager.messageCache.posts).map(post =>
+      transformPost(post, undefined, userVerificationStatus)
+    )
+  ).then(posts => posts.filter((post): post is Post => post !== null));
 
-  const comments = Object.values(messageManager.messageCache.comments)
-    .map(c => transformComment(c, undefined, userVerificationStatus))
-    .filter(Boolean) as Comment[];
+  const comments = await Promise.all(
+    Object.values(messageManager.messageCache.comments).map(c =>
+      transformComment(c, undefined, userVerificationStatus)
+    )
+  ).then(comments =>
+    comments.filter((comment): comment is Comment => comment !== null)
+  );
 
   // Then transform cells with posts for relevance calculation
-  const cells = Object.values(messageManager.messageCache.cells)
-    .map(cell => transformCell(cell, undefined, userVerificationStatus, posts))
-    .filter(Boolean) as Cell[];
+  const cells = await Promise.all(
+    Object.values(messageManager.messageCache.cells).map(cell =>
+      transformCell(cell, undefined, userVerificationStatus, posts)
+    )
+  ).then(cells => cells.filter((cell): cell is Cell => cell !== null));
 
   return { cells, posts, comments };
 };

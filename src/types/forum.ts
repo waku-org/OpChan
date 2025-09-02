@@ -6,6 +6,7 @@ import {
   ModerateMessage,
 } from '@/types/waku';
 import { EVerificationStatus } from './identity';
+import { DelegationProof } from '@/lib/delegation/types';
 
 /**
  * Union type of all message types
@@ -92,6 +93,7 @@ export interface Comment extends CommentMessage {
 export interface SignedMessage {
   signature: string;
   browserPubKey: string;
+  delegationProof?: DelegationProof; // Cryptographic proof that browser key was authorized
 }
 
 /**

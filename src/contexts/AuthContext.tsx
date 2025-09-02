@@ -3,7 +3,11 @@ import { useToast } from '@/components/ui/use-toast';
 import { OpchanMessage } from '@/types/forum';
 import { User, EVerificationStatus, DisplayPreference } from '@/types/identity';
 import { WalletManager } from '@/lib/wallet';
-import { DelegationManager, DelegationDuration, DelegationFullStatus } from '@/lib/delegation';
+import {
+  DelegationManager,
+  DelegationDuration,
+  DelegationFullStatus,
+} from '@/lib/delegation';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 
 export type VerificationStatus =
@@ -25,7 +29,7 @@ interface AuthContextType {
   getDelegationStatus: () => DelegationFullStatus;
   clearDelegation: () => void;
   signMessage: (message: OpchanMessage) => Promise<OpchanMessage | null>;
-  verifyMessage: (message: OpchanMessage) => boolean;
+  verifyMessage: (message: OpchanMessage) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -170,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user.address,
         user.walletType,
         duration,
-        (message) => walletManager.signMessage(message)
+        message => walletManager.signMessage(message)
       );
     } catch (error) {
       console.error(
@@ -447,7 +451,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getDelegationStatus = (): DelegationFullStatus => {
-    return delegationManager.getStatus(currentUser?.address, currentUser?.walletType);
+    return delegationManager.getStatus(
+      currentUser?.address,
+      currentUser?.walletType
+    );
   };
 
   const clearDelegation = (): void => {
@@ -477,8 +484,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ): Promise<OpchanMessage | null> => {
       return delegationManager.signMessage(message);
     },
-    verifyMessage: (message: OpchanMessage): boolean => {
-      return delegationManager.verify(message);
+    verifyMessage: async (message: OpchanMessage): Promise<boolean> => {
+      return await delegationManager.verify(message);
     },
   };
 

@@ -105,10 +105,11 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   );
 
   // Transform message cache data to the expected types
-  const updateStateFromCache = useCallback(() => {
+  const updateStateFromCache = useCallback(async () => {
     // Use the verifyMessage function from delegationManager if available
     const verifyFn = isAuthenticated
-      ? (message: OpchanMessage) => delegationManager.verifyMessage(message)
+      ? async (message: OpchanMessage) =>
+          await delegationManager.verify(message)
       : undefined;
 
     // Build user verification status for relevance calculation
@@ -162,7 +163,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       relevanceCalculator.buildUserVerificationStatus(allUsers);
 
     // Transform data with relevance calculation (initial pass)
-    const { cells, posts, comments } = getDataFromCache(
+    const { cells, posts, comments } = await getDataFromCache(
       verifyFn,
       initialStatus
     );
@@ -208,7 +209,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       });
       const enrichedStatus =
         relevanceCalculator.buildUserVerificationStatus(enrichedUsers);
-      const transformed = getDataFromCache(verifyFn, enrichedStatus);
+      const transformed = await getDataFromCache(verifyFn, enrichedStatus);
       setCells(transformed.cells);
       setPosts(transformed.posts);
       setComments(transformed.comments);
@@ -220,7 +221,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     setIsRefreshing(true);
     try {
       // SDS handles message syncing automatically, just update UI
-      updateStateFromCache();
+      await updateStateFromCache();
       toast({
         title: 'Data Refreshed',
         description: 'Your view has been updated.',
