@@ -1,12 +1,12 @@
 import React from 'react';
 import { Button } from './button';
-import { useAuth } from '@/contexts/useAuth';
+import { useAuth, useAuthActions } from '@/hooks';
 import { CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { DelegationDuration } from '@/lib/delegation';
 
 interface DelegationStepProps {
   onComplete: () => void;
-  onBack: () => void;
+  onBack?: () => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
 }
@@ -17,13 +17,8 @@ export function DelegationStep({
   isLoading,
   setIsLoading,
 }: DelegationStepProps) {
-  const {
-    currentUser,
-    delegateKey,
-    getDelegationStatus,
-    isAuthenticating,
-    clearDelegation,
-  } = useAuth();
+  const { currentUser, delegationInfo, isAuthenticating } = useAuth();
+  const { delegateKey, clearDelegation } = useAuthActions();
 
   const [selectedDuration, setSelectedDuration] =
     React.useState<DelegationDuration>('7days');
@@ -77,80 +72,49 @@ export function DelegationStep({
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 space-y-4">
-          <div
-            className={`p-4 rounded-lg border ${
-              delegationResult.success
-                ? 'bg-green-900/20 border-green-500/30'
-                : 'bg-yellow-900/20 border-yellow-500/30'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              {delegationResult.success ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-yellow-500" />
-              )}
-              <span
-                className={`font-medium ${
-                  delegationResult.success
-                    ? 'text-green-400'
-                    : 'text-yellow-400'
-                }`}
-              >
-                {delegationResult.success
-                  ? 'Delegation Complete'
-                  : 'Delegation Result'}
-              </span>
-            </div>
-            <p className="text-sm text-neutral-300 mb-2">
+          <div className="text-center">
+            {delegationResult.success ? (
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+            ) : (
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            )}
+            <h3 className="text-lg font-semibold mb-2">
+              {delegationResult.success ? 'Success!' : 'Failed'}
+            </h3>
+            <p className="text-sm text-neutral-400">
               {delegationResult.message}
             </p>
-            {delegationResult.expiry && (
-              <div className="text-xs text-neutral-400">
-                <p>Expires: {delegationResult.expiry}</p>
-              </div>
+            {delegationResult.success && delegationResult.expiry && (
+              <p className="text-xs text-neutral-500 mt-2">
+                Expires: {delegationResult.expiry}
+              </p>
             )}
           </div>
         </div>
 
-        {/* Action Button */}
-        <div className="mt-auto">
+        <div className="mt-auto space-y-2">
           <Button
             onClick={handleComplete}
             className="w-full bg-green-600 hover:bg-green-700 text-white"
-            disabled={isLoading}
           >
-            Complete Setup
+            Continue
           </Button>
+          {onBack && (
+            <Button onClick={onBack} variant="outline" className="w-full">
+              Back
+            </Button>
+          )}
         </div>
       </div>
     );
   }
 
-  // Show minimal delegation status
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 space-y-4">
+      <div className="flex-1 space-y-6">
         <div className="text-center space-y-2">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-neutral-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-                />
-              </svg>
-            </div>
-          </div>
-          <h3 className="text-lg font-semibold text-neutral-100">
-            Key Delegation
+          <h3 className="text-lg font-semibold text-white">
+            Step 3: Key Delegation
           </h3>
           <p className="text-sm text-neutral-400">
             Delegate signing authority to your browser for convenient forum
@@ -161,44 +125,33 @@ export function DelegationStep({
         <div className="space-y-3">
           {/* Status */}
           <div className="flex items-center gap-2">
-            {getDelegationStatus().isValid ? (
+            {delegationInfo.isActive ? (
               <CheckCircle className="h-4 w-4 text-green-500" />
             ) : (
               <AlertCircle className="h-4 w-4 text-yellow-500" />
             )}
             <span
               className={`text-sm font-medium ${
-                getDelegationStatus().isValid
-                  ? 'text-green-400'
-                  : 'text-yellow-400'
+                delegationInfo.isActive ? 'text-green-400' : 'text-yellow-400'
               }`}
             >
-              {getDelegationStatus().isValid ? 'Delegated' : 'Required'}
+              {delegationInfo.isActive ? 'Delegated' : 'Required'}
             </span>
-            {getDelegationStatus().isValid && (
+            {delegationInfo.isActive && delegationInfo.timeRemaining && (
               <span className="text-xs text-neutral-400">
-                {Math.floor(
-                  (getDelegationStatus().timeRemaining || 0) / (1000 * 60 * 60)
-                )}
-                h{' '}
-                {Math.floor(
-                  ((getDelegationStatus().timeRemaining || 0) %
-                    (1000 * 60 * 60)) /
-                    (1000 * 60)
-                )}
-                m remaining
+                {delegationInfo.timeRemaining} remaining
               </span>
             )}
           </div>
 
           {/* Duration Selection */}
-          {!getDelegationStatus().isValid && (
+          {!delegationInfo.isActive && (
             <div className="space-y-3">
               <label className="text-sm font-medium text-neutral-300">
                 Delegation Duration:
               </label>
               <div className="space-y-2">
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center space-x-2">
                   <input
                     type="radio"
                     name="duration"
@@ -207,11 +160,13 @@ export function DelegationStep({
                     onChange={e =>
                       setSelectedDuration(e.target.value as DelegationDuration)
                     }
-                    className="w-4 h-4 text-green-600 bg-neutral-800 border-neutral-600 focus:ring-green-500 focus:ring-2"
+                    className="text-blue-500"
                   />
-                  <span className="text-sm text-neutral-300">1 Week</span>
+                  <span className="text-sm text-neutral-300">
+                    7 days (recommended)
+                  </span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center space-x-2">
                   <input
                     type="radio"
                     name="duration"
@@ -220,16 +175,16 @@ export function DelegationStep({
                     onChange={e =>
                       setSelectedDuration(e.target.value as DelegationDuration)
                     }
-                    className="w-4 h-4 text-green-600 bg-neutral-800 border-neutral-600 focus:ring-green-500 focus:ring-2"
+                    className="text-blue-500"
                   />
-                  <span className="text-sm text-neutral-300">30 Days</span>
+                  <span className="text-sm text-neutral-300">30 days</span>
                 </label>
               </div>
             </div>
           )}
 
           {/* Delegated Browser Public Key */}
-          {getDelegationStatus().isValid && currentUser?.browserPubKey && (
+          {delegationInfo.isActive && currentUser?.browserPubKey && (
             <div className="text-xs text-neutral-400">
               <div className="font-mono break-all bg-neutral-800 p-2 rounded">
                 {currentUser.browserPubKey}
@@ -237,7 +192,7 @@ export function DelegationStep({
             </div>
           )}
 
-          {/* Wallet Address */}
+          {/* User Address */}
           {currentUser && (
             <div className="text-xs text-neutral-400">
               <div className="font-mono break-all">{currentUser.address}</div>
@@ -245,15 +200,15 @@ export function DelegationStep({
           )}
 
           {/* Delete Button for Active Delegations */}
-          {getDelegationStatus().isValid && (
+          {delegationInfo.isActive && (
             <div className="flex justify-end">
               <Button
                 onClick={clearDelegation}
                 variant="outline"
                 size="sm"
-                className="text-red-400 border-red-400/30 hover:bg-red-400/10"
+                className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white"
               >
-                <Trash2 className="w-4 h-4 mr-1" />
+                <Trash2 className="h-3 w-3 mr-1" />
                 Clear Delegation
               </Button>
             </div>
@@ -263,7 +218,7 @@ export function DelegationStep({
 
       {/* Action Buttons */}
       <div className="mt-auto space-y-2">
-        {getDelegationStatus().isValid ? (
+        {delegationInfo.isActive ? (
           <Button
             onClick={handleComplete}
             className="w-full bg-green-600 hover:bg-green-700 text-white"
@@ -274,21 +229,22 @@ export function DelegationStep({
         ) : (
           <Button
             onClick={handleDelegate}
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             disabled={isLoading || isAuthenticating}
           >
-            {isAuthenticating ? 'Delegating...' : 'Delegate Key'}
+            {isLoading ? 'Delegating...' : 'Delegate Key'}
           </Button>
         )}
-
-        <Button
-          onClick={onBack}
-          variant="outline"
-          className="w-full border-neutral-600 text-neutral-300 hover:bg-neutral-800"
-          disabled={isLoading}
-        >
-          Back
-        </Button>
+        {onBack && (
+          <Button
+            onClick={onBack}
+            variant="outline"
+            className="w-full"
+            disabled={isLoading}
+          >
+            Back
+          </Button>
+        )}
       </div>
     </div>
   );

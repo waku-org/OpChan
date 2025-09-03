@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Circle, Loader2 } from 'lucide-react';
-import { useAuth } from '@/contexts/useAuth';
+import { useAuth } from '@/hooks';
 import { WalletConnectionStep } from './wallet-connection-step';
 import { VerificationStep } from './verification-step';
 import { DelegationStep } from './delegation-step';
@@ -28,8 +28,7 @@ export function WalletWizard({
 }: WalletWizardProps) {
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1);
   const [isLoading, setIsLoading] = React.useState(false);
-  const { isAuthenticated, verificationStatus, getDelegationStatus } =
-    useAuth();
+  const { isAuthenticated, verificationStatus, delegationInfo } = useAuth();
   const hasInitialized = React.useRef(false);
 
   // Reset wizard when opened and determine starting step
@@ -40,16 +39,15 @@ export function WalletWizard({
         setCurrentStep(1); // Start at connection step if not authenticated
       } else if (
         isAuthenticated &&
-        (verificationStatus === 'unverified' ||
-          verificationStatus === 'verifying')
+        (verificationStatus.level === 'unverified' ||
+          verificationStatus.level === 'verifying')
       ) {
         setCurrentStep(2); // Start at verification step if authenticated but not verified
       } else if (
         isAuthenticated &&
-        (verificationStatus === 'verified-owner' ||
-          verificationStatus === 'verified-basic' ||
-          verificationStatus === 'verified-none') &&
-        !getDelegationStatus().isValid
+        (verificationStatus.level === 'verified-owner' ||
+          verificationStatus.level === 'verified-basic') &&
+        !delegationInfo.isActive
       ) {
         setCurrentStep(3); // Start at delegation step if verified but no valid delegation
       } else {
@@ -60,7 +58,7 @@ export function WalletWizard({
     } else if (!open) {
       hasInitialized.current = false;
     }
-  }, [open, isAuthenticated, verificationStatus, getDelegationStatus]);
+  }, [open, isAuthenticated, verificationStatus, delegationInfo]);
 
   const handleStepComplete = (step: WizardStep) => {
     if (step < 3) {
@@ -81,28 +79,12 @@ export function WalletWizard({
       return isAuthenticated ? 'complete' : 'current';
     } else if (step === 2) {
       if (!isAuthenticated) return 'disabled';
-      if (
-        verificationStatus === 'unverified' ||
-        verificationStatus === 'verifying'
-      )
-        return 'current';
-      if (
-        verificationStatus === 'verified-owner' ||
-        verificationStatus === 'verified-basic' ||
-        verificationStatus === 'verified-none'
-      )
-        return 'complete';
-      return 'disabled';
+      return verificationStatus.level !== 'unverified' ? 'complete' : 'current';
     } else if (step === 3) {
-      if (
-        !isAuthenticated ||
-        (verificationStatus !== 'verified-owner' &&
-          verificationStatus !== 'verified-basic' &&
-          verificationStatus !== 'verified-none')
-      )
+      if (!isAuthenticated || verificationStatus.level === 'unverified') {
         return 'disabled';
-      if (getDelegationStatus().isValid) return 'complete';
-      return 'current';
+      }
+      return delegationInfo.isActive ? 'complete' : 'current';
     }
     return 'disabled';
   };

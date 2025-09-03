@@ -118,7 +118,7 @@ export class CacheService {
       case MessageType.USER_PROFILE_UPDATE: {
         const profileMsg = message as UserProfileUpdateMessage;
         const { author, callSign, displayPreference, timestamp } = profileMsg;
-        
+
         console.log('CacheService: Storing USER_PROFILE_UPDATE message', {
           author,
           callSign,
@@ -138,10 +138,16 @@ export class CacheService {
             lastUpdated: timestamp,
             verificationStatus: 'unverified', // Will be updated by UserIdentityService
           };
-          
-          console.log('CacheService: Updated user identity cache for', author, this.cache.userIdentities[author]);
+
+          console.log(
+            'CacheService: Updated user identity cache for',
+            author,
+            this.cache.userIdentities[author]
+          );
         } else {
-          console.log('CacheService: Skipping update - same timestamp or already exists');
+          console.log(
+            'CacheService: Skipping update - same timestamp or already exists'
+          );
         }
         break;
       }

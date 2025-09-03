@@ -3,8 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
-import { useForum } from '@/contexts/useForum';
-import { useAuth } from '@/contexts/useAuth';
+import { useForumActions, usePermissions } from '@/hooks';
 import {
   Form,
   FormControl,
@@ -29,18 +28,24 @@ import { urlLoads } from '@/lib/utils/urlLoads';
 const formSchema = z.object({
   title: z
     .string()
-    .min(3, 'Title must be at least 3 characters')
-    .max(50, 'Title must be less than 50 characters'),
+    .min(3, 'Cell name must be at least 3 characters')
+    .max(50, 'Cell name must be less than 50 characters'),
   description: z
     .string()
     .min(10, 'Description must be at least 10 characters')
-    .max(200, 'Description must be less than 200 characters'),
+    .max(500, 'Description must be less than 500 characters'),
   icon: z
     .string()
     .optional()
-    .refine(val => !val || val.length === 0 || URL.canParse(val), {
-      message: 'Must be a valid URL',
-    }),
+    .refine(
+      val => {
+        if (!val) return true;
+        return urlLoads(val);
+      },
+      {
+        message: 'Icon must be a valid URL',
+      }
+    ),
 });
 
 interface CreateCellDialogProps {
@@ -52,8 +57,8 @@ export function CreateCellDialog({
   open: externalOpen,
   onOpenChange,
 }: CreateCellDialogProps = {}) {
-  const { createCell, isPostingCell } = useForum();
-  const { isAuthenticated } = useAuth();
+  const { createCell, isCreatingCell } = useForumActions();
+  const { canCreateCell } = usePermissions();
   const { toast } = useToast();
   const [internalOpen, setInternalOpen] = React.useState(false);
 
@@ -65,50 +70,42 @@ export function CreateCellDialog({
     defaultValues: {
       title: '',
       description: '',
-      icon: undefined,
+      icon: '',
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // Validate icon URL if provided
-    if (values.icon && values.icon.trim()) {
-      const ok = await urlLoads(values.icon, 5000);
-      if (!ok) {
-        toast({
-          title: 'Icon URL Error',
-          description:
-            'Icon URL could not be loaded. Please check the URL and try again.',
-          variant: 'destructive',
-        });
-        return;
-      }
+    if (!canCreateCell) {
+      toast({
+        title: 'Permission Denied',
+        description: 'You need to verify Ordinal ownership to create cells.',
+        variant: 'destructive',
+      });
+      return;
     }
 
+    // ✅ All validation handled in hook
     const cell = await createCell(
       values.title,
       values.description,
-      values.icon || undefined
+      values.icon
     );
     if (cell) {
-      setOpen(false);
       form.reset();
+      setOpen(false);
     }
   };
 
-  if (!isAuthenticated) return null;
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {!onOpenChange && (
-        <DialogTrigger asChild>
-          <Button variant="outline" className="w-full">
-            Create New Cell
-          </Button>
-        </DialogTrigger>
-      )}
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogTrigger asChild>
+        <Button className="bg-cyber-accent hover:bg-cyber-accent/80">
+          Create Cell
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md bg-cyber-dark border-cyber-muted">
         <DialogHeader>
-          <DialogTitle>Create a New Cell</DialogTitle>
+          <DialogTitle className="text-glow">Create New Cell</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -117,12 +114,13 @@ export function CreateCellDialog({
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>Cell Name</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter cell title"
+                      placeholder="Enter cell name"
+                      className="bg-cyber-muted/50 border-cyber-muted"
+                      disabled={isCreatingCell}
                       {...field}
-                      disabled={isPostingCell}
                     />
                   </FormControl>
                   <FormMessage />
@@ -137,9 +135,10 @@ export function CreateCellDialog({
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Enter cell description"
+                      placeholder="Describe your cell"
+                      className="bg-cyber-muted/50 border-cyber-muted resize-none"
+                      disabled={isCreatingCell}
                       {...field}
-                      disabled={isPostingCell}
                     />
                   </FormControl>
                   <FormMessage />
@@ -151,31 +150,46 @@ export function CreateCellDialog({
               name="icon"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Icon URL (optional)</FormLabel>
+                  <FormLabel>Icon URL (Optional)</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter icon URL (optional)"
-                      type="url"
+                      placeholder="https://example.com/icon.png"
+                      className="bg-cyber-muted/50 border-cyber-muted"
+                      disabled={isCreatingCell}
                       {...field}
-                      value={field.value || ''}
-                      disabled={isPostingCell}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isPostingCell}>
-              {isPostingCell && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Create Cell
-            </Button>
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                disabled={isCreatingCell}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isCreatingCell || !canCreateCell}
+                className="bg-cyber-accent hover:bg-cyber-accent/80"
+              >
+                {isCreatingCell ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Cell'
+                )}
+              </Button>
+            </div>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
 }
-
-export default CreateCellDialog;

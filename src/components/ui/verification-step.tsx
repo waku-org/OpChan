@@ -8,7 +8,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
-import { useAuth } from '@/contexts/useAuth';
+import { useAuth, useAuthActions } from '@/hooks';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { OrdinalDetails, EnsDetails } from '@/types/identity';
 
@@ -25,8 +25,8 @@ export function VerificationStep({
   isLoading,
   setIsLoading,
 }: VerificationStepProps) {
-  const { currentUser, verificationStatus, verifyOwnership, isAuthenticating } =
-    useAuth();
+  const { currentUser, verificationStatus, isAuthenticating } = useAuth();
+  const { verifyWallet } = useAuthActions();
 
   // Get account info to determine wallet type
   const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
@@ -53,7 +53,7 @@ export function VerificationStep({
     setVerificationResult(null);
 
     try {
-      const success = await verifyOwnership();
+      const success = await verifyWallet();
 
       if (success) {
         setVerificationResult({
@@ -182,7 +182,7 @@ export function VerificationStep({
   }
 
   // Show verification status
-  if (verificationStatus === 'verified-owner') {
+  if (verificationStatus.level === 'verified-owner') {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 space-y-4">

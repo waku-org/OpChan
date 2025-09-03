@@ -11,27 +11,36 @@ import {
 } from '@/components/ui/select';
 import PostCard from '@/components/PostCard';
 import FeedSidebar from '@/components/FeedSidebar';
-import { useForum } from '@/contexts/useForum';
-import { useAuth } from '@/contexts/useAuth';
+import { useForumData, useAuth, useForumActions } from '@/hooks';
+import { EVerificationStatus } from '@/types/identity';
 import { sortPosts, SortOption } from '@/lib/utils/sorting';
 
 const FeedPage: React.FC = () => {
-  const { posts, comments, isInitialLoading, isRefreshing, refreshData } =
-    useForum();
+  // ✅ Use reactive hooks
+  const forumData = useForumData();
+  // const selectors = useForumSelectors(forumData); // Available if needed
   const { verificationStatus } = useAuth();
+  const { refreshData } = useForumActions();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
-  // Combine posts from all cells and apply sorting
-  const allPosts = useMemo(() => {
-    const filteredPosts = posts.filter(post => !post.moderated); // Hide moderated posts from main feed
-    return sortPosts(filteredPosts, sortOption);
-  }, [posts, sortOption]);
+  const {
+    postsWithVoteStatus,
+    commentsByPost,
+    isInitialLoading,
+    isRefreshing,
+  } = forumData;
 
-  // Calculate comment counts for each post
+  // ✅ Use pre-computed data and selectors
+  const allPosts = useMemo(() => {
+    const filteredPosts = postsWithVoteStatus.filter(post => !post.moderated);
+    return sortPosts(filteredPosts, sortOption);
+  }, [postsWithVoteStatus, sortOption]);
+
+  // ✅ Get comment count from organized data
   const getCommentCount = (postId: string) => {
-    return comments.filter(
-      comment => comment.postId === postId && !comment.moderated
-    ).length;
+    return (
+      commentsByPost[postId]?.filter(comment => !comment.moderated).length || 0
+    );
   };
 
   // Loading skeleton
@@ -155,7 +164,8 @@ const FeedPage: React.FC = () => {
                     <p className="text-cyber-neutral">
                       Be the first to create a post in a cell!
                     </p>
-                    {verificationStatus !== 'verified-owner' && (
+                    {verificationStatus.level !==
+                      EVerificationStatus.VERIFIED_OWNER && (
                       <p className="text-sm text-cyber-neutral/80">
                         Connect your wallet and verify Ordinal ownership to
                         start posting

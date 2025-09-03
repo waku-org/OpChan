@@ -24,6 +24,18 @@ export type OpchanMessage = (
   SignedMessage;
 
 /**
+ * Partial message type for validation
+ */
+export interface PartialMessage {
+  type?: string;
+  author?: string;
+  timestamp?: number;
+  signature?: string;
+  browserPubKey?: string;
+  [key: string]: unknown;
+}
+
+/**
  * Relevance score calculation details
  */
 export interface RelevanceScoreDetails {
@@ -51,6 +63,8 @@ export interface RelevanceScoreDetails {
 export interface Cell extends CellMessage {
   relevanceScore?: number;
   activeMemberCount?: number;
+  recentActivity?: number;
+  postCount?: number;
   relevanceDetails?: RelevanceScoreDetails;
 }
 
@@ -70,6 +84,7 @@ export interface Post extends PostMessage {
   verifiedUpvotes?: number;
   verifiedCommenters?: string[];
   relevanceDetails?: RelevanceScoreDetails;
+  voteScore?: number; // Computed field for enhanced posts
 }
 
 /**
@@ -86,6 +101,7 @@ export interface Comment extends CommentMessage {
   moderationTimestamp?: number;
   relevanceScore?: number;
   relevanceDetails?: RelevanceScoreDetails;
+  voteScore?: number; // Computed field for enhanced comments
 }
 
 /**

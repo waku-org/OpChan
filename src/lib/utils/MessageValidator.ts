@@ -2,53 +2,17 @@ import { OpchanMessage, PartialMessage } from '@/types/forum';
 import { DelegationManager } from '@/lib/delegation';
 
 interface ValidationReport {
-  hasValidSignature: boolean;
-  errors: string[];
-  isValid: boolean;
+  validMessages: OpchanMessage[];
+  invalidMessages: unknown[];
+  totalProcessed: number;
+  validationErrors: string[];
 }
 
-/**
- * Comprehensive message validation utility
- * Ensures all messages have valid signatures and browserPubKey
- */
 export class MessageValidator {
   private delegationManager: DelegationManager;
-  // Cache validation results to avoid re-validating the same messages
-  private validationCache = new Map<string, { isValid: boolean; timestamp: number }>();
-  private readonly CACHE_TTL = 60000; // 1 minute cache TTL
 
   constructor(delegationManager?: DelegationManager) {
     this.delegationManager = delegationManager || new DelegationManager();
-  }
-
-  /**
-   * Get cached validation result or validate and cache
-   */
-  private getCachedValidation(messageId: string, message: OpchanMessage): { isValid: boolean; timestamp: number } | null {
-    const cached = this.validationCache.get(messageId);
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      return cached;
-    }
-    return null;
-  }
-
-  /**
-   * Cache validation result
-   */
-  private cacheValidation(messageId: string, isValid: boolean): void {
-    this.validationCache.set(messageId, { isValid, timestamp: Date.now() });
-  }
-
-  /**
-   * Clear expired cache entries
-   */
-  private cleanupCache(): void {
-    const now = Date.now();
-    for (const [key, value] of this.validationCache.entries()) {
-      if (now - value.timestamp > this.CACHE_TTL) {
-        this.validationCache.delete(key);
-      }
-    }
   }
 
   /**
@@ -61,13 +25,19 @@ export class MessageValidator {
     }
 
     // Verify signature and delegation proof - we know it's safe to cast here since hasRequiredFields passed
-    return await this.delegationManager.verify(message as OpchanMessage);
+    try {
+      return await this.delegationManager.verify(
+        message as unknown as OpchanMessage
+      );
+    } catch {
+      return false;
+    }
   }
 
   /**
    * Checks if message has required signature and browserPubKey fields
    */
-  hasRequiredFields(message: unknown): message is PartialMessage & {
+  private hasRequiredFields(message: unknown): message is PartialMessage & {
     signature: string;
     browserPubKey: string;
     id: string;
@@ -75,255 +45,311 @@ export class MessageValidator {
     timestamp: number;
     author: string;
   } {
-    if (!message || typeof message !== 'object' || message === null) {
-      console.warn('MessageValidator: Invalid message object');
+    if (!message || typeof message !== 'object') {
       return false;
     }
 
-    const msg = message as PartialMessage;
+    const msg = message as Record<string, unknown>;
 
-    // Check for required signature fields
-    if (!msg.signature || typeof msg.signature !== 'string') {
-      console.warn('MessageValidator: Missing or invalid signature field', {
-        messageId: msg.id,
-        messageType: msg.type,
-        hasSignature: !!msg.signature,
-        signatureType: typeof msg.signature,
-      });
-      return false;
-    }
-
-    if (!msg.browserPubKey || typeof msg.browserPubKey !== 'string') {
-      console.warn('MessageValidator: Missing or invalid browserPubKey field', {
-        messageId: msg.id,
-        messageType: msg.type,
-        hasBrowserPubKey: !!msg.browserPubKey,
-        browserPubKeyType: typeof msg.browserPubKey,
-      });
-      return false;
-    }
-
-    // Check for basic message structure
-    if (
-      !msg.id ||
-      typeof msg.id !== 'string' ||
-      !msg.type ||
-      typeof msg.type !== 'string' ||
-      !msg.timestamp ||
-      typeof msg.timestamp !== 'number' ||
-      !msg.author ||
-      typeof msg.author !== 'string'
-    ) {
-      console.warn('MessageValidator: Missing required message fields', {
-        messageId: msg.id,
-        messageType: msg.type,
-        timestamp: msg.timestamp,
-        author: msg.author,
-        types: {
-          id: typeof msg.id,
-          type: typeof msg.type,
-          timestamp: typeof msg.timestamp,
-          author: typeof msg.author,
-        },
-      });
-      return false;
-    }
-
-    return true;
+    return (
+      typeof msg.signature === 'string' &&
+      typeof msg.browserPubKey === 'string' &&
+      typeof msg.id === 'string' &&
+      typeof msg.type === 'string' &&
+      typeof msg.timestamp === 'number' &&
+      typeof msg.author === 'string'
+    );
   }
 
   /**
-   * Validates a batch of messages and returns only valid ones
+   * Validates multiple messages and returns validation report
    */
-  async filterValidMessages(messages: unknown[]): Promise<OpchanMessage[]> {
+  async validateMessages(messages: unknown[]): Promise<ValidationReport> {
     const validMessages: OpchanMessage[] = [];
-    const invalidCount = {
-      missingFields: 0,
-      invalidSignature: 0,
-      total: 0,
-    };
+    const invalidMessages: unknown[] = [];
+    const validationErrors: string[] = [];
 
     for (const message of messages) {
       try {
+        // Check basic structure first
         if (!this.hasRequiredFields(message)) {
-          invalidCount.missingFields++;
+          invalidMessages.push(message);
+          validationErrors.push('Missing required fields');
           continue;
         }
 
-        if (!(await this.delegationManager.verify(message as OpchanMessage))) {
-          invalidCount.invalidSignature++;
-          continue;
+        // Verify signature
+        try {
+          const isValid = await this.delegationManager.verify(
+            message as unknown as OpchanMessage
+          );
+          if (!isValid) {
+            invalidMessages.push(message);
+            validationErrors.push('Invalid signature');
+            continue;
+          }
+          validMessages.push(message as unknown as OpchanMessage);
+        } catch {
+          invalidMessages.push(message);
+          validationErrors.push('Signature verification failed');
         }
-
-        validMessages.push(message as OpchanMessage);
       } catch (error) {
-        console.error('MessageValidator: Error validating message', {
-          messageId: (message as PartialMessage)?.id,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        invalidCount.total++;
-      }
-    }
-
-    // Log validation results
-    const totalInvalid =
-      invalidCount.missingFields +
-      invalidCount.invalidSignature +
-      invalidCount.total;
-    if (totalInvalid > 0) {
-      console.warn('MessageValidator: Filtered out invalid messages', {
-        totalMessages: messages.length,
-        validMessages: validMessages.length,
-        invalidMessages: totalInvalid,
-        breakdown: invalidCount,
-      });
-    }
-
-    return validMessages;
-  }
-
-  /**
-   * Strict validation that throws errors for invalid messages
-   */
-  async validateMessage(message: unknown): Promise<OpchanMessage> {
-    if (!this.hasRequiredFields(message)) {
-      const partialMsg = message as PartialMessage;
-      throw new Error(
-        `Message validation failed: Missing required signature fields (messageId: ${partialMsg?.id})`
-      );
-    }
-
-    if (!(await this.delegationManager.verify(message as OpchanMessage))) {
-      const partialMsg = message as PartialMessage;
-      throw new Error(
-        `Message validation failed: Invalid signature (messageId: ${partialMsg?.id})`
-      );
-    }
-
-    return message as OpchanMessage;
-  }
-
-  /**
-   * Validates message during creation (before sending)
-   */
-  validateOutgoingMessage(message: unknown): boolean {
-    // More lenient validation for outgoing messages that might not be signed yet
-    if (!message || typeof message !== 'object' || message === null) {
-      console.error('MessageValidator: Invalid outgoing message object');
-      return false;
-    }
-
-    const msg = message as PartialMessage;
-
-    // Check basic structure
-    if (
-      !msg.id ||
-      typeof msg.id !== 'string' ||
-      !msg.type ||
-      typeof msg.type !== 'string' ||
-      !msg.timestamp ||
-      typeof msg.timestamp !== 'number' ||
-      !msg.author ||
-      typeof msg.author !== 'string'
-    ) {
-      console.error(
-        'MessageValidator: Outgoing message missing required fields',
-        {
-          id: !!msg.id,
-          type: !!msg.type,
-          timestamp: !!msg.timestamp,
-          author: !!msg.author,
-          types: {
-            id: typeof msg.id,
-            type: typeof msg.type,
-            timestamp: typeof msg.timestamp,
-            author: typeof msg.author,
-          },
-        }
-      );
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * Creates a validation report for debugging
-   */
-  async getValidationReport(message: unknown): Promise<ValidationReport> {
-    const errors: string[] = [];
-    let hasRequiredFields = false;
-    let hasValidSignature = false;
-
-    try {
-      hasRequiredFields = this.hasRequiredFields(message);
-      if (!hasRequiredFields) {
-        errors.push(
-          'Missing required signature fields (signature, browserPubKey)'
+        invalidMessages.push(message);
+        validationErrors.push(
+          error instanceof Error ? error.message : 'Unknown validation error'
         );
       }
-
-      if (hasRequiredFields) {
-        hasValidSignature = await this.delegationManager.verify(
-          message as OpchanMessage
-        );
-        if (!hasValidSignature) {
-          errors.push('Invalid message signature');
-        }
-      }
-    } catch (error) {
-      const errorMsg =
-        error instanceof Error ? error.message : 'Unknown validation error';
-      errors.push(errorMsg);
     }
 
     return {
-      isValid: hasRequiredFields && hasValidSignature && errors.length === 0,
-      hasRequiredFields,
-      hasValidSignature,
-      errors,
+      validMessages,
+      invalidMessages,
+      totalProcessed: messages.length,
+      validationErrors,
     };
   }
-}
 
-/**
- * Global validator instance
- */
-export const messageValidator = new MessageValidator();
-
-/**
- * Type guard function for convenient usage
- * Note: This is not a true type guard since it's async
- */
-export async function isValidOpchanMessage(message: unknown): Promise<boolean> {
-  return await messageValidator.isValidMessage(message);
-}
-
-/**
- * Validation decorator for message processing functions
- */
-export function validateMessage(
-  _target: unknown,
-  propertyName: string,
-  descriptor: PropertyDescriptor
-) {
-  const originalMethod = descriptor.value;
-
-  descriptor.value = function (...args: unknown[]) {
-    // Assume first argument is the message
-    const message = args[0];
-
-    if (!messageValidator.isValidMessage(message)) {
-      const partialMsg = message as PartialMessage;
-      console.warn(`${propertyName}: Rejecting invalid message`, {
-        messageId: partialMsg?.id,
-        messageType: partialMsg?.type,
-      });
-      return null; // or throw an error depending on the use case
+  /**
+   * Validates and returns a single message if valid
+   */
+  async validateSingleMessage(message: unknown): Promise<OpchanMessage> {
+    // Check basic structure
+    if (!this.hasRequiredFields(message)) {
+      throw new Error('Message missing required fields');
     }
 
-    return originalMethod.apply(this, args);
-  };
+    // Verify signature and delegation proof
+    try {
+      const isValid = await this.delegationManager.verify(
+        message as unknown as OpchanMessage
+      );
+      if (!isValid) {
+        throw new Error('Invalid message signature');
+      }
+      return message as unknown as OpchanMessage;
+    } catch (error) {
+      throw new Error(`Message validation failed: ${error}`);
+    }
+  }
 
-  return descriptor;
+  /**
+   * Batch validation with performance optimization
+   */
+  async batchValidate(
+    messages: unknown[],
+    options: {
+      maxConcurrent?: number;
+      skipInvalid?: boolean;
+    } = {}
+  ): Promise<ValidationReport> {
+    const { maxConcurrent = 10, skipInvalid = true } = options;
+    const validMessages: OpchanMessage[] = [];
+    const invalidMessages: unknown[] = [];
+    const validationErrors: string[] = [];
+
+    // Process messages in batches to avoid overwhelming the system
+    for (let i = 0; i < messages.length; i += maxConcurrent) {
+      const batch = messages.slice(i, i + maxConcurrent);
+      const batchPromises = batch.map(async (message, index) => {
+        try {
+          const isValid = await this.isValidMessage(message);
+          return { message, isValid, index: i + index, error: null };
+        } catch (error) {
+          return {
+            message,
+            isValid: false,
+            index: i + index,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          };
+        }
+      });
+
+      const batchResults = await Promise.allSettled(batchPromises);
+
+      for (const result of batchResults) {
+        if (result.status === 'fulfilled') {
+          const { message, isValid, error } = result.value;
+          if (isValid) {
+            validMessages.push(message as unknown as OpchanMessage);
+          } else {
+            if (!skipInvalid) {
+              invalidMessages.push(message);
+              if (error) validationErrors.push(error);
+            }
+          }
+        } else {
+          if (!skipInvalid) {
+            validationErrors.push(
+              result.reason?.message || 'Batch validation failed'
+            );
+          }
+        }
+      }
+    }
+
+    return {
+      validMessages,
+      invalidMessages,
+      totalProcessed: messages.length,
+      validationErrors,
+    };
+  }
+
+  /**
+   * Quick validation check without full verification (for performance)
+   */
+  quickValidate(message: unknown): boolean {
+    return this.hasRequiredFields(message);
+  }
+
+  /**
+   * Get validation statistics
+   */
+  getValidationStats(report: ValidationReport) {
+    const validCount = report.validMessages.length;
+    const invalidCount = report.invalidMessages.length;
+    const successRate =
+      report.totalProcessed > 0 ? validCount / report.totalProcessed : 0;
+
+    return {
+      validCount,
+      invalidCount,
+      totalProcessed: report.totalProcessed,
+      successRate,
+      errorCount: report.validationErrors.length,
+      hasErrors: report.validationErrors.length > 0,
+    };
+  }
+
+  /**
+   * Filter messages by type after validation
+   */
+  filterByType<T extends OpchanMessage>(
+    messages: OpchanMessage[],
+    messageType: string
+  ): T[] {
+    return messages.filter(msg => msg.type === messageType) as T[];
+  }
+
+  /**
+   * Sort messages by timestamp
+   */
+  sortByTimestamp(
+    messages: OpchanMessage[],
+    ascending = true
+  ): OpchanMessage[] {
+    return [...messages].sort((a, b) =>
+      ascending ? a.timestamp - b.timestamp : b.timestamp - a.timestamp
+    );
+  }
+
+  /**
+   * Group messages by author
+   */
+  groupByAuthor(messages: OpchanMessage[]): Record<string, OpchanMessage[]> {
+    const grouped: Record<string, OpchanMessage[]> = {};
+
+    for (const message of messages) {
+      if (!grouped[message.author]) {
+        grouped[message.author] = [];
+      }
+      const authorMessages = grouped[message.author];
+      if (authorMessages) {
+        authorMessages.push(message);
+      }
+    }
+
+    return grouped;
+  }
+
+  /**
+   * Get validation report for a message (for backward compatibility)
+   */
+  async getValidationReport(message: unknown): Promise<{
+    isValid: boolean;
+    hasValidSignature: boolean;
+    missingFields: string[];
+    invalidFields: string[];
+    warnings: string[];
+    errors: string[];
+  }> {
+    const structureReport = this.validateStructure(message);
+    const hasValidSignature = structureReport.isValid
+      ? await this.isValidMessage(message)
+      : false;
+
+    return {
+      ...structureReport,
+      hasValidSignature,
+      errors: [
+        ...structureReport.missingFields,
+        ...structureReport.invalidFields,
+      ],
+    };
+  }
+
+  /**
+   * Validate message structure and return detailed report
+   */
+  validateStructure(message: unknown): {
+    isValid: boolean;
+    missingFields: string[];
+    invalidFields: string[];
+    warnings: string[];
+  } {
+    const missingFields: string[] = [];
+    const invalidFields: string[] = [];
+    const warnings: string[] = [];
+
+    if (!message || typeof message !== 'object') {
+      return {
+        isValid: false,
+        missingFields: ['message'],
+        invalidFields: [],
+        warnings: ['Message is not an object'],
+      };
+    }
+
+    const msg = message as Record<string, unknown>;
+    const requiredFields = [
+      'signature',
+      'browserPubKey',
+      'id',
+      'type',
+      'timestamp',
+      'author',
+    ];
+
+    for (const field of requiredFields) {
+      if (!(field in msg)) {
+        missingFields.push(field);
+      } else if (
+        typeof msg[field] !== (field === 'timestamp' ? 'number' : 'string')
+      ) {
+        invalidFields.push(field);
+      }
+    }
+
+    // Additional validation warnings
+    if (typeof msg.timestamp === 'number') {
+      const age = Date.now() - msg.timestamp;
+      if (age > 24 * 60 * 60 * 1000) {
+        // Older than 24 hours
+        warnings.push('Message is older than 24 hours');
+      }
+      if (msg.timestamp > Date.now() + 5 * 60 * 1000) {
+        // More than 5 minutes in future
+        warnings.push('Message timestamp is in the future');
+      }
+    }
+
+    const isValid = missingFields.length === 0 && invalidFields.length === 0;
+
+    return {
+      isValid,
+      missingFields,
+      invalidFields,
+      warnings,
+    };
+  }
 }

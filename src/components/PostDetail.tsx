@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useForum } from '@/contexts/useForum';
-import { useAuth } from '@/contexts/useAuth';
+import {
+  usePost,
+  usePostComments,
+  useForumActions,
+  usePermissions,
+  useUserVotes,
+} from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -11,37 +16,38 @@ import {
   Clock,
   MessageCircle,
   Send,
-  Eye,
   Loader2,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Comment } from '@/types/forum';
-import { CypherImage } from './ui/CypherImage';
+
 import { RelevanceIndicator } from './ui/relevance-indicator';
 import { AuthorDisplay } from './ui/author-display';
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
+
+  // ✅ Use reactive hooks for data and actions
+  const post = usePost(postId);
+  const comments = usePostComments(postId, { includeModerated: false });
   const {
-    posts,
-    getCommentsByPost,
     createComment,
     votePost,
     voteComment,
-    getCellById,
-    isInitialLoading,
-    isPostingComment,
-    isVoting,
     moderateComment,
     moderateUser,
-  } = useForum();
-  const { currentUser, verificationStatus } = useAuth();
+    isCreatingComment,
+    isVoting,
+  } = useForumActions();
+  const { canVote, canComment, canModerate } = usePermissions();
+  const userVotes = useUserVotes();
+
   const [newComment, setNewComment] = useState('');
 
   if (!postId) return <div>Invalid post ID</div>;
 
-  if (isInitialLoading) {
+  // ✅ Loading state handled by hook
+  if (comments.isLoading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-primary" />
@@ -51,8 +57,6 @@ const PostDetail = () => {
       </div>
     );
   }
-
-  const post = posts.find(p => p.id === postId);
 
   if (!post) {
     return (
@@ -68,81 +72,54 @@ const PostDetail = () => {
     );
   }
 
-  const cell = getCellById(post.cellId);
-  const postComments = getCommentsByPost(post.id);
-
-  const isCellAdmin =
-    currentUser && cell && currentUser.address === cell.signature;
-  const visibleComments = isCellAdmin
-    ? postComments
-    : postComments.filter(comment => !comment.moderated);
+  // ✅ All data comes pre-computed from hooks
+  const { cell } = post;
+  const visibleComments = comments.comments; // Already filtered by hook
 
   const handleCreateComment = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!newComment.trim()) return;
 
-    try {
-      const result = await createComment(postId, newComment);
-      if (result) {
-        setNewComment('');
-      }
-    } catch (error) {
-      console.error('Error creating comment:', error);
+    // ✅ All validation handled in hook
+    const result = await createComment(postId, newComment);
+    if (result) {
+      setNewComment('');
     }
   };
 
   const handleVotePost = async (isUpvote: boolean) => {
-    if (
-      verificationStatus !== 'verified-owner' &&
-      verificationStatus !== 'verified-basic' &&
-      !currentUser?.ensDetails &&
-      !currentUser?.ordinalDetails
-    )
-      return;
+    // ✅ Permission checking handled in hook
     await votePost(post.id, isUpvote);
   };
 
   const handleVoteComment = async (commentId: string, isUpvote: boolean) => {
-    if (
-      verificationStatus !== 'verified-owner' &&
-      verificationStatus !== 'verified-basic' &&
-      !currentUser?.ensDetails &&
-      !currentUser?.ordinalDetails
-    )
-      return;
+    // ✅ Permission checking handled in hook
     await voteComment(commentId, isUpvote);
   };
 
-  const isPostUpvoted =
-    currentUser &&
-    post.upvotes.some(vote => vote.author === currentUser.address);
-  const isPostDownvoted =
-    currentUser &&
-    post.downvotes.some(vote => vote.author === currentUser.address);
+  // ✅ Get vote status from hooks
+  const postVoteType = userVotes.getPostVoteType(post.id);
+  const isPostUpvoted = postVoteType === 'upvote';
+  const isPostDownvoted = postVoteType === 'downvote';
 
-  const isCommentVoted = (comment: Comment, isUpvote: boolean) => {
-    if (!currentUser) return false;
-    const votes = isUpvote ? comment.upvotes : comment.downvotes;
-    return votes.some(vote => vote.author === currentUser.address);
-  };
-
-  const getIdentityImageUrl = (address: string) => {
-    return `https://api.dicebear.com/7.x/identicon/svg?seed=${address}`;
+  const getCommentVoteType = (commentId: string) => {
+    return userVotes.getCommentVoteType(commentId);
   };
 
   const handleModerateComment = async (commentId: string) => {
     const reason =
       window.prompt('Enter a reason for moderation (optional):') || undefined;
     if (!cell) return;
-    await moderateComment(cell.id, commentId, reason, cell.signature);
+    // ✅ All validation handled in hook
+    await moderateComment(cell.id, commentId, reason);
   };
 
   const handleModerateUser = async (userAddress: string) => {
-    if (!cell) return;
     const reason =
       window.prompt('Reason for moderating this user? (optional)') || undefined;
-    await moderateUser(cell.id, userAddress, reason, cell.signature);
+    if (!cell) return;
+    // ✅ All validation handled in hook
+    await moderateUser(cell.id, userAddress, reason);
   };
 
   return (
@@ -159,197 +136,195 @@ const PostDetail = () => {
         </Button>
 
         <div className="border border-muted rounded-sm p-3 mb-6">
-          <div className="flex gap-3 items-start">
-            <div className="flex flex-col items-center w-6 pt-1">
+          <div className="flex gap-4">
+            <div className="flex flex-col items-center">
               <button
-                className={`p-1 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isPostUpvoted ? 'text-primary' : ''}`}
+                className={`p-1 rounded-sm hover:bg-muted/50 ${
+                  isPostUpvoted ? 'text-primary' : ''
+                }`}
                 onClick={() => handleVotePost(true)}
-                disabled={verificationStatus !== 'verified-owner' || isVoting}
+                disabled={!canVote || isVoting}
                 title={
-                  verificationStatus === 'verified-owner'
-                    ? 'Upvote'
-                    : 'Full access required to vote'
+                  canVote ? 'Upvote post' : 'Connect wallet and verify to vote'
                 }
               >
-                <ArrowUp className="w-5 h-5" />
+                <ArrowUp className="w-4 h-4" />
               </button>
-              <span className="text-sm font-medium py-1">
-                {post.upvotes.length - post.downvotes.length}
-              </span>
+              <span className="text-sm font-bold">{post.voteScore}</span>
               <button
-                className={`p-1 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isPostDownvoted ? 'text-primary' : ''}`}
+                className={`p-1 rounded-sm hover:bg-muted/50 ${
+                  isPostDownvoted ? 'text-primary' : ''
+                }`}
                 onClick={() => handleVotePost(false)}
-                disabled={verificationStatus !== 'verified-owner' || isVoting}
+                disabled={!canVote || isVoting}
                 title={
-                  verificationStatus === 'verified-owner'
-                    ? 'Downvote'
-                    : 'Full access required to vote'
+                  canVote
+                    ? 'Downvote post'
+                    : 'Connect wallet and verify to vote'
                 }
               >
-                <ArrowDown className="w-5 h-5" />
+                <ArrowDown className="w-4 h-4" />
               </button>
             </div>
 
             <div className="flex-1">
-              <h2 className="text-xl font-bold mb-2 text-foreground">
-                {post.title}
-              </h2>
-              <p className="text-base mb-4 text-foreground/90">
-                {post.content}
-              </p>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center">
-                  <Clock className="w-3 h-3 mr-1" />
-                  {formatDistanceToNow(post.timestamp, { addSuffix: true })}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                <span className="font-medium text-primary">
+                  r/{cell?.name || 'unknown'}
                 </span>
-                <span className="flex items-center">
-                  <MessageCircle className="w-3 h-3 mr-1" />
-                  {postComments.length}{' '}
-                  {postComments.length === 1 ? 'comment' : 'comments'}
-                </span>
+                <span>•</span>
+                <span>Posted by u/</span>
                 <AuthorDisplay
-                  address={post.authorAddress}
-                  className="text-sm font-medium"
+                  address={post.author}
+                  className="text-sm"
+                  showBadge={false}
                 />
+                <span>•</span>
+                <Clock className="w-3 h-3" />
+                <span>
+                  {formatDistanceToNow(new Date(post.timestamp), {
+                    addSuffix: true,
+                  })}
+                </span>
                 {post.relevanceScore !== undefined && (
-                  <RelevanceIndicator
-                    score={post.relevanceScore}
-                    details={post.relevanceDetails}
-                    type="post"
-                    className="text-xs"
-                    showTooltip={true}
-                  />
+                  <>
+                    <span>•</span>
+                    <RelevanceIndicator
+                      score={post.relevanceScore}
+                      details={post.relevanceDetails}
+                      type="post"
+                      className="text-sm"
+                      showTooltip={true}
+                    />
+                  </>
                 )}
               </div>
+
+              <h1 className="text-2xl font-bold mb-3">{post.title}</h1>
+              <p className="text-sm whitespace-pre-wrap break-words">
+                {post.content}
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {verificationStatus === 'verified-owner' ||
-      verificationStatus === 'verified-basic' ||
-      currentUser?.ensDetails ||
-      currentUser?.ordinalDetails ? (
+      {/* Comment Form */}
+      {canComment && (
         <div className="mb-8">
           <form onSubmit={handleCreateComment}>
-            <div className="flex gap-2">
-              <Textarea
-                placeholder="Add a comment..."
-                value={newComment}
-                onChange={e => setNewComment(e.target.value)}
-                className="flex-1 bg-secondary/40 border-muted resize-none rounded-sm text-sm p-2"
-                disabled={isPostingComment}
-              />
+            <h2 className="text-sm font-bold mb-2 flex items-center gap-1">
+              <MessageCircle className="w-4 h-4" />
+              Add a comment
+            </h2>
+            <Textarea
+              placeholder="What are your thoughts?"
+              value={newComment}
+              onChange={e => setNewComment(e.target.value)}
+              className="mb-3 resize-none"
+              disabled={isCreatingComment}
+            />
+            <div className="flex justify-end">
               <Button
                 type="submit"
-                disabled={isPostingComment || !newComment.trim()}
-                size="icon"
+                disabled={!canComment || isCreatingComment}
+                className="bg-cyber-accent hover:bg-cyber-accent/80"
               >
-                <Send className="w-4 h-4" />
+                {isCreatingComment ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Posting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Post Comment
+                  </>
+                )}
               </Button>
             </div>
           </form>
         </div>
-      ) : verificationStatus === 'verified-none' ? (
-        <div className="mb-8 p-3 border border-muted rounded-sm bg-secondary/30">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Eye className="w-4 h-4 text-muted-foreground" />
-            <h3 className="font-medium">Read-Only Mode</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Your wallet has been verified but does not contain any Ordinal
-            Operators. You can browse threads but cannot comment or vote.
-          </p>
-        </div>
-      ) : (
-        <div className="mb-8 p-3 border border-muted rounded-sm bg-secondary/30 text-center">
-          <p className="text-sm mb-2">
-            Connect wallet and verify ownership to comment
+      )}
+
+      {!canComment && (
+        <div className="mb-6 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 text-center">
+          <p className="text-sm mb-3">
+            Connect wallet and verify Ordinal ownership to comment
           </p>
           <Button asChild size="sm">
-            <Link to="/">Go to Home</Link>
+            <Link to="/">Connect Wallet</Link>
           </Button>
         </div>
       )}
 
-      <div className="space-y-2">
-        {postComments.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground">
-            <p>No comments yet</p>
+      {/* Comments */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <MessageCircle className="w-5 h-5" />
+          Comments ({visibleComments.length})
+        </h2>
+
+        {visibleComments.length === 0 ? (
+          <div className="text-center py-8">
+            <MessageCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-lg font-bold mb-2">No comments yet</h3>
+            <p className="text-muted-foreground">
+              {canComment
+                ? 'Be the first to share your thoughts!'
+                : 'Connect your wallet to join the conversation.'}
+            </p>
           </div>
         ) : (
           visibleComments.map(comment => (
             <div
               key={comment.id}
-              className="comment-card"
-              id={`comment-${comment.id}`}
+              className="border border-muted rounded-sm p-4 bg-card"
             >
-              <div className="flex gap-2 items-start">
-                <div className="flex flex-col items-center w-5 pt-0.5">
+              <div className="flex gap-4">
+                <div className="flex flex-col items-center">
                   <button
-                    className={`p-0.5 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isCommentVoted(comment, true) ? 'text-primary' : ''}`}
+                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
+                      getCommentVoteType(comment.id) === 'upvote'
+                        ? 'text-cyber-accent'
+                        : ''
+                    }`}
                     onClick={() => handleVoteComment(comment.id, true)}
-                    disabled={
-                      verificationStatus !== 'verified-owner' || isVoting
-                    }
-                    title={
-                      verificationStatus === 'verified-owner'
-                        ? 'Upvote'
-                        : 'Full access required to vote'
-                    }
+                    disabled={!canVote || isVoting}
                   >
-                    <ArrowUp className="w-4 h-4" />
+                    <ArrowUp className="w-3 h-3" />
                   </button>
-                  <span className="text-xs font-medium py-0.5">
-                    {comment.upvotes.length - comment.downvotes.length}
-                  </span>
+                  <span className="text-sm font-bold">{comment.voteScore}</span>
                   <button
-                    className={`p-0.5 rounded-sm hover:bg-secondary/50 disabled:opacity-50 ${isCommentVoted(comment, false) ? 'text-primary' : ''}`}
+                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
+                      getCommentVoteType(comment.id) === 'downvote'
+                        ? 'text-cyber-accent'
+                        : ''
+                    }`}
                     onClick={() => handleVoteComment(comment.id, false)}
-                    disabled={
-                      verificationStatus !== 'verified-owner' || isVoting
-                    }
-                    title={
-                      verificationStatus === 'verified-owner'
-                        ? 'Downvote'
-                        : 'Full access required to vote'
-                    }
+                    disabled={!canVote || isVoting}
                   >
-                    <ArrowDown className="w-4 h-4" />
+                    <ArrowDown className="w-3 h-3" />
                   </button>
                 </div>
-                <div className="flex-1 pt-0.5">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <CypherImage
-                        src={getIdentityImageUrl(comment.authorAddress)}
-                        alt={`${comment.authorAddress.slice(0, 6)}...`}
-                        className="rounded-sm w-5 h-5 bg-secondary"
-                      />
-                      <AuthorDisplay
-                        address={comment.authorAddress}
-                        className="text-sm font-medium"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {comment.relevanceScore !== undefined && (
-                        <RelevanceIndicator
-                          score={comment.relevanceScore}
-                          details={comment.relevanceDetails}
-                          type="comment"
-                          className="text-xs"
-                          showTooltip={true}
-                        />
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(comment.timestamp, {
-                          addSuffix: true,
-                        })}
-                      </span>
-                    </div>
+
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                    <AuthorDisplay
+                      address={comment.author}
+                      className="text-xs"
+                      showBadge={false}
+                    />
+                    <span>•</span>
+                    <Clock className="w-3 h-3" />
+                    <span>
+                      {formatDistanceToNow(new Date(comment.timestamp), {
+                        addSuffix: true,
+                      })}
+                    </span>
                   </div>
                   <p className="text-sm break-words">{comment.content}</p>
-                  {isCellAdmin && !comment.moderated && (
+                  {canModerate(cell?.id || '') && !comment.moderated && (
                     <Button
                       size="sm"
                       variant="destructive"
@@ -359,16 +334,18 @@ const PostDetail = () => {
                       Moderate
                     </Button>
                   )}
-                  {isCellAdmin && comment.authorAddress !== cell.signature && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="ml-2"
-                      onClick={() => handleModerateUser(comment.authorAddress)}
-                    >
-                      Moderate User
-                    </Button>
-                  )}
+                  {post.cell &&
+                    canModerate(post.cell.id) &&
+                    comment.author !== post.author && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="ml-2"
+                        onClick={() => handleModerateUser(comment.author)}
+                      >
+                        Moderate User
+                      </Button>
+                    )}
                   {comment.moderated && (
                     <span className="ml-2 text-xs text-red-500">
                       [Moderated]

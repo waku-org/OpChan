@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Post } from '@/types/forum';
-import { useForum } from '@/contexts/useForum';
-import { useAuth } from '@/contexts/useAuth';
+import {
+  useForumActions,
+  usePermissions,
+  useUserVotes,
+  useForumData,
+} from '@/hooks';
 import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
 import { AuthorDisplay } from '@/components/ui/author-display';
 
@@ -14,32 +18,36 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
-  const { getCellById, votePost, isVoting } = useForum();
-  const { isAuthenticated, currentUser } = useAuth();
+  // ✅ Use reactive hooks instead of direct context access
+  const { cellsWithStats } = useForumData();
+  const { votePost, isVoting } = useForumActions();
+  const { canVote } = usePermissions();
+  const userVotes = useUserVotes();
 
-  const cell = getCellById(post.cellId);
+  // ✅ Get pre-computed cell data
+  const cell = cellsWithStats.find(c => c.id === post.cellId);
   const cellName = cell?.name || 'unknown';
 
-  // Calculate vote score
-  const score = post.upvotes.length - post.downvotes.length;
+  // ✅ Use pre-computed vote data (assuming post comes from useForumData)
+  const score =
+    'voteScore' in post
+      ? (post.voteScore as number)
+      : post.upvotes.length - post.downvotes.length;
 
-  // Check user's vote status
-  const userUpvoted = currentUser
-    ? post.upvotes.some(vote => vote.author === currentUser.address)
-    : false;
-  const userDownvoted = currentUser
-    ? post.downvotes.some(vote => vote.author === currentUser.address)
-    : false;
+  // ✅ Get user vote status from hook
+  const userVoteType = userVotes.getPostVoteType(post.id);
+  const userUpvoted = userVoteType === 'upvote';
+  const userDownvoted = userVoteType === 'downvote';
 
-  // Truncate content for preview
+  // ✅ Content truncation (simple presentation logic is OK)
   const contentPreview =
     post.content.length > 200
       ? post.content.substring(0, 200) + '...'
       : post.content;
 
   const handleVote = async (e: React.MouseEvent, isUpvote: boolean) => {
-    e.preventDefault(); // Prevent navigation when clicking vote buttons
-    if (!isAuthenticated) return;
+    e.preventDefault();
+    // ✅ All validation and permission checking handled in hook
     await votePost(post.id, isUpvote);
   };
 
@@ -55,8 +63,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
                 : 'text-cyber-neutral hover:text-cyber-accent'
             }`}
             onClick={e => handleVote(e, true)}
-            disabled={!isAuthenticated || isVoting}
-            title={isAuthenticated ? 'Upvote' : 'Connect wallet to vote'}
+            disabled={!canVote || isVoting}
+            title={canVote ? 'Upvote' : 'Connect wallet and verify to vote'}
           >
             <ArrowUp className="w-5 h-5" />
           </button>
@@ -80,8 +88,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
                 : 'text-cyber-neutral hover:text-blue-400'
             }`}
             onClick={e => handleVote(e, false)}
-            disabled={!isAuthenticated || isVoting}
-            title={isAuthenticated ? 'Downvote' : 'Connect wallet to vote'}
+            disabled={!canVote || isVoting}
+            title={canVote ? 'Downvote' : 'Connect wallet and verify to vote'}
           >
             <ArrowDown className="w-5 h-5" />
           </button>

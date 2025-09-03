@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useForum } from '@/contexts/useForum';
+import { useForumData, useForumActions, usePermissions } from '@/hooks';
 import {
   Layout,
   MessageSquare,
@@ -23,14 +23,15 @@ import { RelevanceIndicator } from './ui/relevance-indicator';
 import { sortCells, SortOption } from '@/lib/utils/sorting';
 
 const CellList = () => {
-  const { cells, isInitialLoading, posts, refreshData, isRefreshing } =
-    useForum();
+  const { cellsWithStats, isInitialLoading } = useForumData();
+  const { refreshData } = useForumActions();
+  const { canCreateCell } = usePermissions();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
   // Apply sorting to cells
   const sortedCells = useMemo(() => {
-    return sortCells(cells, sortOption);
-  }, [cells, sortOption]);
+    return sortCells(cellsWithStats, sortOption);
+  }, [cellsWithStats, sortOption]);
 
   if (isInitialLoading) {
     return (
@@ -39,44 +40,46 @@ const CellList = () => {
         <p className="text-lg font-medium text-muted-foreground">
           Loading Cells...
         </p>
-        <p className="text-sm text-muted-foreground/70 mt-1">
-          Connecting to the network and fetching data...
-        </p>
       </div>
     );
   }
 
-  const getPostCount = (cellId: string) => {
-    return posts.filter(post => post.cellId === cellId).length;
-  };
-
   return (
-    <div className="container mx-auto px-4 pt-24 pb-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Layout className="text-cyber-accent w-6 h-6" />
-          <h1 className="text-2xl font-bold text-glow">Cells</h1>
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-glow mb-2">
+            Decentralized Cells
+          </h1>
+          <p className="text-cyber-neutral">
+            Discover communities built on Bitcoin Ordinals
+          </p>
         </div>
-        <div className="flex gap-2">
+
+        <div className="flex items-center gap-4">
           <Select
             value={sortOption}
             onValueChange={(value: SortOption) => setSortOption(value)}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40 bg-cyber-muted/50 border-cyber-muted">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="relevance">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  <span>Relevance</span>
-                </div>
+                <TrendingUp className="w-4 h-4 mr-2 inline" />
+                Relevance
               </SelectItem>
-              <SelectItem value="time">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>Newest</span>
-                </div>
+              <SelectItem value="activity">
+                <MessageSquare className="w-4 h-4 mr-2 inline" />
+                Activity
+              </SelectItem>
+              <SelectItem value="newest">
+                <Clock className="w-4 h-4 mr-2 inline" />
+                Newest
+              </SelectItem>
+              <SelectItem value="alphabetical">
+                <Layout className="w-4 h-4 mr-2 inline" />
+                A-Z
               </SelectItem>
             </SelectContent>
           </Select>
@@ -85,12 +88,12 @@ const CellList = () => {
             variant="outline"
             size="icon"
             onClick={refreshData}
-            disabled={isRefreshing}
+            disabled={isInitialLoading}
             title="Refresh data"
             className="px-3"
           >
             <RefreshCw
-              className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+              className={`w-4 h-4 ${isInitialLoading ? 'animate-spin' : ''}`}
             />
           </Button>
           <CreateCellDialog />
@@ -98,7 +101,7 @@ const CellList = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {cells.length === 0 ? (
+        {sortedCells.length === 0 ? (
           <div className="col-span-2 text-center py-12">
             <div className="text-cyber-neutral mb-4">
               No cells found. Be the first to create one!
@@ -107,38 +110,49 @@ const CellList = () => {
         ) : (
           sortedCells.map(cell => (
             <Link
-              to={`/cell/${cell.id}`}
               key={cell.id}
-              className="board-card group"
+              to={`/cell/${cell.id}`}
+              className="group block p-4 border border-cyber-muted rounded-sm bg-cyber-muted/10 hover:bg-cyber-muted/20 hover:border-cyber-accent/50 transition-all duration-200"
             >
-              <div className="flex gap-4 items-start">
+              <div className="flex items-start gap-4">
                 <CypherImage
                   src={cell.icon}
                   alt={cell.name}
-                  className="w-16 h-16 object-cover rounded-sm border border-cyber-muted group-hover:border-cyber-accent transition-colors"
+                  className="w-12 h-12 object-cover rounded-sm border border-cyber-muted flex-shrink-0"
                   generateUniqueFallback={true}
                 />
-                <div className="flex-1">
-                  <h2 className="text-xl font-bold mb-1 group-hover:text-cyber-accent transition-colors">
-                    {cell.name}
-                  </h2>
-                  <p className="text-sm text-cyber-neutral mb-2">
-                    {cell.description}
-                  </p>
-                  <div className="flex items-center text-xs text-cyber-neutral gap-2">
-                    <div className="flex items-center">
-                      <MessageSquare className="w-3 h-3 mr-1" />
-                      <span>{getPostCount(cell.id)} threads</span>
-                    </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between mb-2">
+                    <h2 className="text-lg font-bold text-glow group-hover:text-cyber-accent transition-colors line-clamp-1">
+                      {cell.name}
+                    </h2>
                     {cell.relevanceScore !== undefined && (
                       <RelevanceIndicator
                         score={cell.relevanceScore}
                         details={cell.relevanceDetails}
                         type="cell"
-                        className="text-xs"
+                        className="ml-2 flex-shrink-0"
                         showTooltip={true}
                       />
                     )}
+                  </div>
+
+                  <p className="text-cyber-neutral text-sm mb-3 line-clamp-2">
+                    {cell.description}
+                  </p>
+
+                  <div className="flex items-center justify-between text-xs text-cyber-neutral">
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1">
+                        <MessageSquare className="w-3 h-3" />
+                        {cell.postCount || 0} posts
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Layout className="w-3 h-3" />
+                        {cell.activeMemberCount || 0} members
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -146,6 +160,15 @@ const CellList = () => {
           ))
         )}
       </div>
+
+      {canCreateCell && (
+        <div className="text-center mt-8">
+          <p className="text-cyber-neutral text-sm mb-4">
+            Ready to start your own community?
+          </p>
+          <CreateCellDialog />
+        </div>
+      )}
     </div>
   );
 };

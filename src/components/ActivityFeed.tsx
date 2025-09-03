@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForum } from '@/contexts/useForum';
+import { useForumData } from '@/hooks';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,121 +34,154 @@ interface CommentFeedItem extends FeedItemBase {
 type FeedItem = PostFeedItem | CommentFeedItem;
 
 const ActivityFeed: React.FC = () => {
-  const { posts, comments, getCellById, isInitialLoading } = useForum();
+  // ✅ Use reactive hooks for data
+  const forumData = useForumData();
 
+  const {
+    postsWithVoteStatus,
+    commentsWithVoteStatus,
+    cellsWithStats,
+    isInitialLoading,
+  } = forumData;
+
+  // ✅ Use pre-computed data with vote scores
   const combinedFeed: FeedItem[] = [
-    ...posts.map(
+    ...postsWithVoteStatus.map(
       (post): PostFeedItem => ({
         id: post.id,
         type: 'post',
         timestamp: post.timestamp,
-        ownerAddress: post.authorAddress,
+        ownerAddress: post.author,
         title: post.title,
         cellId: post.cellId,
         postId: post.id,
-        commentCount: 0,
-        voteCount: post.upvotes.length - post.downvotes.length,
+        commentCount: forumData.commentsByPost[post.id]?.length || 0,
+        voteCount: post.voteScore,
       })
     ),
-    ...comments
+    ...commentsWithVoteStatus
       .map((comment): CommentFeedItem | null => {
-        const parentPost = posts.find(p => p.id === comment.postId);
+        const parentPost = postsWithVoteStatus.find(
+          p => p.id === comment.postId
+        );
         if (!parentPost) return null;
         return {
           id: comment.id,
           type: 'comment',
           timestamp: comment.timestamp,
-          ownerAddress: comment.authorAddress,
+          ownerAddress: comment.author,
           content: comment.content,
           postId: comment.postId,
           cellId: parentPost.cellId,
-          voteCount: comment.upvotes.length - comment.downvotes.length,
+          voteCount: comment.voteScore,
         };
       })
       .filter((item): item is CommentFeedItem => item !== null),
   ].sort((a, b) => b.timestamp - a.timestamp);
 
   const renderFeedItem = (item: FeedItem) => {
-    const cell = item.cellId ? getCellById(item.cellId) : undefined;
+    const cell = item.cellId
+      ? cellsWithStats.find(c => c.id === item.cellId)
+      : undefined;
     const timeAgo = formatDistanceToNow(new Date(item.timestamp), {
       addSuffix: true,
     });
 
     const linkTarget =
-      item.type === 'post'
-        ? `/post/${item.postId}`
-        : `/post/${item.postId}#comment-${item.id}`;
+      item.type === 'post' ? `/post/${item.id}` : `/post/${item.postId}`;
 
     return (
-      <Link
-        to={linkTarget}
+      <div
         key={item.id}
-        className="block border border-muted hover:border-primary/50 hover:bg-secondary/30 rounded-sm p-3 mb-3 transition-colors duration-150"
+        className="border border-cyber-muted rounded-sm p-3 bg-cyber-muted/10 hover:bg-cyber-muted/20 transition-colors"
       >
-        <div className="flex items-center text-xs text-muted-foreground mb-1.5">
-          {item.type === 'post' ? (
-            <Newspaper className="w-3.5 h-3.5 mr-1.5 text-primary/80" />
-          ) : (
-            <MessageSquareText className="w-3.5 h-3.5 mr-1.5 text-accent/80" />
-          )}
-          <span className="font-medium text-foreground/90 mr-1">
-            {item.type === 'post'
-              ? item.title
-              : `Comment on: ${posts.find(p => p.id === item.postId)?.title || 'post'}`}
-          </span>
-          by
-          <AuthorDisplay
-            address={item.ownerAddress}
-            className="font-medium text-foreground/70 mx-1"
-            showBadge={false}
-          />
-          {cell && (
-            <>
-              in
-              <span className="font-medium text-foreground/70 ml-1">
-                /{cell.name}
-              </span>
-            </>
-          )}
-          <span className="ml-auto">{timeAgo}</span>
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            {item.type === 'post' ? (
+              <Newspaper className="w-5 h-5 text-cyber-accent" />
+            ) : (
+              <MessageSquareText className="w-5 h-5 text-blue-400" />
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2 text-xs text-muted-foreground mb-1">
+              <AuthorDisplay
+                address={item.ownerAddress}
+                className="text-xs"
+                showBadge={false}
+              />
+              <span>•</span>
+              <span>{timeAgo}</span>
+              {cell && (
+                <>
+                  <span>•</span>
+                  <span className="text-cyber-accent">r/{cell.name}</span>
+                </>
+              )}
+            </div>
+
+            <Link to={linkTarget} className="block hover:opacity-80">
+              {item.type === 'post' ? (
+                <div>
+                  <div className="font-medium text-sm mb-1 line-clamp-2">
+                    {item.title}
+                  </div>
+                  <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                    <span>↑ {item.voteCount}</span>
+                    <span>{item.commentCount} comments</span>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="text-sm line-clamp-3 mb-1">
+                    {item.content}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    ↑ {item.voteCount} • Reply to post
+                  </div>
+                </div>
+              )}
+            </Link>
+          </div>
         </div>
-        {item.type === 'comment' && (
-          <p className="text-sm text-foreground/80 pl-5 truncate">
-            {item.content}
-          </p>
-        )}
-      </Link>
+      </div>
     );
   };
 
   if (isInitialLoading) {
     return (
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-3 text-primary">
-          Latest Activity
-        </h2>
+      <div className="space-y-3">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="border border-muted rounded-sm p-3 mb-3">
-            <Skeleton className="h-4 w-3/4 mb-2" />
-            <Skeleton className="h-3 w-1/2" />
+          <div key={i} className="border border-cyber-muted rounded-sm p-3">
+            <div className="flex items-start space-x-3">
+              <Skeleton className="w-5 h-5 rounded bg-cyber-muted" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4 bg-cyber-muted" />
+                <Skeleton className="h-3 w-1/2 bg-cyber-muted" />
+              </div>
+            </div>
           </div>
         ))}
       </div>
     );
   }
 
-  return (
-    <div className="mb-6">
-      <h2 className="text-lg font-semibold mb-3 text-primary">
-        Latest Activity
-      </h2>
-      {combinedFeed.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          No activity yet. Be the first to post!
+  if (combinedFeed.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <MessageSquareText className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+        <h3 className="text-lg font-bold mb-2">No Activity Yet</h3>
+        <p className="text-muted-foreground">
+          Be the first to create a post or comment!
         </p>
-      ) : (
-        combinedFeed.map(renderFeedItem)
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {combinedFeed.slice(0, 20).map(renderFeedItem)}
     </div>
   );
 };

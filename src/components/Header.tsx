@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/useAuth';
-import { useForum } from '@/contexts/useForum';
+import { useAuth, useNetworkStatus } from '@/hooks';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+
 import {
   LogOut,
   Terminal,
-  Wifi,
-  WifiOff,
   AlertTriangle,
   CheckCircle,
   Key,
-  RefreshCw,
   CircleSlash,
   Home,
   Grid3X3,
@@ -25,14 +21,15 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
-import { CallSignSetupDialog } from '@/components/ui/call-sign-setup-dialog';
-import { useUserDisplay } from '@/hooks/useUserDisplay';
+
+import { useUserDisplay } from '@/hooks';
 
 const Header = () => {
-  const { verificationStatus, getDelegationStatus } = useAuth();
-  const { isNetworkConnected, isRefreshing } = useForum();
+  const { verificationStatus, delegationInfo } = useAuth();
+  const networkStatus = useNetworkStatus();
   const location = useLocation();
   const { toast } = useToast();
+
   // Use AppKit hooks for multi-chain support
   const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
   const ethereumAccount = useAppKitAccount({ namespace: 'eip155' });
@@ -50,7 +47,7 @@ const Header = () => {
 
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
 
-  // Get display name from hook
+  // ✅ Get display name from enhanced hook
   const { displayName } = useUserDisplay(address || '');
 
   // Use sessionStorage to persist wizard state across navigation
@@ -92,98 +89,87 @@ const Header = () => {
   };
 
   const getAccountStatusText = () => {
-    switch (verificationStatus) {
-      case 'unverified':
-        return 'Setup Required';
-      case 'verifying':
-        return 'Verifying...';
-      case 'verified-none':
-        return 'Read-Only Access';
-      case 'verified-basic':
-        return getDelegationStatus().isValid ? 'Full Access' : 'Setup Key';
-      case 'verified-owner':
-        return getDelegationStatus().isValid ? 'Premium Access' : 'Setup Key';
-      default:
-        return 'Setup Account';
+    if (!isConnected) return 'Connect Wallet';
+
+    if (verificationStatus.level === 'verified-owner') {
+      return delegationInfo.isActive ? 'Ready to Post' : 'Delegation Expired';
+    } else if (verificationStatus.level === 'verified-basic') {
+      return 'Verified (Read-only)';
+    } else if (verificationStatus.level === 'unverified') {
+      return verificationStatus.hasOrdinal
+        ? 'Verify Wallet'
+        : 'No Ordinals Found';
+    } else {
+      return 'Verify Wallet';
     }
   };
 
-  const getAccountStatusIcon = () => {
-    switch (verificationStatus) {
-      case 'unverified':
-        return <AlertTriangle className="w-3 h-3" />;
-      case 'verifying':
-        return <RefreshCw className="w-3 h-3 animate-spin" />;
-      case 'verified-none':
-        return <CircleSlash className="w-3 h-3" />;
-      case 'verified-basic':
-        return getDelegationStatus().isValid ? (
-          <CheckCircle className="w-3 h-3" />
-        ) : (
-          <CheckCircle className="w-3 h-3" />
-        );
-      case 'verified-owner':
-        return getDelegationStatus().isValid ? (
-          <CheckCircle className="w-3 h-3" />
-        ) : (
-          <Key className="w-3 h-3" />
-        );
-      default:
-        return <AlertTriangle className="w-3 h-3" />;
+  const getStatusColor = () => {
+    if (!isConnected) return 'text-red-400';
+
+    if (
+      verificationStatus.level === 'verified-owner' &&
+      delegationInfo.isActive
+    ) {
+      return 'text-green-400';
+    } else if (verificationStatus.level === 'verified-basic') {
+      return 'text-yellow-400';
+    } else if (verificationStatus.hasOrdinal || verificationStatus.hasENS) {
+      return 'text-orange-400';
+    } else {
+      return 'text-red-400';
     }
   };
 
-  const getAccountStatusVariant = () => {
-    switch (verificationStatus) {
-      case 'unverified':
-        return 'destructive';
-      case 'verifying':
-        return 'outline';
-      case 'verified-none':
-        return 'secondary';
-      case 'verified-basic':
-        return getDelegationStatus().isValid ? 'default' : 'outline';
-      case 'verified-owner':
-        return getDelegationStatus().isValid ? 'default' : 'outline';
-      default:
-        return 'outline';
+  const getStatusIcon = () => {
+    if (!isConnected) return <CircleSlash className="w-4 h-4" />;
+
+    if (
+      verificationStatus.level === 'verified-owner' &&
+      delegationInfo.isActive
+    ) {
+      return <CheckCircle className="w-4 h-4" />;
+    } else if (verificationStatus.level === 'verified-basic') {
+      return <AlertTriangle className="w-4 h-4" />;
+    } else if (verificationStatus.hasOrdinal || verificationStatus.hasENS) {
+      return <Key className="w-4 h-4" />;
+    } else {
+      return <AlertTriangle className="w-4 h-4" />;
     }
   };
 
   return (
-    <>
-      <header className="border-b border-cyber-muted bg-cyber-dark fixed top-0 left-0 right-0 z-50 h-16">
-        <div className="container mx-auto px-4 h-full flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <Terminal className="text-cyber-accent w-6 h-6" />
-              <Link
-                to="/"
-                className="text-xl font-bold text-glow text-cyber-accent"
-              >
-                OpChan
-              </Link>
-            </div>
+    <header className="bg-cyber-muted/20 border-b border-cyber-muted sticky top-0 z-50 backdrop-blur-sm">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* Logo and Navigation */}
+          <div className="flex items-center space-x-6">
+            <Link
+              to="/"
+              className="text-xl font-bold text-glow hover:text-cyber-accent transition-colors"
+            >
+              <Terminal className="w-6 h-6 inline mr-2" />
+              opchan
+            </Link>
 
-            {/* Navigation Tabs */}
-            <nav className="hidden md:flex items-center space-x-1">
+            <nav className="hidden md:flex space-x-4">
               <Link
                 to="/"
-                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-sm transition-colors ${
+                className={`flex items-center space-x-1 px-3 py-1 rounded-sm text-sm transition-colors ${
                   location.pathname === '/'
                     ? 'bg-cyber-accent/20 text-cyber-accent'
-                    : 'text-gray-300 hover:text-cyber-accent hover:bg-cyber-accent/10'
+                    : 'text-cyber-neutral hover:text-cyber-accent hover:bg-cyber-muted/50'
                 }`}
               >
                 <Home className="w-4 h-4" />
-                <span>Feed</span>
+                <span>Home</span>
               </Link>
               <Link
                 to="/cells"
-                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-sm transition-colors ${
+                className={`flex items-center space-x-1 px-3 py-1 rounded-sm text-sm transition-colors ${
                   location.pathname === '/cells'
                     ? 'bg-cyber-accent/20 text-cyber-accent'
-                    : 'text-gray-300 hover:text-cyber-accent hover:bg-cyber-accent/10'
+                    : 'text-cyber-neutral hover:text-cyber-accent hover:bg-cyber-muted/50'
                 }`}
               >
                 <Grid3X3 className="w-4 h-4" />
@@ -192,115 +178,84 @@ const Header = () => {
             </nav>
           </div>
 
-          <div className="flex gap-3 items-center">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant={isNetworkConnected ? 'default' : 'destructive'}
-                  className="flex items-center gap-1 text-xs px-2 h-7 cursor-help"
-                >
-                  {isNetworkConnected ? (
-                    <>
-                      <Wifi className="w-3 h-3" />
-                      <span>WAKU: Connected</span>
-                    </>
-                  ) : (
-                    <>
-                      <WifiOff className="w-3 h-3" />
-                      <span>WAKU: Offline</span>
-                    </>
-                  )}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent className="text-sm">
-                <p>
-                  {isNetworkConnected
-                    ? 'Waku network connection active.'
-                    : 'Waku network connection lost.'}
-                </p>
-                {isRefreshing && <p>Refreshing data...</p>}
-              </TooltipContent>
-            </Tooltip>
+          {/* Right side - Status and User */}
+          <div className="flex items-center space-x-4">
+            {/* Network Status */}
+            <div className="flex items-center space-x-2">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  networkStatus.health.isConnected
+                    ? 'bg-green-400'
+                    : 'bg-red-400'
+                }`}
+              />
+              <span className="text-xs text-cyber-neutral">
+                {networkStatus.getStatusMessage()}
+              </span>
+            </div>
 
-            {!isConnected ? (
+            {/* User Status */}
+            {isConnected ? (
+              <div className="flex items-center space-x-3">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center space-x-2">
+                      <div className={getStatusColor()}>{getStatusIcon()}</div>
+                      <div className="text-sm">
+                        <div className="font-medium">{displayName}</div>
+                        <div className={`text-xs ${getStatusColor()}`}>
+                          {getAccountStatusText()}
+                        </div>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-xs">
+                      <div>Address: {address?.slice(0, 8)}...</div>
+                      <div>Status: {getAccountStatusText()}</div>
+                      {delegationInfo.timeRemaining && (
+                        <div>
+                          Delegation: {delegationInfo.timeRemaining} remaining
+                        </div>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDisconnect}
+                  className="text-cyber-neutral hover:text-red-400"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
               <Button
-                variant="outline"
-                size="sm"
                 onClick={handleConnect}
-                className="text-xs px-2 h-7"
+                className="bg-cyber-accent hover:bg-cyber-accent/80"
               >
                 Connect Wallet
               </Button>
-            ) : (
-              <div className="flex gap-2 items-center">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={getAccountStatusVariant()}
-                      size="sm"
-                      onClick={() => setWalletWizardOpen(true)}
-                      className="flex items-center gap-1 text-xs px-2 h-7"
-                    >
-                      {getAccountStatusIcon()}
-                      <span>{getAccountStatusText()}</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-[260px] text-sm">
-                    <p className="font-semibold mb-1">Account Setup</p>
-                    <p>
-                      Click to view and manage your wallet connection,
-                      verification status, and key delegation.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="hidden md:flex items-center text-xs text-muted-foreground cursor-default px-2 h-7">
-                      {displayName}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-sm">
-                    <p>
-                      {displayName !==
-                      `${address?.slice(0, 5)}...${address?.slice(-4)}`
-                        ? `${displayName} (${address})`
-                        : address}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-                <CallSignSetupDialog />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleDisconnect}
-                      className="w-7 h-7"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="text-sm">
-                    Disconnect Wallet
-                  </TooltipContent>
-                </Tooltip>
-              </div>
             )}
           </div>
         </div>
-      </header>
+      </div>
 
+      {/* Wallet Wizard */}
       <WalletWizard
         open={walletWizardOpen}
         onOpenChange={setWalletWizardOpen}
         onComplete={() => {
+          setWalletWizardOpen(false);
           toast({
             title: 'Setup Complete',
-            description: 'You can now use all OpChan features!',
+            description: 'Your wallet is ready to use!',
           });
         }}
       />
-    </>
+    </header>
   );
 };
 

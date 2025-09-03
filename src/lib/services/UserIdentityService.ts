@@ -54,18 +54,42 @@ export class UserIdentityService {
     }
 
     // Check CacheService for Waku messages
-    console.log('UserIdentityService: Checking CacheService for address', address);
-    console.log('UserIdentityService: messageManager available?', !!messageManager);
-    console.log('UserIdentityService: messageCache available?', !!messageManager?.messageCache);
-    console.log('UserIdentityService: userIdentities available?', !!messageManager?.messageCache?.userIdentities);
-    console.log('UserIdentityService: All userIdentities keys:', Object.keys(messageManager?.messageCache?.userIdentities || {}));
-    
-    const cacheServiceData = messageManager.messageCache.userIdentities[address];
-    console.log('UserIdentityService: CacheService data for', address, ':', cacheServiceData);
-    
+    console.log(
+      'UserIdentityService: Checking CacheService for address',
+      address
+    );
+    console.log(
+      'UserIdentityService: messageManager available?',
+      !!messageManager
+    );
+    console.log(
+      'UserIdentityService: messageCache available?',
+      !!messageManager?.messageCache
+    );
+    console.log(
+      'UserIdentityService: userIdentities available?',
+      !!messageManager?.messageCache?.userIdentities
+    );
+    console.log(
+      'UserIdentityService: All userIdentities keys:',
+      Object.keys(messageManager?.messageCache?.userIdentities || {})
+    );
+
+    const cacheServiceData =
+      messageManager.messageCache.userIdentities[address];
+    console.log(
+      'UserIdentityService: CacheService data for',
+      address,
+      ':',
+      cacheServiceData
+    );
+
     if (cacheServiceData) {
-      console.log('UserIdentityService: Found in CacheService', cacheServiceData);
-      
+      console.log(
+        'UserIdentityService: Found in CacheService',
+        cacheServiceData
+      );
+
       // Store in internal cache for future use
       this.userIdentityCache[address] = {
         ensName: cacheServiceData.ensName,
@@ -75,7 +99,7 @@ export class UserIdentityService {
         lastUpdated: cacheServiceData.lastUpdated,
         verificationStatus: cacheServiceData.verificationStatus,
       };
-      
+
       return {
         address,
         ensName: cacheServiceData.ensName,
@@ -92,7 +116,9 @@ export class UserIdentityService {
       };
     }
 
-    console.log('UserIdentityService: No cached data found, resolving from sources');
+    console.log(
+      'UserIdentityService: No cached data found, resolving from sources'
+    );
 
     // Try to resolve identity from various sources
     const identity = await this.resolveUserIdentity(address);
@@ -157,13 +183,19 @@ export class UserIdentityService {
             : 'wallet-address',
       };
 
-      console.log('UserIdentityService: Created unsigned message', unsignedMessage);
+      console.log(
+        'UserIdentityService: Created unsigned message',
+        unsignedMessage
+      );
 
       const signedMessage =
         await this.messageService.signAndBroadcastMessage(unsignedMessage);
-      
-      console.log('UserIdentityService: Message broadcast result', !!signedMessage);
-      
+
+      console.log(
+        'UserIdentityService: Message broadcast result',
+        !!signedMessage
+      );
+
       return !!signedMessage;
     } catch (error) {
       console.error('Failed to update user profile:', error);

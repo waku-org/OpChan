@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useForum } from '@/contexts/useForum';
-import { useAuth } from '@/contexts/useAuth';
+import {
+  useCell,
+  useCellPosts,
+  useForumActions,
+  usePermissions,
+  useUserVotes,
+  useAuth,
+} from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,25 +28,27 @@ import { AuthorDisplay } from './ui/author-display';
 
 const PostList = () => {
   const { cellId } = useParams<{ cellId: string }>();
+
+  // ✅ Use reactive hooks for data and actions
+  const cell = useCell(cellId);
+  const cellPosts = useCellPosts(cellId, { sortBy: 'relevance' });
   const {
-    getCellById,
-    getPostsByCell,
     createPost,
-    isInitialLoading,
-    isPostingPost,
-    isRefreshing,
-    refreshData,
     votePost,
-    isVoting,
-    posts,
     moderatePost,
     moderateUser,
-  } = useForum();
-  const { isAuthenticated, currentUser, verificationStatus } = useAuth();
+    refreshData,
+    isCreatingPost,
+    isVoting,
+  } = useForumActions();
+  const { canPost, canVote, canModerate } = usePermissions();
+  const userVotes = useUserVotes();
+  const { currentUser, verificationStatus } = useAuth();
+
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
 
-  if (!cellId || isInitialLoading) {
+  if (!cellId || cellPosts.isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
@@ -70,9 +78,6 @@ const PostList = () => {
     );
   }
 
-  const cell = getCellById(cellId);
-  const cellPosts = getPostsByCell(cellId);
-
   if (!cell) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -99,52 +104,42 @@ const PostList = () => {
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!newPostContent.trim()) return;
 
-    try {
-      const post = await createPost(cellId, newPostTitle, newPostContent);
-      if (post) {
-        setNewPostTitle('');
-        setNewPostContent('');
-      }
-    } catch (error) {
-      console.error('Error creating post:', error);
+    // ✅ All validation handled in hook
+    const post = await createPost(cellId, newPostTitle, newPostContent);
+    if (post) {
+      setNewPostTitle('');
+      setNewPostContent('');
     }
   };
 
   const handleVotePost = async (postId: string, isUpvote: boolean) => {
-    if (!isAuthenticated) return;
+    // ✅ Permission checking handled in hook
     await votePost(postId, isUpvote);
   };
 
-  const isPostVoted = (postId: string, isUpvote: boolean) => {
-    if (!currentUser) return false;
-    const post = posts.find(p => p.id === postId);
-    if (!post) return false;
-    const votes = isUpvote ? post.upvotes : post.downvotes;
-    return votes.some(vote => vote.author === currentUser.address);
+  const getPostVoteType = (postId: string) => {
+    return userVotes.getPostVoteType(postId);
   };
 
-  // Only show unmoderated posts, or all if admin
-  const isCellAdmin =
-    currentUser && cell && currentUser.address === cell.signature;
-  const visiblePosts = isCellAdmin
-    ? cellPosts
-    : cellPosts.filter(post => !post.moderated);
+  // ✅ Posts already filtered by hook based on user permissions
+  const visiblePosts = cellPosts.posts;
 
   const handleModerate = async (postId: string) => {
     const reason =
       window.prompt('Enter a reason for moderation (optional):') || undefined;
     if (!cell) return;
-    await moderatePost(cell.id, postId, reason, cell.signature);
+    // ✅ All validation handled in hook
+    await moderatePost(cell.id, postId, reason);
   };
 
   const handleModerateUser = async (userAddress: string) => {
     const reason =
       window.prompt('Reason for moderating this user? (optional)') || undefined;
     if (!cell) return;
-    await moderateUser(cell.id, userAddress, reason, cell.signature);
+    // ✅ All validation handled in hook
+    await moderateUser(cell.id, userAddress, reason);
   };
 
   return (
@@ -172,11 +167,11 @@ const PostList = () => {
               variant="outline"
               size="icon"
               onClick={refreshData}
-              disabled={isRefreshing}
+              disabled={cellPosts.isLoading}
               title="Refresh data"
             >
               <RefreshCw
-                className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                className={`w-4 h-4 ${cellPosts.isLoading ? 'animate-spin' : ''}`}
               />
             </Button>
           </div>
@@ -184,7 +179,7 @@ const PostList = () => {
         </div>
       </div>
 
-      {verificationStatus === 'verified-owner' && (
+      {canPost && (
         <div className="mb-8">
           <form onSubmit={handleCreatePost}>
             <h2 className="text-sm font-bold mb-2 flex items-center gap-1">
@@ -197,33 +192,33 @@ const PostList = () => {
                 value={newPostTitle}
                 onChange={e => setNewPostTitle(e.target.value)}
                 className="mb-3 bg-cyber-muted/50 border-cyber-muted"
-                disabled={isPostingPost}
+                disabled={isCreatingPost}
               />
               <Textarea
                 placeholder="What's on your mind?"
                 value={newPostContent}
                 onChange={e => setNewPostContent(e.target.value)}
                 className="bg-cyber-muted/50 border-cyber-muted resize-none"
-                disabled={isPostingPost}
+                disabled={isCreatingPost}
               />
             </div>
             <div className="flex justify-end">
               <Button
                 type="submit"
                 disabled={
-                  isPostingPost ||
+                  isCreatingPost ||
                   !newPostContent.trim() ||
                   !newPostTitle.trim()
                 }
               >
-                {isPostingPost ? 'Posting...' : 'Post Thread'}
+                {isCreatingPost ? 'Posting...' : 'Post Thread'}
               </Button>
             </div>
           </form>
         </div>
       )}
 
-      {verificationStatus === 'verified-none' && (
+      {!canPost && verificationStatus.level === 'verified-basic' && (
         <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20">
           <div className="flex items-center gap-2 mb-2">
             <Eye className="w-4 h-4 text-cyber-neutral" />
@@ -239,7 +234,7 @@ const PostList = () => {
         </div>
       )}
 
-      {!currentUser && (
+      {!canPost && !currentUser && (
         <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 text-center">
           <p className="text-sm mb-3">
             Connect wallet and verify Ordinal ownership to post
@@ -251,12 +246,12 @@ const PostList = () => {
       )}
 
       <div className="space-y-4">
-        {cellPosts.length === 0 ? (
+        {visiblePosts.length === 0 ? (
           <div className="text-center py-12">
             <MessageCircle className="w-12 h-12 mx-auto mb-4 text-cyber-neutral opacity-50" />
             <h2 className="text-xl font-bold mb-2">No Threads Yet</h2>
             <p className="text-cyber-neutral">
-              {isAuthenticated
+              {canPost
                 ? 'Be the first to post in this cell!'
                 : 'Connect your wallet and verify Ordinal ownership to start a thread.'}
             </p>
@@ -270,11 +265,11 @@ const PostList = () => {
               <div className="flex gap-4">
                 <div className="flex flex-col items-center">
                   <button
-                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${isPostVoted(post.id, true) ? 'text-cyber-accent' : ''}`}
+                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${getPostVoteType(post.id) === 'upvote' ? 'text-cyber-accent' : ''}`}
                     onClick={() => handleVotePost(post.id, true)}
-                    disabled={!isAuthenticated || isVoting}
+                    disabled={!canVote || isVoting}
                     title={
-                      isAuthenticated ? 'Upvote' : 'Verify Ordinal to vote'
+                      canVote ? 'Upvote' : 'Connect wallet and verify to vote'
                     }
                   >
                     <ArrowUp className="w-4 h-4" />
@@ -283,11 +278,11 @@ const PostList = () => {
                     {post.upvotes.length - post.downvotes.length}
                   </span>
                   <button
-                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${isPostVoted(post.id, false) ? 'text-cyber-accent' : ''}`}
+                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${getPostVoteType(post.id) === 'downvote' ? 'text-cyber-accent' : ''}`}
                     onClick={() => handleVotePost(post.id, false)}
-                    disabled={!isAuthenticated || isVoting}
+                    disabled={!canVote || isVoting}
                     title={
-                      isAuthenticated ? 'Downvote' : 'Verify Ordinal to vote'
+                      canVote ? 'Downvote' : 'Connect wallet and verify to vote'
                     }
                   >
                     <ArrowDown className="w-4 h-4" />
@@ -314,7 +309,7 @@ const PostList = () => {
                       />
                     </div>
                   </Link>
-                  {isCellAdmin && !post.moderated && (
+                  {canModerate(cell.id) && !post.moderated && (
                     <Button
                       size="sm"
                       variant="destructive"
@@ -324,12 +319,12 @@ const PostList = () => {
                       Moderate
                     </Button>
                   )}
-                  {isCellAdmin && post.authorAddress !== cell.signature && (
+                  {canModerate(cell.id) && post.author !== cell.signature && (
                     <Button
                       size="sm"
                       variant="destructive"
                       className="ml-2"
-                      onClick={() => handleModerateUser(post.authorAddress)}
+                      onClick={() => handleModerateUser(post.author)}
                     >
                       Moderate User
                     </Button>

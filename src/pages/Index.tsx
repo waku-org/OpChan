@@ -1,18 +1,19 @@
 import Header from '@/components/Header';
 import CellList from '@/components/CellList';
-import { useForum } from '@/contexts/useForum';
+import { useNetworkStatus, useForumActions } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Wifi } from 'lucide-react';
 
 const Index = () => {
-  const { isNetworkConnected, refreshData } = useForum();
+  const { health } = useNetworkStatus();
+  const { refreshData } = useForumActions();
 
   return (
     <div className="min-h-screen flex flex-col bg-cyber-dark text-white">
       <Header />
       <main className="flex-1 relative">
         <CellList />
-        {!isNetworkConnected && (
+        {!health.isConnected && (
           <div className="fixed bottom-4 right-4">
             <Button
               onClick={refreshData}

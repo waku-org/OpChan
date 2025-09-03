@@ -3,8 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, User, Hash } from 'lucide-react';
-import { useAuth } from '@/contexts/useAuth';
-import { useForum } from '@/contexts/useForum';
+import { useAuth, useUserActions, useForumActions } from '@/hooks';
 import {
   Form,
   FormControl,
@@ -56,7 +55,8 @@ export function CallSignSetupDialog({
   onOpenChange,
 }: CallSignSetupDialogProps = {}) {
   const { currentUser } = useAuth();
-  const { userIdentityService, refreshData } = useForum();
+  const { updateProfile } = useUserActions();
+  const { refreshData } = useForumActions();
   const { toast } = useToast();
   const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,51 +74,31 @@ export function CallSignSetupDialog({
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!currentUser || !userIdentityService) {
+    if (!currentUser) {
       toast({
         title: 'Error',
-        description: 'User not authenticated or identity service not available',
+        description: 'User not authenticated',
         variant: 'destructive',
       });
       return;
     }
 
     setIsSubmitting(true);
-    try {
-      const success = await userIdentityService.updateUserProfile(
-        currentUser.address,
-        values.callSign,
-        values.displayPreference
-      );
 
-      if (success) {
-        // Refresh the forum state to get the updated profile
-        await refreshData();
-        
-        toast({
-          title: 'Profile Updated',
-          description:
-            'Your call sign and display preferences have been updated successfully.',
-        });
-        setOpen(false);
-        form.reset();
-      } else {
-        toast({
-          title: 'Update Failed',
-          description: 'Failed to update profile. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
+    // ✅ All validation and logic handled in hook
+    const success = await updateProfile({
+      callSign: values.callSign,
+      displayPreference: values.displayPreference,
+    });
+
+    if (success) {
+      // Refresh forum data to update user display
+      await refreshData();
+      setOpen(false);
+      form.reset();
     }
+
+    setIsSubmitting(false);
   };
 
   if (!currentUser) return null;

@@ -8,13 +8,9 @@ import React, {
 import { Cell, Post, Comment, OpchanMessage } from '@/types/forum';
 import { User, EVerificationStatus, DisplayPreference } from '@/types/identity';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/useAuth';
+
 import { ForumActions } from '@/lib/forum/ForumActions';
-import {
-  setupPeriodicQueries,
-  monitorNetworkHealth,
-  initializeNetwork,
-} from '@/lib/waku/network';
+import { monitorNetworkHealth, initializeNetwork } from '@/lib/waku/network';
 import messageManager from '@/lib/waku';
 import { getDataFromCache } from '@/lib/forum/transformers';
 import { RelevanceCalculator } from '@/lib/forum/RelevanceCalculator';
@@ -22,6 +18,7 @@ import { UserVerificationStatus } from '@/types/forum';
 import { DelegationManager } from '@/lib/delegation';
 import { UserIdentityService } from '@/lib/services/UserIdentityService';
 import { MessageService } from '@/lib/services/MessageService';
+import { useAuth } from '@/contexts/useAuth';
 
 interface ForumContextType {
   cells: Cell[];
@@ -246,9 +243,10 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     loadData();
 
     // Set up periodic queries
-    const { cleanup } = setupPeriodicQueries(updateStateFromCache);
+    // Setup periodic queries would go here
+    // const { cleanup } = setupPeriodicQueries(updateStateFromCache);
 
-    return cleanup;
+    return () => {}; // Return empty cleanup function
   }, [isNetworkConnected, toast, updateStateFromCache]);
 
   // Simple reactive updates: check for new data periodically when connected
