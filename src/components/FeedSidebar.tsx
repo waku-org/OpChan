@@ -8,12 +8,17 @@ import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
 import { CypherImage } from '@/components/ui/CypherImage';
 import { CreateCellDialog } from '@/components/CreateCellDialog';
-import { EVerificationStatus } from '@/types/identity';
+import { useUserDisplay } from '@/hooks/useUserDisplay';
 
 const FeedSidebar: React.FC = () => {
-  const { cells, posts } = useForum();
   const { currentUser, verificationStatus } = useAuth();
+  const { cells, posts } = useForum();
   const [showCreateCell, setShowCreateCell] = useState(false);
+
+  // Get user display information using the hook
+  const { displayName, hasENS, hasOrdinal } = useUserDisplay(
+    currentUser?.address || ''
+  );
 
   // Calculate trending cells based on recent post activity
   const trendingCells = cells
@@ -46,14 +51,10 @@ const FeedSidebar: React.FC = () => {
 
     // Ethereum wallet with ENS
     if (currentUser.walletType === 'ethereum') {
-      if (
-        currentUser.ensDetails?.ensName &&
-        (verificationStatus === EVerificationStatus.VERIFIED_OWNER ||
-          currentUser.ensDetails)
-      ) {
+      if (hasENS && (verificationStatus === 'verified-owner' || hasENS)) {
         return (
           <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-            ✓ Owns ENS: {currentUser.ensDetails.ensName}
+            ✓ Owns ENS: {displayName}
           </Badge>
         );
       } else if (verificationStatus === 'verified-basic') {
@@ -69,10 +70,7 @@ const FeedSidebar: React.FC = () => {
 
     // Bitcoin wallet with Ordinal
     if (currentUser.walletType === 'bitcoin') {
-      if (
-        verificationStatus === 'verified-owner' ||
-        currentUser.ordinalDetails?.ordinalId
-      ) {
+      if (verificationStatus === 'verified-owner' || hasOrdinal) {
         return (
           <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
             ✓ Owns Ordinal
@@ -117,10 +115,7 @@ const FeedSidebar: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="text-xs text-cyber-neutral">
-              {currentUser.address.slice(0, 8)}...
-              {currentUser.address.slice(-6)}
-            </div>
+            <div className="text-xs text-cyber-neutral">{displayName}</div>
             {getVerificationBadge()}
           </CardContent>
         </Card>

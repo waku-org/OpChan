@@ -7,6 +7,7 @@ export enum MessageType {
   COMMENT = 'comment',
   VOTE = 'vote',
   MODERATE = 'moderate',
+  USER_PROFILE_UPDATE = 'user_profile_update',
 }
 
 /**
@@ -64,6 +65,12 @@ export interface UnsignedModerateMessage extends UnsignedBaseMessage {
   reason?: string;
 }
 
+export interface UnsignedUserProfileUpdateMessage extends UnsignedBaseMessage {
+  type: MessageType.USER_PROFILE_UPDATE;
+  callSign?: string;
+  displayPreference: 'call-sign' | 'wallet-address';
+}
+
 /**
  * Signed message types (after signature is added)
  */
@@ -101,6 +108,12 @@ export interface ModerateMessage extends BaseMessage {
   reason?: string;
 }
 
+export interface UserProfileUpdateMessage extends BaseMessage {
+  type: MessageType.USER_PROFILE_UPDATE;
+  callSign?: string;
+  displayPreference: 'call-sign' | 'wallet-address';
+}
+
 /**
  * Union types for message handling
  */
@@ -109,14 +122,16 @@ export type UnsignedMessage =
   | UnsignedPostMessage
   | UnsignedCommentMessage
   | UnsignedVoteMessage
-  | UnsignedModerateMessage;
+  | UnsignedModerateMessage
+  | UnsignedUserProfileUpdateMessage;
 
 export type SignedMessage =
   | CellMessage
   | PostMessage
   | CommentMessage
   | VoteMessage
-  | ModerateMessage;
+  | ModerateMessage
+  | UserProfileUpdateMessage;
 
 /**
  * Cache objects for storing messages
@@ -135,4 +150,22 @@ export interface CommentCache {
 
 export interface VoteCache {
   [key: string]: VoteMessage; // key = targetId + authorAddress
+}
+
+export interface UserIdentityCache {
+  [address: string]: {
+    ensName?: string;
+    ordinalDetails?: {
+      ordinalId: string;
+      ordinalDetails: string;
+    };
+    callSign?: string;
+    displayPreference: 'call-sign' | 'wallet-address';
+    lastUpdated: number;
+    verificationStatus:
+      | 'unverified'
+      | 'verified-basic'
+      | 'verified-owner'
+      | 'verifying';
+  };
 }

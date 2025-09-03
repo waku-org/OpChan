@@ -35,7 +35,6 @@ const PostList = () => {
     posts,
     moderatePost,
     moderateUser,
-    userVerificationStatus,
   } = useForum();
   const { isAuthenticated, currentUser, verificationStatus } = useAuth();
   const [newPostTitle, setNewPostTitle] = useState('');
@@ -309,8 +308,7 @@ const PostList = () => {
                       </span>
                       <span>by </span>
                       <AuthorDisplay
-                        address={post.authorAddress}
-                        userVerificationStatus={userVerificationStatus}
+                        address={post.author}
                         className="text-xs"
                         showBadge={false}
                       />

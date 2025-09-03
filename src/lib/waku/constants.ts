@@ -9,6 +9,7 @@ export const CONTENT_TOPICS: Record<MessageType, string> = {
   [MessageType.COMMENT]: '/opchan-ab-xyz/1/comment/proto',
   [MessageType.VOTE]: '/opchan-sds-ab/1/vote/proto',
   [MessageType.MODERATE]: '/opchan-sds-ab/1/moderate/proto',
+  [MessageType.USER_PROFILE_UPDATE]: '/opchan-sds-ab/1/profile/proto',
 };
 
 /**

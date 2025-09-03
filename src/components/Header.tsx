@@ -25,9 +25,11 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
+import { CallSignSetupDialog } from '@/components/ui/call-sign-setup-dialog';
+import { useUserDisplay } from '@/hooks/useUserDisplay';
 
 const Header = () => {
-  const { currentUser, verificationStatus, getDelegationStatus } = useAuth();
+  const { verificationStatus, getDelegationStatus } = useAuth();
   const { isNetworkConnected, isRefreshing } = useForum();
   const location = useLocation();
   const { toast } = useToast();
@@ -47,6 +49,9 @@ const Header = () => {
     : undefined;
 
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
+
+  // Get display name from hook
+  const { displayName } = useUserDisplay(address || '');
 
   // Use sessionStorage to persist wizard state across navigation
   const getHasShownWizard = () => {
@@ -251,18 +256,19 @@ const Header = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="hidden md:flex items-center text-xs text-muted-foreground cursor-default px-2 h-7">
-                      {currentUser?.ensDetails?.ensName ||
-                        `${address?.slice(0, 5)}...${address?.slice(-4)}`}
+                      {displayName}
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="text-sm">
                     <p>
-                      {currentUser?.ensDetails?.ensName
-                        ? `${currentUser.ensDetails.ensName} (${address})`
+                      {displayName !==
+                      `${address?.slice(0, 5)}...${address?.slice(-4)}`
+                        ? `${displayName} (${address})`
                         : address}
                     </p>
                   </TooltipContent>
                 </Tooltip>
+                <CallSignSetupDialog />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button

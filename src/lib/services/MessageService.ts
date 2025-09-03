@@ -12,6 +12,9 @@ export interface MessageResult {
 export interface MessageServiceInterface {
   sendMessage(message: UnsignedMessage): Promise<MessageResult>;
   verifyMessage(message: OpchanMessage): Promise<boolean>;
+  signAndBroadcastMessage(
+    message: UnsignedMessage
+  ): Promise<OpchanMessage | null>;
 }
 
 export class MessageService implements MessageServiceInterface {
@@ -74,6 +77,27 @@ export class MessageService implements MessageServiceInterface {
         success: false,
         error: errorMessage,
       };
+    }
+  }
+
+  /**
+   * Sign and broadcast a message (simplified version for profile updates)
+   */
+  async signAndBroadcastMessage(
+    message: UnsignedMessage
+  ): Promise<OpchanMessage | null> {
+    try {
+      const signedMessage = this.delegationManager.signMessage(message);
+      if (!signedMessage) {
+        console.error('Failed to sign message');
+        return null;
+      }
+
+      await messageManager.sendMessage(signedMessage);
+      return signedMessage;
+    } catch (error) {
+      console.error('Error signing and broadcasting message:', error);
+      return null;
     }
   }
 

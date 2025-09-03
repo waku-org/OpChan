@@ -246,6 +246,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const chainName = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
+        // Note: We can't use useUserDisplay hook here since this is not a React component
+        // This is just for toast messages, so simple truncation is acceptable
         const displayName = `${address.slice(0, 6)}...${address.slice(-4)}`;
 
         toast({

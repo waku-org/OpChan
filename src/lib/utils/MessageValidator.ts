@@ -1,16 +1,10 @@
-import { OpchanMessage } from '@/types/forum';
+import { OpchanMessage, PartialMessage } from '@/types/forum';
 import { DelegationManager } from '@/lib/delegation';
 
-/**
- * Type for potential message objects with partial structure
- */
-interface PartialMessage {
-  id?: unknown;
-  type?: unknown;
-  timestamp?: unknown;
-  author?: unknown;
-  signature?: unknown;
-  browserPubKey?: unknown;
+interface ValidationReport {
+  hasValidSignature: boolean;
+  errors: string[];
+  isValid: boolean;
 }
 
 /**
@@ -19,9 +13,42 @@ interface PartialMessage {
  */
 export class MessageValidator {
   private delegationManager: DelegationManager;
+  // Cache validation results to avoid re-validating the same messages
+  private validationCache = new Map<string, { isValid: boolean; timestamp: number }>();
+  private readonly CACHE_TTL = 60000; // 1 minute cache TTL
 
   constructor(delegationManager?: DelegationManager) {
     this.delegationManager = delegationManager || new DelegationManager();
+  }
+
+  /**
+   * Get cached validation result or validate and cache
+   */
+  private getCachedValidation(messageId: string, message: OpchanMessage): { isValid: boolean; timestamp: number } | null {
+    const cached = this.validationCache.get(messageId);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached;
+    }
+    return null;
+  }
+
+  /**
+   * Cache validation result
+   */
+  private cacheValidation(messageId: string, isValid: boolean): void {
+    this.validationCache.set(messageId, { isValid, timestamp: Date.now() });
+  }
+
+  /**
+   * Clear expired cache entries
+   */
+  private cleanupCache(): void {
+    const now = Date.now();
+    for (const [key, value] of this.validationCache.entries()) {
+      if (now - value.timestamp > this.CACHE_TTL) {
+        this.validationCache.delete(key);
+      }
+    }
   }
 
   /**
@@ -223,12 +250,7 @@ export class MessageValidator {
   /**
    * Creates a validation report for debugging
    */
-  async getValidationReport(message: unknown): Promise<{
-    isValid: boolean;
-    hasRequiredFields: boolean;
-    hasValidSignature: boolean;
-    errors: string[];
-  }> {
+  async getValidationReport(message: unknown): Promise<ValidationReport> {
     const errors: string[] = [];
     let hasRequiredFields = false;
     let hasValidSignature = false;

@@ -14,8 +14,7 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
-  const { getCellById, votePost, isVoting, userVerificationStatus } =
-    useForum();
+  const { getCellById, votePost, isVoting } = useForum();
   const { isAuthenticated, currentUser } = useAuth();
 
   const cell = getCellById(post.cellId);
@@ -99,8 +98,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
               <span>•</span>
               <span>Posted by u/</span>
               <AuthorDisplay
-                address={post.authorAddress}
-                userVerificationStatus={userVerificationStatus}
+                address={post.author}
                 className="text-xs"
                 showBadge={false}
               />

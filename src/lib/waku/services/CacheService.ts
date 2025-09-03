@@ -5,6 +5,8 @@ import {
   CommentCache,
   VoteCache,
   ModerateMessage,
+  UserProfileUpdateMessage,
+  UserIdentityCache,
 } from '../../../types/waku';
 import { OpchanMessage } from '@/types/forum';
 import { MessageValidator } from '@/lib/utils/MessageValidator';
@@ -15,6 +17,7 @@ export interface MessageCache {
   comments: CommentCache;
   votes: VoteCache;
   moderations: { [targetId: string]: ModerateMessage };
+  userIdentities: UserIdentityCache;
 }
 
 export class CacheService {
@@ -27,6 +30,7 @@ export class CacheService {
     comments: {},
     votes: {},
     moderations: {},
+    userIdentities: {},
   };
 
   constructor() {
@@ -111,6 +115,36 @@ export class CacheService {
         }
         break;
       }
+      case MessageType.USER_PROFILE_UPDATE: {
+        const profileMsg = message as UserProfileUpdateMessage;
+        const { author, callSign, displayPreference, timestamp } = profileMsg;
+        
+        console.log('CacheService: Storing USER_PROFILE_UPDATE message', {
+          author,
+          callSign,
+          displayPreference,
+          timestamp,
+        });
+
+        if (
+          !this.cache.userIdentities[author] ||
+          this.cache.userIdentities[author]?.lastUpdated !== timestamp
+        ) {
+          this.cache.userIdentities[author] = {
+            ensName: undefined,
+            ordinalDetails: undefined,
+            callSign,
+            displayPreference,
+            lastUpdated: timestamp,
+            verificationStatus: 'unverified', // Will be updated by UserIdentityService
+          };
+          
+          console.log('CacheService: Updated user identity cache for', author, this.cache.userIdentities[author]);
+        } else {
+          console.log('CacheService: Skipping update - same timestamp or already exists');
+        }
+        break;
+      }
       default:
         console.warn('Received message with unknown type');
         break;
@@ -124,5 +158,6 @@ export class CacheService {
     this.cache.comments = {};
     this.cache.votes = {};
     this.cache.moderations = {};
+    this.cache.userIdentities = {};
   }
 }

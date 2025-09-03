@@ -84,17 +84,6 @@ export const initializeNetwork = async (
   }
 };
 
-export const setupPeriodicQueries = (
-  updateStateFromCache: () => void
-): { cleanup: () => void } => {
-  const uiRefreshInterval = setInterval(updateStateFromCache, 5000);
-  return {
-    cleanup: () => {
-      clearInterval(uiRefreshInterval);
-    },
-  };
-};
-
 export const monitorNetworkHealth = (
   setIsNetworkConnected: (isConnected: boolean) => void,
   toast: ToastFunction

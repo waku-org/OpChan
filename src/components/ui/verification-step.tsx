@@ -198,18 +198,8 @@ export function VerificationStep({
             </p>
             {currentUser && (
               <div className="text-xs text-neutral-400">
-                {walletType === 'bitcoin' && currentUser.ordinalDetails && (
-                  <p>
-                    Ordinal ID:{' '}
-                    {typeof currentUser.ordinalDetails === 'object'
-                      ? currentUser.ordinalDetails.ordinalId
-                      : 'Verified'}
-                  </p>
-                )}
-                {walletType === 'ethereum' &&
-                  currentUser.ensDetails?.ensName && (
-                    <p>ENS Name: {currentUser.ensDetails.ensName}</p>
-                  )}
+                {walletType === 'bitcoin' && <p>Ordinal ID: Verified</p>}
+                {walletType === 'ethereum' && <p>ENS Name: Verified</p>}
               </div>
             )}
           </div>

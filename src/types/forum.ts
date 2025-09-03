@@ -4,6 +4,7 @@ import {
   PostMessage,
   VoteMessage,
   ModerateMessage,
+  UserProfileUpdateMessage,
 } from '@/types/waku';
 import { EVerificationStatus } from './identity';
 import { DelegationProof } from '@/lib/delegation/types';
@@ -18,6 +19,7 @@ export type OpchanMessage = (
   | CommentMessage
   | VoteMessage
   | ModerateMessage
+  | UserProfileUpdateMessage
 ) &
   SignedMessage;
 

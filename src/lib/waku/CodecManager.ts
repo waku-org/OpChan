@@ -1,5 +1,5 @@
 import { IDecodedMessage, IDecoder, IEncoder, LightNode } from '@waku/sdk';
-import { MessageType } from '../../types/waku';
+import { MessageType, UserProfileUpdateMessage } from '../../types/waku';
 import {
   CellMessage,
   PostMessage,
@@ -53,6 +53,8 @@ export class CodecManager {
         return message as CommentMessage;
       case MessageType.VOTE:
         return message as VoteMessage;
+      case MessageType.USER_PROFILE_UPDATE:
+        return message as UserProfileUpdateMessage;
       default:
         throw new Error(`Unknown message type: ${message}`);
     }

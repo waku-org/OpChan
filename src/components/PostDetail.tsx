@@ -35,7 +35,6 @@ const PostDetail = () => {
     isVoting,
     moderateComment,
     moderateUser,
-    userVerificationStatus,
   } = useForum();
   const { currentUser, verificationStatus } = useAuth();
   const [newComment, setNewComment] = useState('');
@@ -210,8 +209,7 @@ const PostDetail = () => {
                 </span>
                 <AuthorDisplay
                   address={post.authorAddress}
-                  userVerificationStatus={userVerificationStatus}
-                  className="truncate max-w-[150px]"
+                  className="text-sm font-medium"
                 />
                 {post.relevanceScore !== undefined && (
                   <RelevanceIndicator
@@ -325,13 +323,12 @@ const PostDetail = () => {
                     <div className="flex items-center gap-1.5">
                       <CypherImage
                         src={getIdentityImageUrl(comment.authorAddress)}
-                        alt={comment.authorAddress.slice(0, 6)}
+                        alt={`${comment.authorAddress.slice(0, 6)}...`}
                         className="rounded-sm w-5 h-5 bg-secondary"
                       />
                       <AuthorDisplay
                         address={comment.authorAddress}
-                        userVerificationStatus={userVerificationStatus}
-                        className="text-xs"
+                        className="text-sm font-medium"
                       />
                     </div>
                     <div className="flex items-center gap-2">

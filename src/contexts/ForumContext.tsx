@@ -20,8 +20,8 @@ import { getDataFromCache } from '@/lib/forum/transformers';
 import { RelevanceCalculator } from '@/lib/forum/RelevanceCalculator';
 import { UserVerificationStatus } from '@/types/forum';
 import { DelegationManager } from '@/lib/delegation';
-import { getEnsName } from '@wagmi/core';
-import { config } from '@/lib/wallet/config';
+import { UserIdentityService } from '@/lib/services/UserIdentityService';
+import { MessageService } from '@/lib/services/MessageService';
 
 interface ForumContextType {
   cells: Cell[];
@@ -29,6 +29,8 @@ interface ForumContextType {
   comments: Comment[];
   // User verification status for display
   userVerificationStatus: UserVerificationStatus;
+  // User identity service for profile management
+  userIdentityService: UserIdentityService | null;
   // Granular loading states
   isInitialLoading: boolean;
   isPostingCell: boolean;
@@ -99,6 +101,14 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const { currentUser, isAuthenticated } = useAuth();
 
   const delegationManager = useMemo(() => new DelegationManager(), []);
+  const messageService = useMemo(
+    () => new MessageService(delegationManager),
+    [delegationManager]
+  );
+  const userIdentityService = useMemo(
+    () => new UserIdentityService(messageService),
+    [messageService]
+  );
   const forumActions = useMemo(
     () => new ForumActions(delegationManager),
     [delegationManager]
@@ -134,35 +144,60 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       userAddresses.add(vote.author);
     });
 
-    // Create user objects for verification status
-    Array.from(userAddresses).forEach(address => {
-      // Check if this address matches the current user's address
-      if (currentUser && currentUser.address === address) {
-        // Use the current user's actual verification status
-        allUsers.push({
-          address,
-          walletType: currentUser.walletType,
-          verificationStatus: currentUser.verificationStatus,
-          displayPreference: currentUser.displayPreference,
-          ensDetails: currentUser.ensDetails,
-          ordinalDetails: currentUser.ordinalDetails,
-          lastChecked: currentUser.lastChecked,
-        });
-      } else {
-        // Create generic user object for other addresses
-        allUsers.push({
-          address,
-          walletType: address.startsWith('0x') ? 'ethereum' : 'bitcoin',
-          verificationStatus: EVerificationStatus.UNVERIFIED,
-          displayPreference: DisplayPreference.WALLET_ADDRESS,
-        });
+    // Create user objects for verification status using UserIdentityService
+    const userIdentityPromises = Array.from(userAddresses).map(
+      async address => {
+        // Check if this address matches the current user's address
+        if (currentUser && currentUser.address === address) {
+          // Use the current user's actual verification status
+          return {
+            address,
+            walletType: currentUser.walletType,
+            verificationStatus: currentUser.verificationStatus,
+            displayPreference: currentUser.displayPreference,
+            ensDetails: currentUser.ensDetails,
+            ordinalDetails: currentUser.ordinalDetails,
+            lastChecked: currentUser.lastChecked,
+          };
+        } else {
+          // Use UserIdentityService to get identity information
+          const identity = await userIdentityService.getUserIdentity(address);
+          if (identity) {
+            return {
+              address,
+              walletType: address.startsWith('0x')
+                ? ('ethereum' as const)
+                : ('bitcoin' as const),
+              verificationStatus: identity.verificationStatus,
+              displayPreference: identity.displayPreference,
+              ensDetails: identity.ensName
+                ? { ensName: identity.ensName }
+                : undefined,
+              ordinalDetails: identity.ordinalDetails,
+              lastChecked: identity.lastUpdated,
+            };
+          } else {
+            // Fallback to generic user object
+            return {
+              address,
+              walletType: address.startsWith('0x')
+                ? ('ethereum' as const)
+                : ('bitcoin' as const),
+              verificationStatus: EVerificationStatus.UNVERIFIED,
+              displayPreference: DisplayPreference.WALLET_ADDRESS,
+            };
+          }
+        }
       }
-    });
+    );
+
+    const resolvedUsers = await Promise.all(userIdentityPromises);
+    allUsers.push(...resolvedUsers);
 
     const initialStatus =
       relevanceCalculator.buildUserVerificationStatus(allUsers);
 
-    // Transform data with relevance calculation (initial pass)
+    // Transform data with relevance calculation
     const { cells, posts, comments } = await getDataFromCache(
       verifyFn,
       initialStatus
@@ -172,50 +207,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     setPosts(posts);
     setComments(comments);
     setUserVerificationStatus(initialStatus);
-
-    // Enrich: resolve ENS for ethereum addresses asynchronously and update
-    (async () => {
-      const targets = allUsers.filter(
-        u => u.walletType === 'ethereum' && !u.ensDetails
-      );
-      if (targets.length === 0) return;
-      const lookups = await Promise.all(
-        targets.map(async u => {
-          try {
-            const name = await getEnsName(config, {
-              address: u.address as `0x${string}`,
-            });
-            return { address: u.address, ensName: name || undefined };
-          } catch {
-            return { address: u.address, ensName: undefined };
-          }
-        })
-      );
-      const ensByAddress = new Map<string, string | undefined>(
-        lookups.map(l => [l.address, l.ensName])
-      );
-      const enrichedUsers: User[] = allUsers.map(u => {
-        const ensName = ensByAddress.get(u.address);
-        if (ensName) {
-          return {
-            ...u,
-            walletType: 'ethereum',
-            ensOwnership: true,
-            ensName,
-            verificationStatus: 'verified-owner',
-          } as User;
-        }
-        return u;
-      });
-      const enrichedStatus =
-        relevanceCalculator.buildUserVerificationStatus(enrichedUsers);
-      const transformed = await getDataFromCache(verifyFn, enrichedStatus);
-      setCells(transformed.cells);
-      setPosts(transformed.posts);
-      setComments(transformed.comments);
-      setUserVerificationStatus(enrichedStatus);
-    })();
-  }, [delegationManager, isAuthenticated, currentUser]);
+  }, [delegationManager, isAuthenticated, currentUser, userIdentityService]);
 
   const handleRefreshData = async () => {
     setIsRefreshing(true);
@@ -258,6 +250,20 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
 
     return cleanup;
   }, [isNetworkConnected, toast, updateStateFromCache]);
+
+  // Simple reactive updates: check for new data periodically when connected
+  useEffect(() => {
+    if (!isNetworkConnected) return;
+
+    const interval = setInterval(() => {
+      // Only update if we're connected and ready
+      if (messageManager.isReady) {
+        updateStateFromCache();
+      }
+    }, 15000); // 15 seconds - much less frequent than before
+
+    return () => clearInterval(interval);
+  }, [isNetworkConnected, updateStateFromCache]);
 
   const getCellById = (id: string): Cell | undefined => {
     return cells.find(cell => cell.id === id);
@@ -547,6 +553,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         posts,
         comments,
         userVerificationStatus,
+        userIdentityService,
         isInitialLoading,
         isPostingCell,
         isPostingPost,
