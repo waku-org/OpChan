@@ -8,37 +8,16 @@ import {
 import messageManager from '@/lib/waku';
 import { RelevanceCalculator } from './RelevanceCalculator';
 import { UserVerificationStatus } from '@/types/forum';
-import { MessageValidator } from '@/lib/utils/MessageValidator';
-
-// Global validator instance for transformers
-const messageValidator = new MessageValidator();
+// Validation is enforced at ingestion time by LocalDatabase. Transformers assume
+// cache contains only valid, verified messages.
 
 export const transformCell = async (
   cellMessage: CellMessage,
-  _verifyMessage?: unknown, // Deprecated parameter, kept for compatibility
+  _verifyMessage?: unknown,
   userVerificationStatus?: UserVerificationStatus,
   posts?: Post[]
 ): Promise<Cell | null> => {
-  // MANDATORY: All messages must have valid signatures
-  // Since CellMessage extends BaseMessage, it already has required signature fields
-  // But we still need to verify the signature cryptographically
-  if (!cellMessage.signature || !cellMessage.browserPubKey) {
-    console.warn(
-      `Cell message ${cellMessage.id} missing required signature fields`
-    );
-    return null;
-  }
-
-  // Verify signature using the message validator's crypto service
-  const validationReport =
-    await messageValidator.getValidationReport(cellMessage);
-  if (!validationReport.hasValidSignature) {
-    console.warn(
-      `Cell message ${cellMessage.id} failed signature validation:`,
-      validationReport.errors
-    );
-    return null;
-  }
+  // Message validity already enforced upstream
 
   const transformedCell: Cell = {
     id: cellMessage.id,
@@ -81,49 +60,16 @@ export const transformCell = async (
 
 export const transformPost = async (
   postMessage: PostMessage,
-  _verifyMessage?: unknown, // Deprecated parameter, kept for compatibility
+  _verifyMessage?: unknown,
   userVerificationStatus?: UserVerificationStatus
 ): Promise<Post | null> => {
-  // MANDATORY: All messages must have valid signatures
-  if (!postMessage.signature || !postMessage.browserPubKey) {
-    console.warn(
-      `Post message ${postMessage.id} missing required signature fields`
-    );
-    return null;
-  }
-
-  // Verify signature using the message validator's crypto service
-  const validationReport =
-    await messageValidator.getValidationReport(postMessage);
-  if (!validationReport.hasValidSignature) {
-    console.warn(
-      `Post message ${postMessage.id} failed signature validation:`,
-      validationReport.errors
-    );
-    return null;
-  }
+  // Message validity already enforced upstream
 
   const votes = Object.values(messageManager.messageCache.votes).filter(
     vote => vote.targetId === postMessage.id
   );
-  // MANDATORY: Filter out votes with invalid signatures
-  const filteredVotes = await Promise.all(
-    votes.map(async vote => {
-      if (!vote.signature || !vote.browserPubKey) {
-        console.warn(`Vote ${vote.id} missing signature fields`);
-        return null;
-      }
-      const voteValidation = await messageValidator.getValidationReport(vote);
-      if (!voteValidation.hasValidSignature) {
-        console.warn(
-          `Vote ${vote.id} failed signature validation:`,
-          voteValidation.errors
-        );
-        return null;
-      }
-      return vote;
-    })
-  ).then(votes => votes.filter((vote): vote is VoteMessage => vote !== null));
+  // Votes in cache are already validated; just map
+  const filteredVotes = votes;
   const upvotes = filteredVotes.filter(
     (vote): vote is VoteMessage => vote !== null && vote.value === 1
   );
@@ -172,6 +118,8 @@ export const transformPost = async (
       : isUserModerated
         ? userModMsg!.timestamp
         : undefined,
+    // mark pending for optimistic UI if not yet acknowledged
+    // not persisted as a field; UI can check via LocalDatabase
   };
 
   // Calculate relevance score if user verification status is provided
@@ -227,48 +175,15 @@ export const transformPost = async (
 
 export const transformComment = async (
   commentMessage: CommentMessage,
-  _verifyMessage?: unknown, // Deprecated parameter, kept for compatibility
+  _verifyMessage?: unknown,
   userVerificationStatus?: UserVerificationStatus
 ): Promise<Comment | null> => {
-  // MANDATORY: All messages must have valid signatures
-  if (!commentMessage.signature || !commentMessage.browserPubKey) {
-    console.warn(
-      `Comment message ${commentMessage.id} missing required signature fields`
-    );
-    return null;
-  }
-
-  // Verify signature using the message validator's crypto service
-  const validationReport =
-    await messageValidator.getValidationReport(commentMessage);
-  if (!validationReport.hasValidSignature) {
-    console.warn(
-      `Comment message ${commentMessage.id} failed signature validation:`,
-      validationReport.errors
-    );
-    return null;
-  }
+  // Message validity already enforced upstream
   const votes = Object.values(messageManager.messageCache.votes).filter(
     vote => vote.targetId === commentMessage.id
   );
-  // MANDATORY: Filter out votes with invalid signatures
-  const filteredVotes = await Promise.all(
-    votes.map(async vote => {
-      if (!vote.signature || !vote.browserPubKey) {
-        console.warn(`Vote ${vote.id} missing signature fields`);
-        return null;
-      }
-      const voteValidation = await messageValidator.getValidationReport(vote);
-      if (!voteValidation.hasValidSignature) {
-        console.warn(
-          `Vote ${vote.id} failed signature validation:`,
-          voteValidation.errors
-        );
-        return null;
-      }
-      return vote;
-    })
-  ).then(votes => votes.filter((vote): vote is typeof vote => vote !== null));
+  // Votes in cache are already validated
+  const filteredVotes = votes;
   const upvotes = filteredVotes.filter(
     (vote): vote is VoteMessage => vote !== null && vote.value === 1
   );
@@ -316,6 +231,7 @@ export const transformComment = async (
       : isUserModerated
         ? userModMsg!.timestamp
         : undefined,
+    // mark pending for optimistic UI via LocalDatabase lookup
   };
 
   // Calculate relevance score if user verification status is provided
@@ -340,26 +256,9 @@ export const transformComment = async (
 
 export const transformVote = async (
   voteMessage: VoteMessage,
-  _verifyMessage?: unknown // Deprecated parameter, kept for compatibility
+  _verifyMessage?: unknown
 ): Promise<VoteMessage | null> => {
-  // MANDATORY: All messages must have valid signatures
-  if (!voteMessage.signature || !voteMessage.browserPubKey) {
-    console.warn(
-      `Vote message ${voteMessage.id} missing required signature fields`
-    );
-    return null;
-  }
-
-  // Verify signature using the message validator's crypto service
-  const validationReport =
-    await messageValidator.getValidationReport(voteMessage);
-  if (!validationReport.hasValidSignature) {
-    console.warn(
-      `Vote message ${voteMessage.id} failed signature validation:`,
-      validationReport.errors
-    );
-    return null;
-  }
+  // Message validity already enforced upstream
 
   return voteMessage;
 };

@@ -4,9 +4,10 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from 'react';
-import { Cell, Post, Comment, OpchanMessage } from '@/types/forum';
-import { User, EVerificationStatus, DisplayPreference } from '@/types/identity';
+import { Cell, Post, Comment } from '@/types/forum';
+import { User, EVerificationStatus, EDisplayPreference } from '@/types/identity';
 import { useToast } from '@/components/ui/use-toast';
 
 import { ForumActions } from '@/lib/forum/ForumActions';
@@ -19,6 +20,7 @@ import { DelegationManager } from '@/lib/delegation';
 import { UserIdentityService } from '@/lib/services/UserIdentityService';
 import { MessageService } from '@/lib/services/MessageService';
 import { useAuth } from '@/contexts/useAuth';
+import { localDatabase } from '@/lib/database/LocalDatabase';
 
 interface ForumContextType {
   cells: Cell[];
@@ -30,6 +32,9 @@ interface ForumContextType {
   userIdentityService: UserIdentityService | null;
   // Granular loading states
   isInitialLoading: boolean;
+  // Sync state
+  lastSync: number | null;
+  isSyncing: boolean;
   isPostingCell: boolean;
   isPostingPost: boolean;
   isPostingComment: boolean;
@@ -84,6 +89,10 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [{ lastSync, isSyncing }, setSyncState] = useState({
+    lastSync: null as number | null,
+    isSyncing: false,
+  });
   const [isPostingCell, setIsPostingCell] = useState(false);
   const [isPostingPost, setIsPostingPost] = useState(false);
   const [isPostingComment, setIsPostingComment] = useState(false);
@@ -113,11 +122,6 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
 
   // Transform message cache data to the expected types
   const updateStateFromCache = useCallback(async () => {
-    // Use the verifyMessage function from delegationManager if available
-    const verifyFn = isAuthenticated
-      ? async (message: OpchanMessage) =>
-          await delegationManager.verify(message)
-      : undefined;
 
     // Build user verification status for relevance calculation
     const relevanceCalculator = new RelevanceCalculator();
@@ -181,7 +185,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
                 ? ('ethereum' as const)
                 : ('bitcoin' as const),
               verificationStatus: EVerificationStatus.UNVERIFIED,
-              displayPreference: DisplayPreference.WALLET_ADDRESS,
+              displayPreference: EDisplayPreference.WALLET_ADDRESS,
             };
           }
         }
@@ -196,7 +200,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
 
     // Transform data with relevance calculation
     const { cells, posts, comments } = await getDataFromCache(
-      verifyFn,
+      undefined,
       initialStatus
     );
 
@@ -204,16 +208,23 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     setPosts(posts);
     setComments(comments);
     setUserVerificationStatus(initialStatus);
-  }, [delegationManager, isAuthenticated, currentUser, userIdentityService]);
+    // Sync state from LocalDatabase
+    setSyncState(localDatabase.getSyncState());
+  }, [currentUser, userIdentityService]);
 
   const handleRefreshData = async () => {
     setIsRefreshing(true);
     try {
       // SDS handles message syncing automatically, just update UI
       await updateStateFromCache();
+      const { lastSync, isSyncing } = localDatabase.getSyncState();
       toast({
         title: 'Data Refreshed',
-        description: 'Your view has been updated.',
+        description: lastSync
+          ? `Your view has been updated. Last sync: ${new Date(
+              lastSync
+            ).toLocaleTimeString()}${isSyncing ? ' (syncing...)' : ''}`
+          : 'Your view has been updated.',
       });
     } catch (error) {
       console.error('Error refreshing data:', error);
@@ -233,11 +244,56 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, [toast]);
 
+  const hasInitializedRef = useRef(false);
+
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
     const loadData = async () => {
       setIsInitialLoading(true);
-      await initializeNetwork(toast, updateStateFromCache, setError);
-      setIsInitialLoading(false);
+      // Open Local DB and seed Waku cache on warm start before network init
+      try {
+        await localDatabase.open();
+        // Seed messageManager's in-memory cache from LocalDatabase for instant UI
+        const seeded = localDatabase.cache;
+        Object.assign(messageManager.messageCache.cells, seeded.cells);
+        Object.assign(messageManager.messageCache.posts, seeded.posts);
+        Object.assign(messageManager.messageCache.comments, seeded.comments);
+        Object.assign(messageManager.messageCache.votes, seeded.votes);
+        Object.assign(messageManager.messageCache.moderations, seeded.moderations);
+        Object.assign(messageManager.messageCache.userIdentities, seeded.userIdentities);
+
+        // Determine if we have any cached content
+        const hasSeedData =
+          Object.keys(seeded.cells).length > 0 ||
+          Object.keys(seeded.posts).length > 0 ||
+          Object.keys(seeded.comments).length > 0 ||
+          Object.keys(seeded.votes).length > 0;
+
+        // Render from local cache immediately (warm start) or empty (cold)
+        await updateStateFromCache();
+
+        // Initialize network and let incoming messages update LocalDatabase/Cache
+        await initializeNetwork(toast, updateStateFromCache, setError);
+
+        if (hasSeedData) {
+          setIsInitialLoading(false);
+        } else {
+          // Wait for first incoming message before showing UI
+          const unsubscribe = messageManager.onMessageReceived(() => {
+            setIsInitialLoading(false);
+            unsubscribe();
+          });
+        }
+      } catch (e) {
+        console.warn('LocalDatabase warm-start failed, continuing cold:', e);
+        // Initialize network even if local DB failed, keep loader until first message
+        await initializeNetwork(toast, updateStateFromCache, setError);
+        const unsubscribe = messageManager.onMessageReceived(() => {
+          setIsInitialLoading(false);
+          unsubscribe();
+        });
+      }
     };
 
     loadData();
@@ -247,7 +303,16 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     // const { cleanup } = setupPeriodicQueries(updateStateFromCache);
 
     return () => {}; // Return empty cleanup function
-  }, [isNetworkConnected, toast, updateStateFromCache]);
+  }, [toast, updateStateFromCache]);
+
+  // Subscribe to incoming messages to update UI in real-time
+  useEffect(() => {
+    const unsubscribe = messageManager.onMessageReceived(() => {
+      localDatabase.setSyncing(true);
+      updateStateFromCache().finally(() => localDatabase.setSyncing(false));
+    });
+    return unsubscribe;
+  }, [updateStateFromCache]);
 
   // Simple reactive updates: check for new data periodically when connected
   useEffect(() => {
@@ -256,7 +321,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     const interval = setInterval(() => {
       // Only update if we're connected and ready
       if (messageManager.isReady) {
-        updateStateFromCache();
+        localDatabase.setSyncing(true);
+        updateStateFromCache().finally(() => localDatabase.setSyncing(false));
       }
     }, 15000); // 15 seconds - much less frequent than before
 
@@ -553,6 +619,8 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         userVerificationStatus,
         userIdentityService,
         isInitialLoading,
+        lastSync,
+        isSyncing,
         isPostingCell,
         isPostingPost,
         isPostingComment,

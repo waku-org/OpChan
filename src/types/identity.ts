@@ -7,7 +7,7 @@ export type User = {
 
   //TODO: implement call sign & display preference setup
   callSign?: string;
-  displayPreference: DisplayPreference;
+  displayPreference: EDisplayPreference;
 
   verificationStatus: EVerificationStatus;
 
@@ -34,7 +34,7 @@ export interface EnsDetails {
   ensName: string;
 }
 
-export enum DisplayPreference {
+export enum EDisplayPreference {
   CALL_SIGN = 'call-sign',
   WALLET_ADDRESS = 'wallet-address',
 }

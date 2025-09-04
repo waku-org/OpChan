@@ -16,6 +16,9 @@ export interface DelegationFullStatus extends DelegationStatus {
 }
 
 export class DelegationManager {
+  private cachedDelegation: DelegationInfo | null = null;
+  private cachedAt: number = 0;
+  private static readonly CACHE_TTL_MS = 5 * 1000; // 5s to avoid hot-looping
   private static readonly DURATION_HOURS = {
     '7days': 24 * 7,
     '30days': 24 * 30,
@@ -81,7 +84,12 @@ export class DelegationManager {
    * Sign a message with delegated key
    */
   signMessage(message: UnsignedMessage): OpchanMessage | null {
-    const delegation = DelegationStorage.retrieve();
+    const now = Date.now();
+    if (!this.cachedDelegation || now - this.cachedAt > DelegationManager.CACHE_TTL_MS) {
+      this.cachedDelegation = DelegationStorage.retrieve();
+      this.cachedAt = now;
+    }
+    const delegation = this.cachedDelegation;
     if (!delegation || Date.now() >= delegation.expiryTimestamp) {
       return null;
     }
@@ -155,13 +163,16 @@ export class DelegationManager {
     currentAddress?: string,
     currentWalletType?: 'bitcoin' | 'ethereum'
   ): DelegationFullStatus {
-    const delegation = DelegationStorage.retrieve();
+    const now = Date.now();
+    if (!this.cachedDelegation || now - this.cachedAt > DelegationManager.CACHE_TTL_MS) {
+      this.cachedDelegation = DelegationStorage.retrieve();
+      this.cachedAt = now;
+    }
+    const delegation = this.cachedDelegation;
     if (!delegation) {
       return { hasDelegation: false, isValid: false };
     }
 
-    // Check validity
-    const now = Date.now();
     const hasExpired = now >= delegation.expiryTimestamp;
     const addressMatches =
       !currentAddress || delegation.walletAddress === currentAddress;

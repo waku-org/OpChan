@@ -22,6 +22,21 @@ import { formatDistanceToNow } from 'date-fns';
 
 import { RelevanceIndicator } from './ui/relevance-indicator';
 import { AuthorDisplay } from './ui/author-display';
+import { usePending, usePendingVote } from '@/hooks/usePending';
+
+// Extracted child component to respect Rules of Hooks
+const PendingBadge: React.FC<{ id: string }> = ({ id }) => {
+  const { isPending } = usePending(id);
+  if (!isPending) return null;
+  return (
+    <>
+      <span>•</span>
+      <span className="px-2 py-0.5 rounded-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+        syncing…
+      </span>
+    </>
+  );
+};
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -41,6 +56,10 @@ const PostDetail = () => {
   } = useForumActions();
   const { canVote, canComment, canModerate } = usePermissions();
   const userVotes = useUserVotes();
+
+  // ✅ Move ALL hook calls to the top, before any conditional logic
+  const postPending = usePending(post?.id);
+  const postVotePending = usePendingVote(post?.id);
 
   const [newComment, setNewComment] = useState('');
 
@@ -165,6 +184,9 @@ const PostDetail = () => {
               >
                 <ArrowDown className="w-4 h-4" />
               </button>
+              {postVotePending.isPending && (
+                <span className="mt-1 text-[10px] text-yellow-500">syncing…</span>
+              )}
             </div>
 
             <div className="flex-1">
@@ -196,6 +218,14 @@ const PostDetail = () => {
                       className="text-sm"
                       showTooltip={true}
                     />
+                  </>
+                )}
+                {postPending.isPending && (
+                  <>
+                    <span>•</span>
+                    <span className="px-2 py-0.5 rounded-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                      syncing…
+                    </span>
                   </>
                 )}
               </div>
@@ -322,6 +352,7 @@ const PostDetail = () => {
                         addSuffix: true,
                       })}
                     </span>
+                    <PendingBadge id={comment.id} />
                   </div>
                   <p className="text-sm break-words">{comment.content}</p>
                   {canModerate(cell?.id || '') && !comment.moderated && (

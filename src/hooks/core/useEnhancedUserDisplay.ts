@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useForum } from '@/contexts/useForum';
-import { DisplayPreference, EVerificationStatus } from '@/types/identity';
+import { EDisplayPreference, EVerificationStatus } from '@/types/identity';
 
 export interface Badge {
   type: 'verification' | 'ens' | 'ordinal' | 'callsign';
@@ -80,36 +80,19 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
       }
 
       try {
-        console.log(
-          'useEnhancedUserDisplay: Getting identity for address',
-          address
-        );
         const identity = await userIdentityService.getUserIdentity(address);
-        console.log('useEnhancedUserDisplay: Received identity', identity);
 
         if (identity) {
           let displayName = `${address.slice(0, 6)}...${address.slice(-4)}`;
 
           // Determine display name based on preferences
           if (
-            identity.displayPreference === DisplayPreference.CALL_SIGN &&
+            identity.displayPreference === EDisplayPreference.CALL_SIGN &&
             identity.callSign
           ) {
             displayName = identity.callSign;
-            console.log(
-              'useEnhancedUserDisplay: Using call sign as display name',
-              identity.callSign
-            );
           } else if (identity.ensName) {
             displayName = identity.ensName;
-            console.log(
-              'useEnhancedUserDisplay: Using ENS as display name',
-              identity.ensName
-            );
-          } else {
-            console.log(
-              'useEnhancedUserDisplay: Using truncated address as display name'
-            );
           }
 
           // Generate badges
@@ -177,9 +160,6 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
             error: null,
           });
         } else {
-          console.log(
-            'useEnhancedUserDisplay: No identity found, using fallback with verification info'
-          );
 
           // Use verification info from forum context
           const badges: Badge[] = [];
@@ -234,7 +214,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
     };
 
     getUserDisplayInfo();
-  }, [address, userIdentityService]);
+  }, [address, userIdentityService, verificationInfo]);
 
   // Update display info when verification status changes reactively
   useEffect(() => {
@@ -253,6 +233,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
     verificationInfo.hasOrdinal,
     verificationInfo.verificationStatus,
     displayInfo.isLoading,
+    verificationInfo
   ]);
 
   return displayInfo;

@@ -1,10 +1,10 @@
 import { OpchanMessage } from '@/types/forum';
-import { CacheService } from './CacheService';
 import {
   ReliableMessaging,
   MessageStatusCallback,
 } from '../core/ReliableMessaging';
 import { WakuNodeManager } from '../core/WakuNodeManager';
+import { localDatabase } from '@/lib/database/LocalDatabase';
 
 export type MessageReceivedCallback = (message: OpchanMessage) => void;
 export type { MessageStatusCallback };
@@ -13,7 +13,6 @@ export class MessageService {
   private messageReceivedCallbacks: Set<MessageReceivedCallback> = new Set();
 
   constructor(
-    private cacheService: CacheService,
     private reliableMessaging: ReliableMessaging | null,
     private nodeManager: WakuNodeManager
   ) {
@@ -23,10 +22,12 @@ export class MessageService {
   private setupMessageHandling(): void {
     if (this.reliableMessaging) {
       this.reliableMessaging.onMessage(async message => {
-        const isNew = await this.cacheService.updateCache(message);
-        if (isNew) {
-          this.messageReceivedCallbacks.forEach(callback => callback(message));
-        }
+        localDatabase.setSyncing(true);
+        const isNew = await localDatabase.updateCache(message);
+        // Defensive: clear pending on inbound message to avoid stuck state
+        localDatabase.clearPending(message.id);
+        localDatabase.setSyncing(false);
+        if (isNew) this.messageReceivedCallbacks.forEach(cb => cb(message));
       });
     }
   }
@@ -45,9 +46,11 @@ export class MessageService {
 
     try {
       // Update cache optimistically
-      await this.cacheService.updateCache(message);
+      await localDatabase.updateCache(message);
+      localDatabase.markPending(message.id);
 
       // Send via reliable messaging with status tracking
+      localDatabase.setSyncing(true);
       await this.reliableMessaging.sendMessage(message, {
         onSent: id => {
           console.log(`Message ${id} sent`);
@@ -56,10 +59,15 @@ export class MessageService {
         onAcknowledged: id => {
           console.log(`Message ${id} acknowledged`);
           statusCallback?.onAcknowledged?.(id);
+          localDatabase.clearPending(message.id);
+          localDatabase.updateLastSync(Date.now());
+          localDatabase.setSyncing(false);
         },
         onError: (id, error) => {
           console.error(`Message ${id} failed:`, error);
           statusCallback?.onError?.(id, error);
+          // Keep pending entry to allow retry logic later
+          localDatabase.setSyncing(false);
         },
       });
 
@@ -86,7 +94,7 @@ export class MessageService {
   }
 
   public get messageCache() {
-    return this.cacheService.cache;
+    return localDatabase.cache;
   }
 
   public cleanup(): void {

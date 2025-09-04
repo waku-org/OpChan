@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { OpchanMessage } from '@/types/forum';
-import { User, EVerificationStatus, DisplayPreference } from '@/types/identity';
+import { User, EVerificationStatus, EDisplayPreference } from '@/types/identity';
 import { WalletManager } from '@/lib/wallet';
 import {
   DelegationManager,
@@ -201,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           address,
           walletType: isBitcoinConnected ? 'bitcoin' : 'ethereum',
           verificationStatus: EVerificationStatus.VERIFIED_BASIC, // Connected wallets get basic verification by default
-          displayPreference: DisplayPreference.WALLET_ADDRESS,
+          displayPreference: EDisplayPreference.WALLET_ADDRESS,
           lastChecked: Date.now(),
         };
 

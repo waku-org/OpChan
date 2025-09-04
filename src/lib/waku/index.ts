@@ -1,7 +1,6 @@
 import { HealthStatus } from '@waku/sdk';
 import { OpchanMessage } from '@/types/forum';
 import { WakuNodeManager, HealthChangeCallback } from './core/WakuNodeManager';
-import { CacheService } from './services/CacheService';
 import {
   MessageService,
   MessageStatusCallback,
@@ -12,12 +11,11 @@ export type { HealthChangeCallback, MessageStatusCallback };
 
 class MessageManager {
   private nodeManager: WakuNodeManager | null = null;
-  private cacheService: CacheService;
+  // LocalDatabase eliminates the need for CacheService
   private messageService: MessageService | null = null;
   private reliableMessaging: ReliableMessaging | null = null;
 
   constructor() {
-    this.cacheService = new CacheService();
   }
 
   public static async create(): Promise<MessageManager> {
@@ -32,7 +30,6 @@ class MessageManager {
 
       // Now create message service with proper dependencies
       this.messageService = new MessageService(
-        this.cacheService,
         this.reliableMessaging,
         this.nodeManager
       );

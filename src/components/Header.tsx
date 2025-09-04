@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth, useNetworkStatus } from '@/hooks';
+import { useForum } from '@/contexts/useForum';
 import { Button } from '@/components/ui/button';
 
 import {
@@ -29,6 +30,7 @@ const Header = () => {
   const networkStatus = useNetworkStatus();
   const location = useLocation();
   const { toast } = useToast();
+  const forum = useForum();
 
   // Use AppKit hooks for multi-chain support
   const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
@@ -192,6 +194,12 @@ const Header = () => {
               <span className="text-xs text-cyber-neutral">
                 {networkStatus.getStatusMessage()}
               </span>
+              {forum.lastSync && (
+                <span className="text-xs text-cyber-neutral ml-2">
+                  Last updated {new Date(forum.lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  {forum.isSyncing ? ' • syncing…' : ''}
+                </span>
+              )}
             </div>
 
             {/* User Status */}

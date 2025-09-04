@@ -1,4 +1,4 @@
-import { EVerificationStatus, DisplayPreference } from '@/types/identity';
+import { EVerificationStatus, EDisplayPreference } from '@/types/identity';
 import {
   UnsignedUserProfileUpdateMessage,
   UserProfileUpdateMessage,
@@ -7,6 +7,7 @@ import {
 } from '@/types/waku';
 import { MessageService } from './MessageService';
 import messageManager from '@/lib/waku';
+import { localDatabase } from '@/lib/database/LocalDatabase';
 
 export interface UserIdentity {
   address: string;
@@ -16,7 +17,7 @@ export interface UserIdentity {
     ordinalDetails: string;
   };
   callSign?: string;
-  displayPreference: DisplayPreference;
+  displayPreference: EDisplayPreference;
   lastUpdated: number;
   verificationStatus: EVerificationStatus;
 }
@@ -36,7 +37,9 @@ export class UserIdentityService {
     // Check internal cache first
     if (this.userIdentityCache[address]) {
       const cached = this.userIdentityCache[address];
-      console.log('UserIdentityService: Found in internal cache', cached);
+      if (import.meta.env?.DEV) {
+        console.debug('UserIdentityService: cache hit (internal)');
+      }
       return {
         address,
         ensName: cached.ensName,
@@ -44,8 +47,8 @@ export class UserIdentityService {
         callSign: cached.callSign,
         displayPreference:
           cached.displayPreference === 'call-sign'
-            ? DisplayPreference.CALL_SIGN
-            : DisplayPreference.WALLET_ADDRESS,
+            ? EDisplayPreference.CALL_SIGN
+            : EDisplayPreference.WALLET_ADDRESS,
         lastUpdated: cached.lastUpdated,
         verificationStatus: this.mapVerificationStatus(
           cached.verificationStatus
@@ -53,42 +56,40 @@ export class UserIdentityService {
       };
     }
 
-    // Check CacheService for Waku messages
-    console.log(
-      'UserIdentityService: Checking CacheService for address',
-      address
-    );
-    console.log(
-      'UserIdentityService: messageManager available?',
-      !!messageManager
-    );
-    console.log(
-      'UserIdentityService: messageCache available?',
-      !!messageManager?.messageCache
-    );
-    console.log(
-      'UserIdentityService: userIdentities available?',
-      !!messageManager?.messageCache?.userIdentities
-    );
-    console.log(
-      'UserIdentityService: All userIdentities keys:',
-      Object.keys(messageManager?.messageCache?.userIdentities || {})
-    );
+    // Check LocalDatabase first for persisted identities (warm start)
+    const persisted = localDatabase.cache.userIdentities[address];
+    if (persisted) {
+      this.userIdentityCache[address] = {
+        ensName: persisted.ensName,
+        ordinalDetails: persisted.ordinalDetails,
+        callSign: persisted.callSign,
+        displayPreference: persisted.displayPreference,
+        lastUpdated: persisted.lastUpdated,
+        verificationStatus: persisted.verificationStatus,
+      };
+      return {
+        address,
+        ensName: persisted.ensName,
+        ordinalDetails: persisted.ordinalDetails,
+        callSign: persisted.callSign,
+        displayPreference:
+          persisted.displayPreference === 'call-sign'
+            ? EDisplayPreference.CALL_SIGN
+            : EDisplayPreference.WALLET_ADDRESS,
+        lastUpdated: persisted.lastUpdated,
+        verificationStatus: this.mapVerificationStatus(
+          persisted.verificationStatus
+        ),
+      };
+    }
 
-    const cacheServiceData =
-      messageManager.messageCache.userIdentities[address];
-    console.log(
-      'UserIdentityService: CacheService data for',
-      address,
-      ':',
-      cacheServiceData
-    );
+    // Fallback: Check Waku message cache
+    const cacheServiceData = messageManager.messageCache.userIdentities[address];
 
     if (cacheServiceData) {
-      console.log(
-        'UserIdentityService: Found in CacheService',
-        cacheServiceData
-      );
+      if (import.meta.env?.DEV) {
+        console.debug('UserIdentityService: cache hit (message cache)');
+      }
 
       // Store in internal cache for future use
       this.userIdentityCache[address] = {
@@ -107,8 +108,8 @@ export class UserIdentityService {
         callSign: cacheServiceData.callSign,
         displayPreference:
           cacheServiceData.displayPreference === 'call-sign'
-            ? DisplayPreference.CALL_SIGN
-            : DisplayPreference.WALLET_ADDRESS,
+            ? EDisplayPreference.CALL_SIGN
+            : EDisplayPreference.WALLET_ADDRESS,
         lastUpdated: cacheServiceData.lastUpdated,
         verificationStatus: this.mapVerificationStatus(
           cacheServiceData.verificationStatus
@@ -116,9 +117,9 @@ export class UserIdentityService {
       };
     }
 
-    console.log(
-      'UserIdentityService: No cached data found, resolving from sources'
-    );
+    if (import.meta.env?.DEV) {
+      console.debug('UserIdentityService: cache miss, resolving');
+    }
 
     // Try to resolve identity from various sources
     const identity = await this.resolveUserIdentity(address);
@@ -128,9 +129,9 @@ export class UserIdentityService {
         ordinalDetails: identity.ordinalDetails,
         callSign: identity.callSign,
         displayPreference:
-          identity.displayPreference === DisplayPreference.CALL_SIGN
-            ? 'call-sign'
-            : 'wallet-address',
+          identity.displayPreference === EDisplayPreference.CALL_SIGN
+            ? EDisplayPreference.CALL_SIGN
+            : EDisplayPreference.WALLET_ADDRESS,
         lastUpdated: identity.lastUpdated,
         verificationStatus: identity.verificationStatus,
       };
@@ -150,8 +151,8 @@ export class UserIdentityService {
       callSign: cached.callSign,
       displayPreference:
         cached.displayPreference === 'call-sign'
-          ? DisplayPreference.CALL_SIGN
-          : DisplayPreference.WALLET_ADDRESS,
+          ? EDisplayPreference.CALL_SIGN
+          : EDisplayPreference.WALLET_ADDRESS,
       lastUpdated: cached.lastUpdated,
       verificationStatus: this.mapVerificationStatus(cached.verificationStatus),
     }));
@@ -163,13 +164,12 @@ export class UserIdentityService {
   async updateUserProfile(
     address: string,
     callSign: string,
-    displayPreference: DisplayPreference
+    displayPreference: EDisplayPreference
   ): Promise<boolean> {
     try {
-      console.log('UserIdentityService: Updating profile for', address, {
-        callSign,
-        displayPreference,
-      });
+      if (import.meta.env?.DEV) {
+        console.debug('UserIdentityService: updating profile', { address });
+      }
 
       const unsignedMessage: UnsignedUserProfileUpdateMessage = {
         id: crypto.randomUUID(),
@@ -178,23 +178,21 @@ export class UserIdentityService {
         author: address,
         callSign,
         displayPreference:
-          displayPreference === DisplayPreference.CALL_SIGN
-            ? 'call-sign'
-            : 'wallet-address',
+          displayPreference === EDisplayPreference.CALL_SIGN
+            ? EDisplayPreference.CALL_SIGN
+            : EDisplayPreference.WALLET_ADDRESS,
       };
 
-      console.log(
-        'UserIdentityService: Created unsigned message',
-        unsignedMessage
-      );
+      if (import.meta.env?.DEV) {
+        console.debug('UserIdentityService: created unsigned message');
+      }
 
       const signedMessage =
         await this.messageService.signAndBroadcastMessage(unsignedMessage);
 
-      console.log(
-        'UserIdentityService: Message broadcast result',
-        !!signedMessage
-      );
+      if (import.meta.env?.DEV) {
+        console.debug('UserIdentityService: message broadcast result', !!signedMessage);
+      }
 
       return !!signedMessage;
     } catch (error) {
@@ -216,8 +214,8 @@ export class UserIdentityService {
       ]);
 
       // Default to wallet address display preference
-      const defaultDisplayPreference: DisplayPreference =
-        DisplayPreference.WALLET_ADDRESS;
+      const defaultDisplayPreference: EDisplayPreference =
+        EDisplayPreference.WALLET_ADDRESS;
 
       // Default verification status based on what we can resolve
       let verificationStatus: EVerificationStatus =
@@ -292,9 +290,9 @@ export class UserIdentityService {
         ordinalDetails: undefined,
         callSign: undefined,
         displayPreference:
-          displayPreference === 'call-sign' ? 'call-sign' : 'wallet-address',
+          displayPreference === EDisplayPreference.CALL_SIGN ? EDisplayPreference.CALL_SIGN : EDisplayPreference.WALLET_ADDRESS,
         lastUpdated: timestamp,
-        verificationStatus: 'unverified',
+        verificationStatus: EVerificationStatus.UNVERIFIED,
       };
     }
 
@@ -303,7 +301,10 @@ export class UserIdentityService {
       this.userIdentityCache[author] = {
         ...this.userIdentityCache[author],
         callSign,
-        displayPreference,
+        displayPreference:
+          displayPreference === EDisplayPreference.CALL_SIGN
+            ? EDisplayPreference.CALL_SIGN
+            : EDisplayPreference.WALLET_ADDRESS,
         lastUpdated: timestamp,
       };
     }

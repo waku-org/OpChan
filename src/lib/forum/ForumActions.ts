@@ -13,8 +13,9 @@ import {
 import { Cell, Comment, Post } from '@/types/forum';
 import { EVerificationStatus, User } from '@/types/identity';
 import { transformCell, transformComment, transformPost } from './transformers';
-import { MessageService } from '@/lib/services';
 import { DelegationManager } from '@/lib/delegation';
+import { localDatabase } from '@/lib/database/LocalDatabase';
+import messageManager from '@/lib/waku';
 
 type ActionResult<T> = {
   success: boolean;
@@ -24,11 +25,9 @@ type ActionResult<T> = {
 
 export class ForumActions {
   private delegationManager: DelegationManager;
-  private messageService: MessageService;
 
   constructor(delegationManager?: DelegationManager) {
     this.delegationManager = delegationManager || new DelegationManager();
-    this.messageService = new MessageService(this.delegationManager);
   }
 
   /* ------------------------------------------------------------------
@@ -72,7 +71,7 @@ export class ForumActions {
 
     try {
       const postId = uuidv4();
-      const postMessage: UnsignedPostMessage = {
+      const unsignedPost: UnsignedPostMessage = {
         type: MessageType.POST,
         id: postId,
         cellId,
@@ -82,28 +81,35 @@ export class ForumActions {
         author: currentUser.address,
       };
 
-      const result = await this.messageService.sendMessage(postMessage);
-      if (!result.success) {
+      const signed = this.delegationManager.signMessage(unsignedPost);
+      if (!signed) {
+        const status = this.delegationManager.getStatus(
+          currentUser.address,
+          currentUser.walletType
+        );
         return {
           success: false,
-          error: result.error || 'Failed to create post. Please try again.',
+          error: status.isValid
+            ? 'Key delegation required. Please delegate a signing key from your profile menu.'
+            : 'Key delegation expired. Please re-delegate your key through the profile menu.',
         };
       }
 
+      await localDatabase.updateCache(signed);
+      localDatabase.markPending(signed.id);
+      localDatabase.setSyncing(true);
       updateStateFromCache();
-      const transformedPost = await transformPost(
-        result.message! as PostMessage
-      );
+
+      messageManager
+        .sendMessage(signed)
+        .catch(err => console.error('Background send failed:', err))
+        .finally(() => localDatabase.setSyncing(false));
+
+      const transformedPost = await transformPost(signed as PostMessage);
       if (!transformedPost) {
-        return {
-          success: false,
-          error: 'Failed to transform post data.',
-        };
+        return { success: false, error: 'Failed to transform post data.' };
       }
-      return {
-        success: true,
-        data: transformedPost,
-      };
+      return { success: true, data: transformedPost };
     } catch (error) {
       console.error('Error creating post:', error);
       return {
@@ -150,7 +156,7 @@ export class ForumActions {
 
     try {
       const commentId = uuidv4();
-      const commentMessage: UnsignedCommentMessage = {
+      const unsignedComment: UnsignedCommentMessage = {
         type: MessageType.COMMENT,
         id: commentId,
         postId,
@@ -159,28 +165,39 @@ export class ForumActions {
         author: currentUser.address,
       };
 
-      const result = await this.messageService.sendMessage(commentMessage);
-      if (!result.success) {
+      // Optimistic path: sign locally, write to cache, mark pending, render immediately
+      const signed = this.delegationManager.signMessage(unsignedComment);
+      if (!signed) {
+        const status = this.delegationManager.getStatus(
+          currentUser.address,
+          currentUser.walletType
+        );
         return {
           success: false,
-          error: result.error || 'Failed to add comment. Please try again.',
+          error: status.isValid
+            ? 'Key delegation required. Please delegate a signing key from your profile menu.'
+            : 'Key delegation expired. Please re-delegate your key through the profile menu.',
         };
       }
 
+      // Write immediately to LocalDatabase and reflect in UI
+      await localDatabase.updateCache(signed);
+      localDatabase.markPending(signed.id);
+      localDatabase.setSyncing(true);
       updateStateFromCache();
-      const transformedComment = await transformComment(
-        result.message! as CommentMessage
-      );
-      if (!transformedComment) {
-        return {
-          success: false,
-          error: 'Failed to transform comment data.',
-        };
+
+      // Fire-and-forget network send; LocalDatabase will clear pending on ack
+      messageManager
+        .sendMessage(signed)
+        .catch(err => console.error('Background send failed:', err))
+        .finally(() => localDatabase.setSyncing(false));
+
+      const transformed = await transformComment(signed as CommentMessage);
+      if (!transformed) {
+        return { success: false, error: 'Failed to transform comment data.' };
       }
-      return {
-        success: true,
-        data: transformedComment,
-      };
+
+      return { success: true, data: transformed };
     } catch (error) {
       console.error('Error creating comment:', error);
       return {
@@ -206,7 +223,7 @@ export class ForumActions {
 
     try {
       const cellId = uuidv4();
-      const cellMessage: UnsignedCellMessage = {
+      const unsignedCell: UnsignedCellMessage = {
         type: MessageType.CELL,
         id: cellId,
         name,
@@ -216,28 +233,35 @@ export class ForumActions {
         author: currentUser.address,
       };
 
-      const result = await this.messageService.sendMessage(cellMessage);
-      if (!result.success) {
+      const signed = this.delegationManager.signMessage(unsignedCell);
+      if (!signed) {
+        const status = this.delegationManager.getStatus(
+          currentUser.address,
+          currentUser.walletType
+        );
         return {
           success: false,
-          error: result.error || 'Failed to create cell. Please try again.',
+          error: status.isValid
+            ? 'Key delegation required. Please delegate a signing key from your profile menu.'
+            : 'Key delegation expired. Please re-delegate your key through the profile menu.',
         };
       }
 
+      await localDatabase.updateCache(signed);
+      localDatabase.markPending(signed.id);
+      localDatabase.setSyncing(true);
       updateStateFromCache();
-      const transformedCell = await transformCell(
-        result.message! as CellMessage
-      );
+
+      messageManager
+        .sendMessage(signed)
+        .catch(err => console.error('Background send failed:', err))
+        .finally(() => localDatabase.setSyncing(false));
+
+      const transformedCell = await transformCell(signed as CellMessage);
       if (!transformedCell) {
-        return {
-          success: false,
-          error: 'Failed to transform cell data.',
-        };
+        return { success: false, error: 'Failed to transform cell data.' };
       }
-      return {
-        success: true,
-        data: transformedCell,
-      };
+      return { success: true, data: transformedCell };
     } catch (error) {
       console.error('Error creating cell:', error);
       return {
@@ -288,7 +312,7 @@ export class ForumActions {
 
     try {
       const voteId = uuidv4();
-      const voteMessage: UnsignedVoteMessage = {
+      const unsignedVote: UnsignedVoteMessage = {
         type: MessageType.VOTE,
         id: voteId,
         targetId,
@@ -297,20 +321,31 @@ export class ForumActions {
         author: currentUser.address,
       };
 
-      const result = await this.messageService.sendMessage(voteMessage);
-      if (!result.success) {
+      const signed = this.delegationManager.signMessage(unsignedVote);
+      if (!signed) {
+        const status = this.delegationManager.getStatus(
+          currentUser.address,
+          currentUser.walletType
+        );
         return {
           success: false,
-          error:
-            result.error || 'Failed to register your vote. Please try again.',
+          error: status.isValid
+            ? 'Key delegation required. Please delegate a signing key from your profile menu.'
+            : 'Key delegation expired. Please re-delegate your key through the profile menu.',
         };
       }
 
+      await localDatabase.updateCache(signed);
+      localDatabase.markPending(signed.id);
+      localDatabase.setSyncing(true);
       updateStateFromCache();
-      return {
-        success: true,
-        data: true,
-      };
+
+      messageManager
+        .sendMessage(signed)
+        .catch(err => console.error('Background send failed:', err))
+        .finally(() => localDatabase.setSyncing(false));
+
+      return { success: true, data: true };
     } catch (error) {
       console.error('Error voting:', error);
       return {
@@ -346,7 +381,7 @@ export class ForumActions {
     }
 
     try {
-      const modMsg: UnsignedModerateMessage = {
+      const unsignedMod: UnsignedModerateMessage = {
         type: MessageType.MODERATE,
         id: uuidv4(),
         cellId,
@@ -357,19 +392,31 @@ export class ForumActions {
         author: currentUser.address,
       };
 
-      const result = await this.messageService.sendMessage(modMsg);
-      if (!result.success) {
+      const signed = this.delegationManager.signMessage(unsignedMod);
+      if (!signed) {
+        const status = this.delegationManager.getStatus(
+          currentUser.address,
+          currentUser.walletType
+        );
         return {
           success: false,
-          error: result.error || 'Failed to moderate post. Please try again.',
+          error: status.isValid
+            ? 'Key delegation required. Please delegate a signing key from your profile menu.'
+            : 'Key delegation expired. Please re-delegate your key through the profile menu.',
         };
       }
 
+      await localDatabase.updateCache(signed);
+      localDatabase.markPending(signed.id);
+      localDatabase.setSyncing(true);
       updateStateFromCache();
-      return {
-        success: true,
-        data: true,
-      };
+
+      messageManager
+        .sendMessage(signed)
+        .catch(err => console.error('Background send failed:', err))
+        .finally(() => localDatabase.setSyncing(false));
+
+      return { success: true, data: true };
     } catch (error) {
       console.error('Error moderating post:', error);
       return {
@@ -407,7 +454,7 @@ export class ForumActions {
     }
 
     try {
-      const modMsg: UnsignedModerateMessage = {
+      const unsignedMod: UnsignedModerateMessage = {
         type: MessageType.MODERATE,
         id: uuidv4(),
         cellId,
@@ -418,20 +465,31 @@ export class ForumActions {
         author: currentUser.address,
       };
 
-      const result = await this.messageService.sendMessage(modMsg);
-      if (!result.success) {
+      const signed = this.delegationManager.signMessage(unsignedMod);
+      if (!signed) {
+        const status = this.delegationManager.getStatus(
+          currentUser.address,
+          currentUser.walletType
+        );
         return {
           success: false,
-          error:
-            result.error || 'Failed to moderate comment. Please try again.',
+          error: status.isValid
+            ? 'Key delegation required. Please delegate a signing key from your profile menu.'
+            : 'Key delegation expired. Please re-delegate your key through the profile menu.',
         };
       }
 
+      await localDatabase.updateCache(signed);
+      localDatabase.markPending(signed.id);
+      localDatabase.setSyncing(true);
       updateStateFromCache();
-      return {
-        success: true,
-        data: true,
-      };
+
+      messageManager
+        .sendMessage(signed)
+        .catch(err => console.error('Background send failed:', err))
+        .finally(() => localDatabase.setSyncing(false));
+
+      return { success: true, data: true };
     } catch (error) {
       console.error('Error moderating comment:', error);
       return {
@@ -469,7 +527,7 @@ export class ForumActions {
     }
 
     try {
-      const modMsg: UnsignedModerateMessage = {
+      const unsignedMod: UnsignedModerateMessage = {
         type: MessageType.MODERATE,
         id: uuidv4(),
         cellId,
@@ -480,19 +538,31 @@ export class ForumActions {
         timestamp: Date.now(),
       };
 
-      const result = await this.messageService.sendMessage(modMsg);
-      if (!result.success) {
+      const signed = this.delegationManager.signMessage(unsignedMod);
+      if (!signed) {
+        const status = this.delegationManager.getStatus(
+          currentUser.address,
+          currentUser.walletType
+        );
         return {
           success: false,
-          error: result.error || 'Failed to moderate user. Please try again.',
+          error: status.isValid
+            ? 'Key delegation required. Please delegate a signing key from your profile menu.'
+            : 'Key delegation expired. Please re-delegate your key through the profile menu.',
         };
       }
 
+      await localDatabase.updateCache(signed);
+      localDatabase.markPending(signed.id);
+      localDatabase.setSyncing(true);
       updateStateFromCache();
-      return {
-        success: true,
-        data: true,
-      };
+
+      messageManager
+        .sendMessage(signed)
+        .catch(err => console.error('Background send failed:', err))
+        .finally(() => localDatabase.setSyncing(false));
+
+      return { success: true, data: true };
     } catch (error) {
       console.error('Error moderating user:', error);
       return {

@@ -1,3 +1,5 @@
+import { EDisplayPreference, EVerificationStatus } from "./identity";
+
 /**
  * Message types for Waku communication
  */
@@ -111,7 +113,7 @@ export interface ModerateMessage extends BaseMessage {
 export interface UserProfileUpdateMessage extends BaseMessage {
   type: MessageType.USER_PROFILE_UPDATE;
   callSign?: string;
-  displayPreference: 'call-sign' | 'wallet-address';
+  displayPreference: EDisplayPreference;
 }
 
 /**
@@ -160,12 +162,8 @@ export interface UserIdentityCache {
       ordinalDetails: string;
     };
     callSign?: string;
-    displayPreference: 'call-sign' | 'wallet-address';
+    displayPreference: EDisplayPreference
     lastUpdated: number;
-    verificationStatus:
-      | 'unverified'
-      | 'verified-basic'
-      | 'verified-owner'
-      | 'verifying';
+    verificationStatus: EVerificationStatus
   };
 }

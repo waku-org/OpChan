@@ -11,6 +11,7 @@ import {
 } from '@/hooks';
 import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
 import { AuthorDisplay } from '@/components/ui/author-display';
+import { usePending, usePendingVote } from '@/hooks/usePending';
 
 interface PostCardProps {
   post: Post;
@@ -33,6 +34,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
     'voteScore' in post
       ? (post.voteScore as number)
       : post.upvotes.length - post.downvotes.length;
+  const { isPending } = usePending(post.id);
+  const votePending = usePendingVote(post.id);
 
   // ✅ Get user vote status from hook
   const userVoteType = userVotes.getPostVoteType(post.id);
@@ -93,6 +96,9 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
           >
             <ArrowDown className="w-5 h-5" />
           </button>
+          {votePending.isPending && (
+            <span className="mt-1 text-[10px] text-yellow-400">syncing…</span>
+          )}
         </div>
 
         {/* Content column */}
@@ -146,6 +152,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
                 <MessageSquare className="w-4 h-4" />
                 <span>{commentCount} comments</span>
               </div>
+              {isPending && (
+                <span className="px-2 py-0.5 rounded-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                  syncing…
+                </span>
+              )}
               <button className="hover:text-cyber-accent transition-colors">
                 Share
               </button>

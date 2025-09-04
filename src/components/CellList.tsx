@@ -21,6 +21,7 @@ import {
 import { CypherImage } from './ui/CypherImage';
 import { RelevanceIndicator } from './ui/relevance-indicator';
 import { sortCells, SortOption } from '@/lib/utils/sorting';
+import { usePending } from '@/hooks/usePending';
 
 const CellList = () => {
   const { cellsWithStats, isInitialLoading } = useForumData();
@@ -137,6 +138,13 @@ const CellList = () => {
                       />
                     )}
                   </div>
+                  {usePending(cell.id).isPending && (
+                    <div className="mb-2">
+                      <span className="px-2 py-0.5 rounded-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs">
+                        syncing…
+                      </span>
+                    </div>
+                  )}
 
                   <p className="text-cyber-neutral text-sm mb-3 line-clamp-2">
                     {cell.description}

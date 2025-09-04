@@ -56,9 +56,6 @@ export const initializeNetwork = async (
       description: 'Connecting to the Waku network...',
     });
 
-    // Load data from cache immediately - health monitoring will handle network status
-    updateStateFromCache();
-
     // Check current network status and provide appropriate feedback
     if (messageManager.isReady) {
       toast({

@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { DisplayPreference } from '@/types/identity';
+import { EDisplayPreference } from '@/types/identity';
 
 const formSchema = z.object({
   callSign: z
@@ -42,7 +42,7 @@ const formSchema = z.object({
       'Only letters, numbers, hyphens, and underscores allowed'
     )
     .refine(val => !/[-_]{2,}/.test(val), 'No consecutive special characters'),
-  displayPreference: z.nativeEnum(DisplayPreference),
+  displayPreference: z.nativeEnum(EDisplayPreference),
 });
 
 interface CallSignSetupDialogProps {
@@ -69,7 +69,7 @@ export function CallSignSetupDialog({
     defaultValues: {
       callSign: currentUser?.callSign || '',
       displayPreference:
-        currentUser?.displayPreference || DisplayPreference.WALLET_ADDRESS,
+        currentUser?.displayPreference || EDisplayPreference.WALLET_ADDRESS,
     },
   });
 
@@ -164,10 +164,10 @@ export function CallSignSetupDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value={DisplayPreference.CALL_SIGN}>
+                      <SelectItem value={EDisplayPreference.CALL_SIGN}>
                         Call Sign (when available)
                       </SelectItem>
-                      <SelectItem value={DisplayPreference.WALLET_ADDRESS}>
+                      <SelectItem value={EDisplayPreference.WALLET_ADDRESS}>
                         Wallet Address
                       </SelectItem>
                     </SelectContent>

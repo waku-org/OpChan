@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/hooks/core/useEnhancedAuth';
-import { DisplayPreference } from '@/types/identity';
+import { EDisplayPreference } from '@/types/identity';
 import { useToast } from '@/components/ui/use-toast';
 
 export interface UserActionStates {
@@ -12,10 +12,10 @@ export interface UserActionStates {
 
 export interface UserActions extends UserActionStates {
   updateCallSign: (callSign: string) => Promise<boolean>;
-  updateDisplayPreference: (preference: DisplayPreference) => Promise<boolean>;
+  updateDisplayPreference: (preference: EDisplayPreference) => Promise<boolean>;
   updateProfile: (updates: {
     callSign?: string;
-    displayPreference?: DisplayPreference;
+    displayPreference?: EDisplayPreference;
   }) => Promise<boolean>;
   clearCallSign: () => Promise<boolean>;
 }
@@ -124,7 +124,7 @@ export function useUserActions(): UserActions {
 
   // Update display preference
   const updateDisplayPreference = useCallback(
-    async (preference: DisplayPreference): Promise<boolean> => {
+    async (preference: EDisplayPreference): Promise<boolean> => {
       if (!permissions.canUpdateProfile) {
         toast({
           title: 'Permission Denied',
@@ -155,7 +155,7 @@ export function useUserActions(): UserActions {
 
         if (success) {
           const preferenceLabel =
-            preference === DisplayPreference.CALL_SIGN
+            preference === EDisplayPreference.CALL_SIGN
               ? 'Call Sign'
               : 'Wallet Address';
 
@@ -193,7 +193,7 @@ export function useUserActions(): UserActions {
   const updateProfile = useCallback(
     async (updates: {
       callSign?: string;
-      displayPreference?: DisplayPreference;
+      displayPreference?: EDisplayPreference;
     }): Promise<boolean> => {
       if (!permissions.canUpdateProfile) {
         toast({

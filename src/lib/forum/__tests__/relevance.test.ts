@@ -1,6 +1,6 @@
 import { RelevanceCalculator } from '../RelevanceCalculator';
 import { Post, Comment, UserVerificationStatus } from '@/types/forum';
-import { User, EVerificationStatus, DisplayPreference } from '@/types/identity';
+import { User, EVerificationStatus, EDisplayPreference } from '@/types/identity';
 import { VoteMessage, MessageType } from '@/types/waku';
 import { expect, describe, beforeEach, it } from 'vitest';
 
@@ -78,7 +78,7 @@ describe('RelevanceCalculator', () => {
         address: 'user1',
         walletType: 'ethereum',
         verificationStatus: EVerificationStatus.VERIFIED_OWNER,
-        displayPreference: DisplayPreference.WALLET_ADDRESS,
+        displayPreference: EDisplayPreference.WALLET_ADDRESS,
         ensDetails: {
           ensName: 'test.eth',
         },
@@ -95,7 +95,7 @@ describe('RelevanceCalculator', () => {
         address: 'user3',
         walletType: 'bitcoin',
         verificationStatus: EVerificationStatus.VERIFIED_OWNER,
-        displayPreference: DisplayPreference.WALLET_ADDRESS,
+        displayPreference: EDisplayPreference.WALLET_ADDRESS,
         ordinalDetails: {
           ordinalId: '1',
           ordinalDetails: 'test',
@@ -112,7 +112,7 @@ describe('RelevanceCalculator', () => {
         address: 'user2',
         walletType: 'ethereum',
         verificationStatus: EVerificationStatus.UNVERIFIED,
-        displayPreference: DisplayPreference.WALLET_ADDRESS,
+        displayPreference: EDisplayPreference.WALLET_ADDRESS,
         ensDetails: undefined,
         ordinalDetails: undefined,
         lastChecked: Date.now(),
@@ -278,7 +278,7 @@ describe('RelevanceCalculator', () => {
           address: 'user1',
           walletType: 'ethereum',
           verificationStatus: EVerificationStatus.VERIFIED_OWNER,
-          displayPreference: DisplayPreference.WALLET_ADDRESS,
+          displayPreference: EDisplayPreference.WALLET_ADDRESS,
           ensDetails: {
             ensName: 'test.eth',
           },
@@ -289,7 +289,7 @@ describe('RelevanceCalculator', () => {
           address: 'user2',
           walletType: 'bitcoin',
           verificationStatus: EVerificationStatus.UNVERIFIED,
-          displayPreference: DisplayPreference.WALLET_ADDRESS,
+          displayPreference: EDisplayPreference.WALLET_ADDRESS,
           ensDetails: undefined,
           ordinalDetails: undefined,
           lastChecked: Date.now(),

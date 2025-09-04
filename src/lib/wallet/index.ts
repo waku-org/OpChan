@@ -8,7 +8,11 @@ import { ChainNamespace } from '@reown/appkit-common';
 import { config } from './config';
 import { Provider } from '@reown/appkit-controllers';
 import { WalletInfo, ActiveWallet } from './types';
-import * as bitcoinMessage from 'bitcoinjs-message';
+// Defer importing 'bitcoinjs-message' to avoid Node polyfill warnings in Vite
+type BitcoinMessageModule = typeof import('bitcoinjs-message');
+let bitcoinMessagePromise: Promise<BitcoinMessageModule> | null = null;
+const loadBitcoinMessage = () =>
+  (bitcoinMessagePromise ??= import('bitcoinjs-message'));
 
 export class WalletManager {
   private static instance: WalletManager | null = null;
@@ -186,12 +190,10 @@ export class WalletManager {
     walletType: 'bitcoin' | 'ethereum'
   ): Promise<boolean> {
     try {
-      console.log('WalletManager.verifySignature - verifying signature:', {
-        message,
-        signature,
-        walletAddress,
-        walletType,
-      });
+      if (import.meta.env?.DEV) {
+        // Keep this lightweight in dev; avoid logging full message/signature repeatedly
+        console.debug('WalletManager.verifySignature', { walletType });
+      }
       if (walletType === 'ethereum') {
         return await verifyEthereumMessage(config, {
           address: walletAddress as `0x${string}`,
@@ -199,19 +201,14 @@ export class WalletManager {
           signature: signature as `0x${string}`,
         });
       } else if (walletType === 'bitcoin') {
-        console.log(
-          'WalletManager.verifySignature - verifying bitcoin signature:',
-          {
-            message,
-            walletAddress,
-            signature,
-          }
-        );
+        if (import.meta.env?.DEV) {
+          console.debug('WalletManager.verifySignature (bitcoin)');
+        }
+        const bitcoinMessage = await loadBitcoinMessage();
         const result = bitcoinMessage.verify(message, walletAddress, signature);
-        console.log(
-          'WalletManager.verifySignature - bitcoin signature result:',
-          result
-        );
+        if (import.meta.env?.DEV) {
+          console.debug('WalletManager.verifySignature (bitcoin) result', result);
+        }
         return result;
       }
 
