@@ -25,6 +25,7 @@ export interface UserIdentity {
 export class UserIdentityService {
   private messageService: MessageService;
   private userIdentityCache: UserIdentityCache = {};
+  private refreshListeners: Set<(address: string) => void> = new Set();
 
   constructor(messageService: MessageService) {
     this.messageService = messageService;
@@ -40,15 +41,19 @@ export class UserIdentityService {
       if (import.meta.env?.DEV) {
         console.debug('UserIdentityService: cache hit (internal)');
       }
+      // Enrich with ENS name if missing and ETH address
+      if (!cached.ensName && address.startsWith('0x')) {
+        const ensName = await this.resolveENSName(address);
+        if (ensName) {
+          cached.ensName = ensName;
+        }
+      }
       return {
         address,
         ensName: cached.ensName,
         ordinalDetails: cached.ordinalDetails,
         callSign: cached.callSign,
-        displayPreference:
-          cached.displayPreference === 'call-sign'
-            ? EDisplayPreference.CALL_SIGN
-            : EDisplayPreference.WALLET_ADDRESS,
+        displayPreference: cached.displayPreference,
         lastUpdated: cached.lastUpdated,
         verificationStatus: this.mapVerificationStatus(
           cached.verificationStatus
@@ -67,20 +72,26 @@ export class UserIdentityService {
         lastUpdated: persisted.lastUpdated,
         verificationStatus: persisted.verificationStatus,
       };
-      return {
+      const result = {
         address,
         ensName: persisted.ensName,
         ordinalDetails: persisted.ordinalDetails,
         callSign: persisted.callSign,
-        displayPreference:
-          persisted.displayPreference === 'call-sign'
-            ? EDisplayPreference.CALL_SIGN
-            : EDisplayPreference.WALLET_ADDRESS,
+        displayPreference: persisted.displayPreference,
         lastUpdated: persisted.lastUpdated,
         verificationStatus: this.mapVerificationStatus(
           persisted.verificationStatus
         ),
-      };
+      } as UserIdentity;
+      // Enrich with ENS name if missing and ETH address
+      if (!result.ensName && address.startsWith('0x')) {
+        const ensName = await this.resolveENSName(address);
+        if (ensName) {
+          result.ensName = ensName;
+          this.userIdentityCache[address].ensName = ensName;
+        }
+      }
+      return result;
     }
 
     // Fallback: Check Waku message cache
@@ -102,20 +113,26 @@ export class UserIdentityService {
         verificationStatus: cacheServiceData.verificationStatus,
       };
 
-      return {
+      const result = {
         address,
         ensName: cacheServiceData.ensName,
         ordinalDetails: cacheServiceData.ordinalDetails,
         callSign: cacheServiceData.callSign,
-        displayPreference:
-          cacheServiceData.displayPreference === 'call-sign'
-            ? EDisplayPreference.CALL_SIGN
-            : EDisplayPreference.WALLET_ADDRESS,
+        displayPreference: cacheServiceData.displayPreference,
         lastUpdated: cacheServiceData.lastUpdated,
         verificationStatus: this.mapVerificationStatus(
           cacheServiceData.verificationStatus
         ),
-      };
+      } as UserIdentity;
+      // Enrich with ENS name if missing and ETH address
+      if (!result.ensName && address.startsWith('0x')) {
+        const ensName = await this.resolveENSName(address);
+        if (ensName) {
+          result.ensName = ensName;
+          this.userIdentityCache[address].ensName = ensName;
+        }
+      }
+      return result;
     }
 
     if (import.meta.env?.DEV) {
@@ -129,10 +146,7 @@ export class UserIdentityService {
         ensName: identity.ensName,
         ordinalDetails: identity.ordinalDetails,
         callSign: identity.callSign,
-        displayPreference:
-          identity.displayPreference === EDisplayPreference.CALL_SIGN
-            ? EDisplayPreference.CALL_SIGN
-            : EDisplayPreference.WALLET_ADDRESS,
+        displayPreference: identity.displayPreference,
         lastUpdated: identity.lastUpdated,
         verificationStatus: identity.verificationStatus,
       };
@@ -150,10 +164,7 @@ export class UserIdentityService {
       ensName: cached.ensName,
       ordinalDetails: cached.ordinalDetails,
       callSign: cached.callSign,
-      displayPreference:
-        cached.displayPreference === 'call-sign'
-          ? EDisplayPreference.CALL_SIGN
-          : EDisplayPreference.WALLET_ADDRESS,
+      displayPreference: cached.displayPreference,
       lastUpdated: cached.lastUpdated,
       verificationStatus: this.mapVerificationStatus(cached.verificationStatus),
     }));
@@ -164,7 +175,7 @@ export class UserIdentityService {
    */
   async updateUserProfile(
     address: string,
-    callSign: string,
+    callSign: string | undefined,
     displayPreference: EDisplayPreference
   ): Promise<boolean> {
     try {
@@ -172,17 +183,18 @@ export class UserIdentityService {
         console.debug('UserIdentityService: updating profile', { address });
       }
 
+      const timestamp = Date.now();
       const unsignedMessage: UnsignedUserProfileUpdateMessage = {
         id: crypto.randomUUID(),
         type: MessageType.USER_PROFILE_UPDATE,
-        timestamp: Date.now(),
+        timestamp,
         author: address,
-        callSign,
-        displayPreference:
-          displayPreference === EDisplayPreference.CALL_SIGN
-            ? EDisplayPreference.CALL_SIGN
-            : EDisplayPreference.WALLET_ADDRESS,
+        displayPreference,
       };
+      // Only include callSign if provided and non-empty
+      if (callSign && callSign.trim()) {
+        unsignedMessage.callSign = callSign.trim();
+      }
 
       if (import.meta.env?.DEV) {
         console.debug('UserIdentityService: created unsigned message');
@@ -196,6 +208,48 @@ export class UserIdentityService {
           'UserIdentityService: message broadcast result',
           !!signedMessage
         );
+      }
+
+      // If broadcast was successful, immediately update local cache
+      if (signedMessage) {
+        this.updateUserIdentityFromMessage(
+          signedMessage as UserProfileUpdateMessage
+        );
+
+        // Also update the local database cache immediately
+        if (this.userIdentityCache[address]) {
+          const updatedIdentity = {
+            ...this.userIdentityCache[address],
+            callSign:
+              callSign && callSign.trim()
+                ? callSign.trim()
+                : this.userIdentityCache[address].callSign,
+            displayPreference,
+            lastUpdated: timestamp,
+          };
+
+          localDatabase.cache.userIdentities[address] = updatedIdentity;
+
+          // Persist to IndexedDB using the storeMessage method
+          const profileMessage: UserProfileUpdateMessage = {
+            id: unsignedMessage.id,
+            type: MessageType.USER_PROFILE_UPDATE,
+            timestamp,
+            author: address,
+            displayPreference,
+            signature: signedMessage.signature,
+            browserPubKey: signedMessage.browserPubKey,
+          };
+          if (callSign && callSign.trim()) {
+            profileMessage.callSign = callSign.trim();
+          }
+
+          // Apply the message to update the database
+          await localDatabase.applyMessage(profileMessage);
+
+          // Notify listeners that the user identity has been updated
+          this.notifyRefreshListeners(address);
+        }
       }
 
       return !!signedMessage;
@@ -295,10 +349,7 @@ export class UserIdentityService {
         ensName: undefined,
         ordinalDetails: undefined,
         callSign: undefined,
-        displayPreference:
-          displayPreference === EDisplayPreference.CALL_SIGN
-            ? EDisplayPreference.CALL_SIGN
-            : EDisplayPreference.WALLET_ADDRESS,
+        displayPreference,
         lastUpdated: timestamp,
         verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
       };
@@ -309,12 +360,12 @@ export class UserIdentityService {
       this.userIdentityCache[author] = {
         ...this.userIdentityCache[author],
         callSign,
-        displayPreference:
-          displayPreference === EDisplayPreference.CALL_SIGN
-            ? EDisplayPreference.CALL_SIGN
-            : EDisplayPreference.WALLET_ADDRESS,
+        displayPreference,
         lastUpdated: timestamp,
       };
+
+      // Notify listeners that the user identity has been updated
+      this.notifyRefreshListeners(author);
     }
   }
 
@@ -350,6 +401,21 @@ export class UserIdentityService {
   }
 
   /**
+   * Add a refresh listener for when user identity data changes
+   */
+  addRefreshListener(listener: (address: string) => void): () => void {
+    this.refreshListeners.add(listener);
+    return () => this.refreshListeners.delete(listener);
+  }
+
+  /**
+   * Notify all listeners that user identity data has changed
+   */
+  private notifyRefreshListeners(address: string): void {
+    this.refreshListeners.forEach(listener => listener(address));
+  }
+
+  /**
    * Get display name for user based on their preferences
    */
   getDisplayName(address: string): string {
@@ -358,7 +424,10 @@ export class UserIdentityService {
       return `${address.slice(0, 6)}...${address.slice(-4)}`;
     }
 
-    if (identity.displayPreference === 'call-sign' && identity.callSign) {
+    if (
+      identity.displayPreference === EDisplayPreference.CALL_SIGN &&
+      identity.callSign
+    ) {
       return identity.callSign;
     }
 

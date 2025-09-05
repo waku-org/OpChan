@@ -167,22 +167,24 @@ export class LocalDatabase {
         const profileMsg = message as UserProfileUpdateMessage;
         const { author, callSign, displayPreference, timestamp } = profileMsg;
 
-        if (
-          !this.cache.userIdentities[author] ||
-          this.cache.userIdentities[author]?.lastUpdated !== timestamp
-        ) {
-          this.cache.userIdentities[author] = {
-            ensName: undefined,
-            ordinalDetails: undefined,
-            callSign,
+        const existing = this.cache.userIdentities[author];
+        if (!existing || timestamp > existing.lastUpdated) {
+          const nextRecord = {
+            ensName: existing?.ensName,
+            ordinalDetails: existing?.ordinalDetails,
+            callSign: callSign !== undefined ? callSign : existing?.callSign,
             displayPreference,
             lastUpdated: timestamp,
-            verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
-          };
+            verificationStatus:
+              existing?.verificationStatus ??
+              EVerificationStatus.WALLET_UNCONNECTED,
+          } as UserIdentityCache[string];
+
+          this.cache.userIdentities[author] = nextRecord;
           // Persist with address keyPath
           this.put(STORE.USER_IDENTITIES, {
             address: author,
-            ...this.cache.userIdentities[author],
+            ...nextRecord,
           });
         }
         break;

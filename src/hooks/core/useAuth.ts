@@ -1,4 +1,5 @@
 import { useAuth as useBaseAuth } from '@/contexts/useAuth';
+import { useForum } from '@/contexts/useForum';
 import { User, EVerificationStatus } from '@/types/identity';
 
 export interface AuthState {
@@ -18,20 +19,17 @@ export interface AuthState {
 export function useAuth(): AuthState {
   const { currentUser, isAuthenticated, isAuthenticating, verificationStatus } =
     useBaseAuth();
+  const { userIdentityService } = useForum();
 
   // Helper functions
   const getDisplayName = (): string => {
     if (!currentUser) return 'Anonymous';
-
-    if (currentUser.callSign) {
-      return currentUser.callSign;
+    // Centralized display logic; fallback to truncated address if service unavailable
+    if (userIdentityService) {
+      return userIdentityService.getDisplayName(currentUser.address);
     }
-
-    if (currentUser.ensDetails?.ensName) {
-      return currentUser.ensDetails.ensName;
-    }
-
-    return `${currentUser.address.slice(0, 6)}...${currentUser.address.slice(-4)}`;
+    const addr = currentUser.address;
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
   const getVerificationBadge = (): string | null => {

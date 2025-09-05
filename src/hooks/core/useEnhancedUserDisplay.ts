@@ -28,6 +28,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
     isLoading: true,
     error: null,
   });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Get verification status from forum context for reactive updates
   const verificationInfo = useMemo(() => {
@@ -39,6 +40,21 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
       }
     );
   }, [userVerificationStatus, address]);
+
+  // Set up refresh listener for user identity changes
+  useEffect(() => {
+    if (!userIdentityService || !address) return;
+
+    const unsubscribe = userIdentityService.addRefreshListener(
+      updatedAddress => {
+        if (updatedAddress === address) {
+          setRefreshTrigger(prev => prev + 1);
+        }
+      }
+    );
+
+    return unsubscribe;
+  }, [userIdentityService, address]);
 
   useEffect(() => {
     const getUserDisplayInfo = async () => {
@@ -75,17 +91,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
         const identity = await userIdentityService.getUserIdentity(address);
 
         if (identity) {
-          let displayName = `${address.slice(0, 6)}...${address.slice(-4)}`;
-
-          // Determine display name based on preferences
-          if (
-            identity.displayPreference === EDisplayPreference.CALL_SIGN &&
-            identity.callSign
-          ) {
-            displayName = identity.callSign;
-          } else if (identity.ensName) {
-            displayName = identity.ensName;
-          }
+          const displayName = userIdentityService.getDisplayName(address);
 
           setDisplayInfo({
             displayName,
@@ -101,9 +107,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
           });
         } else {
           setDisplayInfo({
-            displayName:
-              verificationInfo.ensName ||
-              `${address.slice(0, 6)}...${address.slice(-4)}`,
+            displayName: userIdentityService.getDisplayName(address),
             callSign: null,
             ensName: verificationInfo.ensName || null,
             ordinalDetails: null,
@@ -134,7 +138,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
     };
 
     getUserDisplayInfo();
-  }, [address, userIdentityService, verificationInfo]);
+  }, [address, userIdentityService, verificationInfo, refreshTrigger]);
 
   // Update display info when verification status changes reactively
   useEffect(() => {

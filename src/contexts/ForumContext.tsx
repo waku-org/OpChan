@@ -288,19 +288,24 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         if (hasSeedData) {
           setIsInitialLoading(false);
         } else {
-          // Wait for first incoming message before showing UI
-          const unsubscribe = messageManager.onMessageReceived(() => {
-            setIsInitialLoading(false);
-            unsubscribe();
+          // Wait for Waku network to be healthy instead of first message
+          const unsubscribeHealth = messageManager.onHealthChange(isReady => {
+            if (isReady) {
+              setIsInitialLoading(false);
+              unsubscribeHealth();
+            }
           });
         }
       } catch (e) {
         console.warn('LocalDatabase warm-start failed, continuing cold:', e);
-        // Initialize network even if local DB failed, keep loader until first message
+        // Initialize network even if local DB failed, keep loader until Waku is healthy
         await initializeNetwork(toast, setError);
-        const unsubscribe = messageManager.onMessageReceived(() => {
-          setIsInitialLoading(false);
-          unsubscribe();
+
+        const unsubscribeHealth = messageManager.onHealthChange(isReady => {
+          if (isReady) {
+            setIsInitialLoading(false);
+            unsubscribeHealth();
+          }
         });
       }
     };

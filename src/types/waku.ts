@@ -70,7 +70,7 @@ export interface UnsignedModerateMessage extends UnsignedBaseMessage {
 export interface UnsignedUserProfileUpdateMessage extends UnsignedBaseMessage {
   type: MessageType.USER_PROFILE_UPDATE;
   callSign?: string;
-  displayPreference: 'call-sign' | 'wallet-address';
+  displayPreference: EDisplayPreference;
 }
 
 /**

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth, useNetworkStatus } from '@/hooks';
+import { useAuth, useWakuHealthStatus } from '@/hooks';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
 import { EVerificationStatus } from '@/types/identity';
 import { useForum } from '@/contexts/useForum';
@@ -29,13 +29,14 @@ import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
 
 import { useUserDisplay } from '@/hooks';
+import { WakuHealthDot } from '@/components/ui/waku-health-indicator';
 
 const Header = () => {
   const { verificationStatus } = useAuth();
   const { getDelegationStatus } = useAuthContext();
   const [delegationInfo, setDelegationInfo] =
     useState<DelegationFullStatus | null>(null);
-  const networkStatus = useNetworkStatus();
+  const wakuHealth = useWakuHealthStatus();
   const location = useLocation();
   const { toast } = useToast();
   const forum = useForum();
@@ -215,15 +216,9 @@ const Header = () => {
           <div className="flex items-center space-x-4">
             {/* Network Status */}
             <div className="flex items-center space-x-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  networkStatus.health.isConnected
-                    ? 'bg-green-400'
-                    : 'bg-red-400'
-                }`}
-              />
+              <WakuHealthDot />
               <span className="text-xs text-cyber-neutral">
-                {networkStatus.getStatusMessage()}
+                {wakuHealth.statusMessage}
               </span>
               {forum.lastSync && (
                 <span className="text-xs text-cyber-neutral ml-2">

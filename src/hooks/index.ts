@@ -63,6 +63,13 @@ export type {
   NetworkStatusData,
 } from './utilities/useNetworkStatus';
 
+export {
+  useWakuHealth,
+  useWakuReady,
+  useWakuHealthStatus,
+} from './useWakuHealth';
+export type { WakuHealthState } from './useWakuHealth';
+
 export { useForumSelectors } from './utilities/selectors';
 export type { ForumSelectors } from './utilities/selectors';
 

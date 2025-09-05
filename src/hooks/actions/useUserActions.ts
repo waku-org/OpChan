@@ -220,33 +220,18 @@ export function useUserActions(): UserActions {
 
       try {
         let success = true;
-        const updatePromises: Promise<boolean>[] = [];
-
-        // Update call sign if provided
-        if (updates.callSign !== undefined) {
-          updatePromises.push(
-            userIdentityService.updateUserProfile(
-              currentUser.address,
-              updates.callSign,
-              currentUser.displayPreference
-            )
+        if (
+          updates.callSign !== undefined ||
+          updates.displayPreference !== undefined
+        ) {
+          const callSignToSend = updates.callSign;
+          const preferenceToSend =
+            updates.displayPreference ?? currentUser.displayPreference;
+          success = await userIdentityService.updateUserProfile(
+            currentUser.address,
+            callSignToSend,
+            preferenceToSend
           );
-        }
-
-        // Update display preference if provided
-        if (updates.displayPreference !== undefined) {
-          updatePromises.push(
-            userIdentityService.updateUserProfile(
-              currentUser.address,
-              currentUser.callSign || '',
-              updates.displayPreference
-            )
-          );
-        }
-
-        if (updatePromises.length > 0) {
-          const results = await Promise.all(updatePromises);
-          success = results.every(result => result);
         }
 
         if (success) {
