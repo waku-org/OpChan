@@ -6,27 +6,16 @@ import {
   CommentMessage,
   VoteMessage,
 } from '../../types/waku';
-import { CONTENT_TOPICS } from './constants';
+import { CONTENT_TOPIC } from './constants';
 import { OpchanMessage } from '@/types/forum';
 
 export class CodecManager {
-  private encoders: Map<MessageType, IEncoder> = new Map();
-  private decoders: Map<MessageType, IDecoder<IDecodedMessage>> = new Map();
+  private encoder: IEncoder;
+  private decoder: IDecoder<IDecodedMessage>;
 
   constructor(private node: LightNode) {
-    this.encoders = new Map(
-      Object.values(MessageType).map(type => [
-        type,
-        this.node.createEncoder({ contentTopic: CONTENT_TOPICS[type] }),
-      ])
-    );
-
-    this.decoders = new Map(
-      Object.values(MessageType).map(type => [
-        type,
-        this.node.createDecoder({ contentTopic: CONTENT_TOPICS[type] }),
-      ])
-    );
+    this.encoder = this.node.createEncoder({ contentTopic: CONTENT_TOPIC });
+    this.decoder = this.node.createDecoder({ contentTopic: CONTENT_TOPIC });
   }
 
   /**
@@ -61,38 +50,30 @@ export class CodecManager {
   }
 
   /**
-   * Get encoder for a specific message type
+   * Get the single encoder for all message types
    */
-  getEncoder(messageType: MessageType): IEncoder {
-    const encoder = this.encoders.get(messageType);
-    if (!encoder) {
-      throw new Error(`No encoder found for message type: ${messageType}`);
-    }
-    return encoder;
+  getEncoder(): IEncoder {
+    return this.encoder;
   }
 
   /**
-   * Get decoder for a specific message type
+   * Get the single decoder for all message types
    */
-  getDecoder(messageType: MessageType): IDecoder<IDecodedMessage> {
-    const decoder = this.decoders.get(messageType);
-    if (!decoder) {
-      throw new Error(`No decoder found for message type: ${messageType}`);
-    }
-    return decoder;
+  getDecoder(): IDecoder<IDecodedMessage> {
+    return this.decoder;
   }
 
   /**
-   * Get all decoders for subscribing to multiple message types
+   * Get all decoders (returns single decoder in array for compatibility)
    */
   getAllDecoders(): IDecoder<IDecodedMessage>[] {
-    return Array.from(this.decoders.values());
+    return [this.decoder];
   }
 
   /**
-   * Get decoders for specific message types
+   * Get decoders for specific message types (returns single decoder for all types)
    */
-  getDecoders(messageTypes: MessageType[]): IDecoder<IDecodedMessage>[] {
-    return messageTypes.map(type => this.getDecoder(type));
+  getDecoders(_messageTypes: MessageType[]): IDecoder<IDecodedMessage>[] {
+    return [this.decoder];
   }
 }

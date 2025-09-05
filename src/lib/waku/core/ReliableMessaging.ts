@@ -4,7 +4,6 @@ import {
   ReliableChannel,
   ReliableChannelEvent,
 } from '@waku/sdk';
-import { MessageType } from '../../../types/waku';
 import { CodecManager } from '../CodecManager';
 import { generateStringId } from '@/lib/utils';
 import { OpchanMessage } from '@/types/forum';
@@ -18,43 +17,38 @@ export interface MessageStatusCallback {
 export type IncomingMessageCallback = (message: OpchanMessage) => void;
 
 export class ReliableMessaging {
-  private channels: Map<MessageType, ReliableChannel<IDecodedMessage>> =
-    new Map();
+  private channel: ReliableChannel<IDecodedMessage> | null = null;
   private messageCallbacks: Map<string, MessageStatusCallback> = new Map();
   private incomingMessageCallbacks: Set<IncomingMessageCallback> = new Set();
   private codecManager: CodecManager;
 
   constructor(node: LightNode) {
     this.codecManager = new CodecManager(node);
-    this.initializeChannels(node);
+    this.initializeChannel(node);
   }
 
-  private async initializeChannels(node: LightNode): Promise<void> {
-    for (const type of Object.values(MessageType)) {
-      const encoder = this.codecManager.getEncoder(type);
-      const decoder = this.codecManager.getDecoder(type);
-      const senderId = generateStringId();
-      const channelId = `opchan-${type}`;
+  private async initializeChannel(node: LightNode): Promise<void> {
+    const encoder = this.codecManager.getEncoder();
+    const decoder = this.codecManager.getDecoder();
+    const senderId = generateStringId();
+    const channelId = 'opchan-messages';
 
-      try {
-        const channel = await ReliableChannel.create(
-          node,
-          channelId,
-          senderId,
-          encoder,
-          decoder
-        );
-        this.channels.set(type, channel);
-        this.setupChannelListeners(channel, type);
-      } catch (error) {
-        console.error(`Failed to create reliable channel for ${type}:`, error);
-      }
+    try {
+      this.channel = await ReliableChannel.create(
+        node,
+        channelId,
+        senderId,
+        encoder,
+        decoder
+      );
+      this.setupChannelListeners(this.channel);
+    } catch (error) {
+      console.error('Failed to create reliable channel:', error);
     }
   }
 
   private setupChannelListeners(
-    channel: ReliableChannel<IDecodedMessage>,
-    type: MessageType
+    channel: ReliableChannel<IDecodedMessage>
   ): void {
     channel.addEventListener(ReliableChannelEvent.InMessageReceived, event => {
       try {
@@ -68,7 +62,7 @@ export class ReliableMessaging {
           );
         }
       } catch (error) {
-        console.error(`Failed to process incoming message for ${type}:`, error);
+        console.error('Failed to process incoming message:', error);
       }
     });
 
@@ -105,9 +99,8 @@ export class ReliableMessaging {
     message: OpchanMessage,
     statusCallback?: MessageStatusCallback
   ): Promise<void> {
-    const channel = this.channels.get(message.type);
-    if (!channel) {
-      throw new Error(`No reliable channel for message type: ${message.type}`);
+    if (!this.channel) {
+      throw new Error('Reliable channel not initialized');
     }
 
     const encodedMessage = this.codecManager.encodeMessage(message);
@@ -118,7 +111,7 @@ export class ReliableMessaging {
     }
 
     try {
-      return channel.send(encodedMessage);
+      return this.channel.send(encodedMessage);
     } catch (error) {
       this.messageCallbacks.delete(messageId);
       throw error;
@@ -133,6 +126,6 @@ export class ReliableMessaging {
   public cleanup(): void {
     this.messageCallbacks.clear();
     this.incomingMessageCallbacks.clear();
-    this.channels.clear();
+    this.channel = null;
   }
 }
