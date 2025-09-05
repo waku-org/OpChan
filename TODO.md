@@ -5,6 +5,7 @@ This document outlines the features and improvements that still need to be imple
 ## 🚨 High Priority (1-2 weeks)
 
 ### 1. Bookmarking System
+
 - **Requirement**: "Users can bookmark posts and topics; local only"
 - **Status**: ❌ Not implemented
 - **Missing**:
@@ -16,6 +17,7 @@ This document outlines the features and improvements that still need to be imple
 - **Estimated Effort**: 2-3 days
 
 ### 2. Call Sign Setup & Display
+
 - **Requirement**: "Users can setup a call sign; bitcoin identity operator unique name - remains - ordinal used as avatar"
 - **Status**: ⚠️ Partially implemented
 - **Missing**:
@@ -27,6 +29,7 @@ This document outlines the features and improvements that still need to be imple
 - **Estimated Effort**: 3-4 days
 
 ### 3. Cell Icon System
+
 - **Requirement**: "Cell can be created with a name, description, icon; icon size will be restricted"
 - **Status**: ❌ Not implemented
 - **Missing**:
@@ -40,6 +43,7 @@ This document outlines the features and improvements that still need to be imple
 ## 🔶 Medium Priority (2-3 weeks)
 
 ### 4. Enhanced Sorting Options
+
 - **Requirement**: "Users can sort topics per new or top"
 - **Status**: ⚠️ Basic implementation exists
 - **Missing**:
@@ -51,6 +55,7 @@ This document outlines the features and improvements that still need to be imple
 - **Estimated Effort**: 1-2 days
 
 ### 5. Active Member Count Display
+
 - **Requirement**: "A user can see the number of active members per cell; deduced from retrievable activity"
 - **Status**: ⚠️ Calculated in backend but not shown
 - **Missing**:
@@ -61,6 +66,7 @@ This document outlines the features and improvements that still need to be imple
 - **Estimated Effort**: 1 day
 
 ### 6. IndexedDB Integration
+
 - **Requirement**: "store message cache in indexedDB -- make app local-first"
 - **Status**: ❌ In-memory caching only
 - **Missing**:
@@ -72,6 +78,7 @@ This document outlines the features and improvements that still need to be imple
 - **Estimated Effort**: 3-4 days
 
 ### 7. Enhanced Moderation UI
+
 - **Requirement**: "Cell admin can mark posts and comments as moderated"
 - **Status**: ⚠️ Backend logic exists, basic UI
 - **Missing**:
@@ -86,6 +93,7 @@ This document outlines the features and improvements that still need to be imple
 ## 🔵 Low Priority (3-4 weeks)
 
 ### 8. Anonymous User Experience
+
 - **Requirement**: "Anonymous users can upvote, comments and post"
 - **Status**: ⚠️ Basic support but limited UX
 - **Missing**:
@@ -97,6 +105,7 @@ This document outlines the features and improvements that still need to be imple
 - **Estimated Effort**: 2-3 days
 
 ### 9. Relevance Score Visibility
+
 - **Requirement**: "The relevance index is used to push most relevant posts and comments on top"
 - **Status**: ⚠️ Calculated but limited visibility
 - **Missing**:
@@ -108,6 +117,7 @@ This document outlines the features and improvements that still need to be imple
 - **Estimated Effort**: 1-2 days
 
 ### 10. Mobile Responsiveness
+
 - **Requirement**: "Users do not need any software beyond a browser to use the forum"
 - **Status**: ❌ Basic responsive design
 - **Missing**:
@@ -121,18 +131,21 @@ This document outlines the features and improvements that still need to be imple
 ## 🛠️ Technical Debt & Infrastructure
 
 ### 11. Performance Optimizations
+
 - [ ] Implement virtual scrolling for large lists
 - [ ] Add message pagination
 - [ ] Optimize relevance calculations
 - [ ] Implement lazy loading for images
 
 ### 12. Testing & Quality
+
 - [ ] Add comprehensive unit tests
 - [ ] Implement integration tests
 - [ ] Add end-to-end testing
 - [ ] Performance testing and monitoring
 
 ### 13. Documentation
+
 - [ ] API documentation
 - [ ] User guide
 - [ ] Developer setup guide
@@ -141,11 +154,13 @@ This document outlines the features and improvements that still need to be imple
 ## 📋 Implementation Notes
 
 ### Dependencies
+
 - Bookmarking system depends on IndexedDB integration
 - Call sign setup depends on user profile system completion
 - Enhanced moderation depends on existing moderation backend
 
 ### Technical Considerations
+
 - Use React Query for state management
 - Implement proper error boundaries
 - Add loading states for all async operations
@@ -153,6 +168,7 @@ This document outlines the features and improvements that still need to be imple
 - Follow existing code patterns and conventions
 
 ### Testing Strategy
+
 - Unit tests for utility functions
 - Integration tests for hooks and contexts
 - Component tests for UI elements
@@ -169,11 +185,11 @@ This document outlines the features and improvements that still need to be imple
 ## 📅 Timeline Estimate
 
 - **Phase 1 (High Priority)**: 1-2 weeks
-- **Phase 2 (Medium Priority)**: 2-3 weeks  
+- **Phase 2 (Medium Priority)**: 2-3 weeks
 - **Phase 3 (Low Priority)**: 3-4 weeks
 - **Total Estimated Time**: 6-9 weeks
 
 ---
 
-*Last updated: [Current Date]*
-*Based on FURPS requirements analysis and codebase review*
+_Last updated: [Current Date]_
+_Based on FURPS requirements analysis and codebase review_

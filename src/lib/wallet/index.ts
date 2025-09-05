@@ -207,7 +207,10 @@ export class WalletManager {
         const bitcoinMessage = await loadBitcoinMessage();
         const result = bitcoinMessage.verify(message, walletAddress, signature);
         if (import.meta.env?.DEV) {
-          console.debug('WalletManager.verifySignature (bitcoin) result', result);
+          console.debug(
+            'WalletManager.verifySignature (bitcoin) result',
+            result
+          );
         }
         return result;
       }

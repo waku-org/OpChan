@@ -1,7 +1,11 @@
 import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { OpchanMessage } from '@/types/forum';
-import { User, EVerificationStatus, EDisplayPreference } from '@/types/identity';
+import {
+  User,
+  EVerificationStatus,
+  EDisplayPreference,
+} from '@/types/identity';
 import { WalletManager } from '@/lib/wallet';
 import {
   DelegationManager,

@@ -84,7 +84,8 @@ export class UserIdentityService {
     }
 
     // Fallback: Check Waku message cache
-    const cacheServiceData = messageManager.messageCache.userIdentities[address];
+    const cacheServiceData =
+      messageManager.messageCache.userIdentities[address];
 
     if (cacheServiceData) {
       if (import.meta.env?.DEV) {
@@ -191,7 +192,10 @@ export class UserIdentityService {
         await this.messageService.signAndBroadcastMessage(unsignedMessage);
 
       if (import.meta.env?.DEV) {
-        console.debug('UserIdentityService: message broadcast result', !!signedMessage);
+        console.debug(
+          'UserIdentityService: message broadcast result',
+          !!signedMessage
+        );
       }
 
       return !!signedMessage;
@@ -248,9 +252,15 @@ export class UserIdentityService {
     }
 
     try {
-      // For now, return null - ENS resolution can be added later
-      // This would typically call an ENS resolver API
-      return null;
+      // Import the ENS resolver from wagmi
+      const { getEnsName } = await import('@wagmi/core');
+      const { config } = await import('@/lib/wallet/config');
+
+      const ensName = await getEnsName(config, {
+        address: address as `0x${string}`,
+      });
+
+      return ensName || null;
     } catch (error) {
       console.error('Failed to resolve ENS name:', error);
       return null;
@@ -263,13 +273,9 @@ export class UserIdentityService {
   private async resolveOrdinalDetails(
     address: string
   ): Promise<{ ordinalId: string; ordinalDetails: string } | null> {
-    if (address.startsWith('0x')) {
-      return null; // Not a Bitcoin address
-    }
-
     try {
-      // For now, return null - Ordinal resolution can be added later
-      // This would typically call an Ordinal API
+      //TODO: add Ordinal API call
+      console.log('resolveOrdinalDetails', address);
       return null;
     } catch (error) {
       console.error('Failed to resolve Ordinal details:', error);
@@ -290,7 +296,9 @@ export class UserIdentityService {
         ordinalDetails: undefined,
         callSign: undefined,
         displayPreference:
-          displayPreference === EDisplayPreference.CALL_SIGN ? EDisplayPreference.CALL_SIGN : EDisplayPreference.WALLET_ADDRESS,
+          displayPreference === EDisplayPreference.CALL_SIGN
+            ? EDisplayPreference.CALL_SIGN
+            : EDisplayPreference.WALLET_ADDRESS,
         lastUpdated: timestamp,
         verificationStatus: EVerificationStatus.UNVERIFIED,
       };

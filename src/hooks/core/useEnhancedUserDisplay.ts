@@ -2,20 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { useForum } from '@/contexts/useForum';
 import { EDisplayPreference, EVerificationStatus } from '@/types/identity';
 
-export interface Badge {
-  type: 'verification' | 'ens' | 'ordinal' | 'callsign';
-  label: string;
-  icon: string;
-  color: string;
-}
-
 export interface UserDisplayInfo {
   displayName: string;
-  hasCallSign: boolean;
-  hasENS: boolean;
-  hasOrdinal: boolean;
+  callSign: string | null;
+  ensName: string | null;
+  ordinalDetails: string | null;
   verificationLevel: EVerificationStatus;
-  badges: Badge[];
+  displayPreference: EDisplayPreference | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -27,11 +20,11 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
   const { userIdentityService, userVerificationStatus } = useForum();
   const [displayInfo, setDisplayInfo] = useState<UserDisplayInfo>({
     displayName: `${address.slice(0, 6)}...${address.slice(-4)}`,
-    hasCallSign: false,
-    hasENS: false,
-    hasOrdinal: false,
+    callSign: null,
+    ensName: null,
+    ordinalDetails: null,
     verificationLevel: EVerificationStatus.UNVERIFIED,
-    badges: [],
+    displayPreference: null,
     isLoading: true,
     error: null,
   });
@@ -41,8 +34,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
     return (
       userVerificationStatus[address] || {
         isVerified: false,
-        hasENS: false,
-        hasOrdinal: false,
+        ensName: null,
         verificationStatus: EVerificationStatus.UNVERIFIED,
       }
     );
@@ -66,13 +58,13 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
         );
         setDisplayInfo({
           displayName: `${address.slice(0, 6)}...${address.slice(-4)}`,
-          hasCallSign: false,
-          hasENS: false,
-          hasOrdinal: false,
+          callSign: null,
+          ensName: verificationInfo.ensName || null,
+          ordinalDetails: null,
           verificationLevel:
             verificationInfo.verificationStatus ||
             EVerificationStatus.UNVERIFIED,
-          badges: [],
+          displayPreference: null,
           isLoading: false,
           error: null,
         });
@@ -95,102 +87,30 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
             displayName = identity.ensName;
           }
 
-          // Generate badges
-          const badges: Badge[] = [];
-
-          // Verification badge
-          if (
-            identity.verificationStatus === EVerificationStatus.VERIFIED_OWNER
-          ) {
-            badges.push({
-              type: 'verification',
-              label: 'Verified Owner',
-              icon: '🔑',
-              color: 'text-cyber-accent',
-            });
-          } else if (
-            identity.verificationStatus === EVerificationStatus.VERIFIED_BASIC
-          ) {
-            badges.push({
-              type: 'verification',
-              label: 'Verified',
-              icon: '✅',
-              color: 'text-green-400',
-            });
-          }
-
-          // ENS badge
-          if (identity.ensName) {
-            badges.push({
-              type: 'ens',
-              label: 'ENS',
-              icon: '🏷️',
-              color: 'text-blue-400',
-            });
-          }
-
-          // Ordinal badge
-          if (identity.ordinalDetails) {
-            badges.push({
-              type: 'ordinal',
-              label: 'Ordinal',
-              icon: '⚡',
-              color: 'text-orange-400',
-            });
-          }
-
-          // Call sign badge
-          if (identity.callSign) {
-            badges.push({
-              type: 'callsign',
-              label: 'Call Sign',
-              icon: '📻',
-              color: 'text-purple-400',
-            });
-          }
-
           setDisplayInfo({
             displayName,
-            hasCallSign: Boolean(identity.callSign),
-            hasENS: Boolean(identity.ensName),
-            hasOrdinal: Boolean(identity.ordinalDetails),
+            callSign: identity.callSign || null,
+            ensName: identity.ensName || null,
+            ordinalDetails: identity.ordinalDetails
+              ? identity.ordinalDetails.ordinalDetails
+              : null,
             verificationLevel: identity.verificationStatus,
-            badges,
+            displayPreference: identity.displayPreference || null,
             isLoading: false,
             error: null,
           });
         } else {
-
-          // Use verification info from forum context
-          const badges: Badge[] = [];
-          if (verificationInfo.hasENS) {
-            badges.push({
-              type: 'ens',
-              label: 'ENS',
-              icon: '🏷️',
-              color: 'text-blue-400',
-            });
-          }
-          if (verificationInfo.hasOrdinal) {
-            badges.push({
-              type: 'ordinal',
-              label: 'Ordinal',
-              icon: '⚡',
-              color: 'text-orange-400',
-            });
-          }
-
           setDisplayInfo({
             displayName:
               verificationInfo.ensName ||
               `${address.slice(0, 6)}...${address.slice(-4)}`,
-            hasCallSign: false,
-            hasENS: verificationInfo.hasENS,
-            hasOrdinal: verificationInfo.hasOrdinal,
+            callSign: null,
+            ensName: verificationInfo.ensName || null,
+            ordinalDetails: null,
             verificationLevel:
               verificationInfo.verificationStatus ||
               EVerificationStatus.UNVERIFIED,
-            badges,
+            displayPreference: null,
             isLoading: false,
             error: null,
           });
@@ -202,11 +122,11 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
         );
         setDisplayInfo({
           displayName: `${address.slice(0, 6)}...${address.slice(-4)}`,
-          hasCallSign: false,
-          hasENS: false,
-          hasOrdinal: false,
+          callSign: null,
+          ensName: null,
+          ordinalDetails: null,
           verificationLevel: EVerificationStatus.UNVERIFIED,
-          badges: [],
+          displayPreference: null,
           isLoading: false,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
@@ -221,19 +141,16 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
     if (!displayInfo.isLoading && verificationInfo) {
       setDisplayInfo(prev => ({
         ...prev,
-        hasENS: verificationInfo.hasENS || prev.hasENS,
-        hasOrdinal: verificationInfo.hasOrdinal || prev.hasOrdinal,
+        ensName: verificationInfo.ensName || prev.ensName,
         verificationLevel:
           verificationInfo.verificationStatus || prev.verificationLevel,
       }));
     }
   }, [
     verificationInfo.ensName,
-    verificationInfo.hasENS,
-    verificationInfo.hasOrdinal,
     verificationInfo.verificationStatus,
     displayInfo.isLoading,
-    verificationInfo
+    verificationInfo,
   ]);
 
   return displayInfo;

@@ -46,6 +46,42 @@ export function VerificationStep({
     details?: OrdinalDetails | EnsDetails;
   } | null>(null);
 
+  // Watch for changes in user state after verification
+  React.useEffect(() => {
+    if (
+      verificationResult?.success &&
+      verificationResult.message.includes('Checking ownership')
+    ) {
+      // Check if actual ownership was verified
+      const hasOwnership =
+        walletType === 'bitcoin'
+          ? !!currentUser?.ordinalDetails
+          : !!currentUser?.ensDetails;
+
+      if (hasOwnership) {
+        setVerificationResult({
+          success: true,
+          message:
+            walletType === 'bitcoin'
+              ? 'Ordinal ownership verified successfully!'
+              : 'ENS ownership verified successfully!',
+          details:
+            walletType === 'bitcoin'
+              ? currentUser?.ordinalDetails
+              : currentUser?.ensDetails,
+        });
+      } else {
+        setVerificationResult({
+          success: false,
+          message:
+            walletType === 'bitcoin'
+              ? 'No Ordinal ownership found. You can still participate in the forum with your connected wallet!'
+              : 'No ENS ownership found. You can still participate in the forum with your connected wallet!',
+        });
+      }
+    }
+  }, [currentUser, verificationResult, walletType]);
+
   const handleVerify = async () => {
     if (!currentUser) return;
 
@@ -56,16 +92,15 @@ export function VerificationStep({
       const success = await verifyWallet();
 
       if (success) {
+        // For now, just show success - the actual ownership check will be done
+        // by the useEffect when the user state updates
         setVerificationResult({
           success: true,
           message:
             walletType === 'bitcoin'
-              ? 'Ordinal ownership verified successfully!'
-              : 'ENS ownership verified successfully!',
-          details:
-            walletType === 'bitcoin'
-              ? currentUser.ordinalDetails
-              : currentUser.ensDetails,
+              ? 'Verification process completed. Checking ownership...'
+              : 'Verification process completed. Checking ownership...',
+          details: undefined,
         });
       } else {
         setVerificationResult({

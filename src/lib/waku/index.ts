@@ -15,8 +15,7 @@ class MessageManager {
   private messageService: MessageService | null = null;
   private reliableMessaging: ReliableMessaging | null = null;
 
-  constructor() {
-  }
+  constructor() {}
 
   public static async create(): Promise<MessageManager> {
     const manager = new MessageManager();

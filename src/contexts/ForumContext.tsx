@@ -7,7 +7,11 @@ import React, {
   useRef,
 } from 'react';
 import { Cell, Post, Comment } from '@/types/forum';
-import { User, EVerificationStatus, EDisplayPreference } from '@/types/identity';
+import {
+  User,
+  EVerificationStatus,
+  EDisplayPreference,
+} from '@/types/identity';
 import { useToast } from '@/components/ui/use-toast';
 
 import { ForumActions } from '@/lib/forum/ForumActions';
@@ -122,7 +126,6 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
 
   // Transform message cache data to the expected types
   const updateStateFromCache = useCallback(async () => {
-
     // Build user verification status for relevance calculation
     const relevanceCalculator = new RelevanceCalculator();
     const allUsers: User[] = [];
@@ -260,8 +263,14 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         Object.assign(messageManager.messageCache.posts, seeded.posts);
         Object.assign(messageManager.messageCache.comments, seeded.comments);
         Object.assign(messageManager.messageCache.votes, seeded.votes);
-        Object.assign(messageManager.messageCache.moderations, seeded.moderations);
-        Object.assign(messageManager.messageCache.userIdentities, seeded.userIdentities);
+        Object.assign(
+          messageManager.messageCache.moderations,
+          seeded.moderations
+        );
+        Object.assign(
+          messageManager.messageCache.userIdentities,
+          seeded.userIdentities
+        );
 
         // Determine if we have any cached content
         const hasSeedData =
@@ -274,7 +283,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         await updateStateFromCache();
 
         // Initialize network and let incoming messages update LocalDatabase/Cache
-        await initializeNetwork(toast, updateStateFromCache, setError);
+        await initializeNetwork(toast, setError);
 
         if (hasSeedData) {
           setIsInitialLoading(false);
@@ -288,7 +297,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         console.warn('LocalDatabase warm-start failed, continuing cold:', e);
         // Initialize network even if local DB failed, keep loader until first message
-        await initializeNetwork(toast, updateStateFromCache, setError);
+        await initializeNetwork(toast, setError);
         const unsubscribe = messageManager.onMessageReceived(() => {
           setIsInitialLoading(false);
           unsubscribe();

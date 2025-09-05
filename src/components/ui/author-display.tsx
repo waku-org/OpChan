@@ -13,11 +13,11 @@ export function AuthorDisplay({
   className = '',
   showBadge = true,
 }: AuthorDisplayProps) {
-  const { displayName, hasCallSign, hasENS, hasOrdinal } =
+  const { displayName, callSign, ensName, ordinalDetails } =
     useUserDisplay(address);
 
   // Only show a badge if the author has ENS, Ordinal, or Call Sign
-  const shouldShowBadge = showBadge && (hasENS || hasOrdinal || hasCallSign);
+  const shouldShowBadge = showBadge && (ensName || ordinalDetails || callSign);
 
   return (
     <div className={`flex items-center gap-1.5 ${className}`}>
@@ -28,12 +28,12 @@ export function AuthorDisplay({
           variant="secondary"
           className="text-xs px-1.5 py-0.5 h-auto bg-green-900/20 border-green-500/30 text-green-400"
         >
-          {hasCallSign ? (
+          {callSign ? (
             <>
               <Hash className="w-3 h-3 mr-1" />
               Call Sign
             </>
-          ) : hasENS ? (
+          ) : ensName ? (
             <>
               <Crown className="w-3 h-3 mr-1" />
               ENS

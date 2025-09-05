@@ -13,6 +13,7 @@ import {
   CircleSlash,
   Home,
   Grid3X3,
+  User,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -177,6 +178,19 @@ const Header = () => {
                 <Grid3X3 className="w-4 h-4" />
                 <span>Cells</span>
               </Link>
+              {isConnected && (
+                <Link
+                  to="/profile"
+                  className={`flex items-center space-x-1 px-3 py-1 rounded-sm text-sm transition-colors ${
+                    location.pathname === '/profile'
+                      ? 'bg-cyber-accent/20 text-cyber-accent'
+                      : 'text-cyber-neutral hover:text-cyber-accent hover:bg-cyber-muted/50'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  <span>Profile</span>
+                </Link>
+              )}
             </nav>
           </div>
 
@@ -196,7 +210,12 @@ const Header = () => {
               </span>
               {forum.lastSync && (
                 <span className="text-xs text-cyber-neutral ml-2">
-                  Last updated {new Date(forum.lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  Last updated{' '}
+                  {new Date(forum.lastSync).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })}
                   {forum.isSyncing ? ' • syncing…' : ''}
                 </span>
               )}

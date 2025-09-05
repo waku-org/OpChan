@@ -113,26 +113,38 @@ export class LocalDatabase {
   private storeMessage(message: OpchanMessage): void {
     switch (message.type) {
       case MessageType.CELL:
-        if (!this.cache.cells[message.id] || this.cache.cells[message.id]?.timestamp !== message.timestamp) {
+        if (
+          !this.cache.cells[message.id] ||
+          this.cache.cells[message.id]?.timestamp !== message.timestamp
+        ) {
           this.cache.cells[message.id] = message;
           this.put(STORE.CELLS, message);
         }
         break;
       case MessageType.POST:
-        if (!this.cache.posts[message.id] || this.cache.posts[message.id]?.timestamp !== message.timestamp) {
+        if (
+          !this.cache.posts[message.id] ||
+          this.cache.posts[message.id]?.timestamp !== message.timestamp
+        ) {
           this.cache.posts[message.id] = message;
           this.put(STORE.POSTS, message);
         }
         break;
       case MessageType.COMMENT:
-        if (!this.cache.comments[message.id] || this.cache.comments[message.id]?.timestamp !== message.timestamp) {
+        if (
+          !this.cache.comments[message.id] ||
+          this.cache.comments[message.id]?.timestamp !== message.timestamp
+        ) {
           this.cache.comments[message.id] = message;
           this.put(STORE.COMMENTS, message);
         }
         break;
       case MessageType.VOTE: {
         const voteKey = `${message.targetId}:${message.author}`;
-        if (!this.cache.votes[voteKey] || this.cache.votes[voteKey]?.timestamp !== message.timestamp) {
+        if (
+          !this.cache.votes[voteKey] ||
+          this.cache.votes[voteKey]?.timestamp !== message.timestamp
+        ) {
           this.cache.votes[voteKey] = message;
           this.put(STORE.VOTES, { key: voteKey, ...message });
         }
@@ -140,7 +152,11 @@ export class LocalDatabase {
       }
       case MessageType.MODERATE: {
         const modMsg = message as ModerateMessage;
-        if (!this.cache.moderations[modMsg.targetId] || this.cache.moderations[modMsg.targetId]?.timestamp !== modMsg.timestamp) {
+        if (
+          !this.cache.moderations[modMsg.targetId] ||
+          this.cache.moderations[modMsg.targetId]?.timestamp !==
+            modMsg.timestamp
+        ) {
           this.cache.moderations[modMsg.targetId] = modMsg;
           this.put(STORE.MODERATIONS, modMsg);
         }
@@ -150,7 +166,10 @@ export class LocalDatabase {
         const profileMsg = message as UserProfileUpdateMessage;
         const { author, callSign, displayPreference, timestamp } = profileMsg;
 
-        if (!this.cache.userIdentities[author] || this.cache.userIdentities[author]?.lastUpdated !== timestamp) {
+        if (
+          !this.cache.userIdentities[author] ||
+          this.cache.userIdentities[author]?.lastUpdated !== timestamp
+        ) {
           this.cache.userIdentities[author] = {
             ensName: undefined,
             ordinalDetails: undefined,
@@ -182,14 +201,7 @@ export class LocalDatabase {
   private async hydrateFromIndexedDB(): Promise<void> {
     if (!this.db) return;
 
-    const [
-      cells,
-      posts,
-      comments,
-      votes,
-      moderations,
-      identities,
-    ]: [
+    const [cells, posts, comments, votes, moderations, identities]: [
       CellMessage[],
       PostMessage[],
       CommentMessage[],
@@ -217,7 +229,9 @@ export class LocalDatabase {
         return [key, vote];
       })
     );
-    this.cache.moderations = Object.fromEntries(moderations.map(m => [m.targetId, m]));
+    this.cache.moderations = Object.fromEntries(
+      moderations.map(m => [m.targetId, m])
+    );
     this.cache.userIdentities = Object.fromEntries(
       identities.map(u => {
         const { address, ...record } = u;
@@ -232,7 +246,10 @@ export class LocalDatabase {
       STORE.META
     );
     meta
-      .filter(entry => typeof entry.key === 'string' && entry.key.startsWith('pending:'))
+      .filter(
+        entry =>
+          typeof entry.key === 'string' && entry.key.startsWith('pending:')
+      )
       .forEach(entry => {
         const id = (entry.key as string).substring('pending:'.length);
         this.pendingIds.add(id);
@@ -313,5 +330,3 @@ export class LocalDatabase {
 }
 
 export const localDatabase = new LocalDatabase();
-
-

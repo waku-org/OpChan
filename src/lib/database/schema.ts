@@ -60,5 +60,3 @@ export function openLocalDB(): Promise<IDBDatabase> {
     };
   });
 }
-
-

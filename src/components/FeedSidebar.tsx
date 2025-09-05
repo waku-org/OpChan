@@ -1,17 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, TrendingUp, Users, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { TrendingUp, Users, Eye } from 'lucide-react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  useForumData,
-  useForumSelectors,
-  useAuth,
-  usePermissions,
-} from '@/hooks';
+import { useForumData, useForumSelectors, useAuth } from '@/hooks';
 import { CypherImage } from '@/components/ui/CypherImage';
-import { CreateCellDialog } from '@/components/CreateCellDialog';
 import { useUserDisplay } from '@/hooks';
 
 const FeedSidebar: React.FC = () => {
@@ -19,11 +13,9 @@ const FeedSidebar: React.FC = () => {
   const forumData = useForumData();
   const selectors = useForumSelectors(forumData);
   const { currentUser, verificationStatus } = useAuth();
-  const { canCreateCell } = usePermissions();
-  const [showCreateCell, setShowCreateCell] = useState(false);
 
   // Get user display information using the hook
-  const { displayName, hasENS, hasOrdinal } = useUserDisplay(
+  const { displayName, ensName, ordinalDetails } = useUserDisplay(
     currentUser?.address || ''
   );
 
@@ -41,9 +33,9 @@ const FeedSidebar: React.FC = () => {
       return { text: 'Verified Owner', color: 'bg-green-500' };
     } else if (verificationStatus.level === 'verified-basic') {
       return { text: 'Verified', color: 'bg-blue-500' };
-    } else if (hasENS) {
+    } else if (ensName) {
       return { text: 'ENS User', color: 'bg-purple-500' };
-    } else if (hasOrdinal) {
+    } else if (ordinalDetails) {
       return { text: 'Ordinal User', color: 'bg-orange-500' };
     }
     return { text: 'Unverified', color: 'bg-gray-500' };
@@ -82,12 +74,13 @@ const FeedSidebar: React.FC = () => {
               </div>
             )}
 
-            {verificationStatus.level === 'verified-basic' && !hasOrdinal && (
-              <div className="text-xs text-muted-foreground">
-                <Eye className="w-3 h-3 inline mr-1" />
-                Read-only mode. Acquire Ordinals to post.
-              </div>
-            )}
+            {verificationStatus.level === 'verified-basic' &&
+              !ordinalDetails && (
+                <div className="text-xs text-muted-foreground">
+                  <Eye className="w-3 h-3 inline mr-1" />
+                  Read-only mode. Acquire Ordinals to post.
+                </div>
+              )}
           </CardContent>
         </Card>
       )}
@@ -158,31 +151,6 @@ const FeedSidebar: React.FC = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* Quick Actions */}
-      {canCreateCell && (
-        <Card className="bg-cyber-muted/20 border-cyber-muted">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button
-              onClick={() => setShowCreateCell(true)}
-              className="w-full bg-cyber-accent hover:bg-cyber-accent/80"
-              size="sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Cell
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Create Cell Dialog */}
-      <CreateCellDialog
-        open={showCreateCell}
-        onOpenChange={setShowCreateCell}
-      />
     </div>
   );
 };

@@ -185,7 +185,9 @@ const PostDetail = () => {
                 <ArrowDown className="w-4 h-4" />
               </button>
               {postVotePending.isPending && (
-                <span className="mt-1 text-[10px] text-yellow-500">syncing…</span>
+                <span className="mt-1 text-[10px] text-yellow-500">
+                  syncing…
+                </span>
               )}
             </div>
 

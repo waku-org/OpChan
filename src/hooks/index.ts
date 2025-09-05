@@ -18,7 +18,7 @@ export type {
   EnhancedAuthState,
 } from './core/useEnhancedAuth';
 
-export type { Badge, UserDisplayInfo } from './core/useEnhancedUserDisplay';
+export type { UserDisplayInfo } from './core/useEnhancedUserDisplay';
 
 // Derived hooks
 export { useCell } from './derived/useCell';

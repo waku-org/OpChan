@@ -23,6 +23,7 @@ import PostPage from './pages/PostPage';
 import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import Index from './pages/Index';
+import ProfilePage from './pages/ProfilePage';
 import { appkitConfig } from './lib/wallet/config';
 import { WagmiProvider } from 'wagmi';
 import { config } from './lib/wallet/config';
@@ -46,6 +47,7 @@ const App = () => (
                   <Route path="/cells" element={<Index />} />
                   <Route path="/cell/:cellId" element={<CellPage />} />
                   <Route path="/post/:postId" element={<PostPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </TooltipProvider>

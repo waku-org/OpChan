@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useAuth } from '@/hooks/core/useEnhancedAuth';
 import { DelegationDuration } from '@/lib/delegation';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth as useAuthContext } from '@/contexts/useAuth';
 
 export interface AuthActionStates {
   isConnecting: boolean;
@@ -38,6 +39,7 @@ export function useAuthActions(): AuthActions {
     verificationStatus,
   } = useAuth();
 
+  const { verifyOwnership, delegateKey: delegateKeyFromContext } = useAuthContext();
   const { toast } = useToast();
 
   const [isConnecting, setIsConnecting] = useState(false);
@@ -153,23 +155,24 @@ export function useAuthActions(): AuthActions {
 
     setIsVerifying(true);
 
-    try {
-      toast({
-        title: 'Verifying...',
-        description: 'Please sign the verification message in your wallet.',
-      });
-
-      // This would trigger the verification process
-      // The actual implementation would depend on the verification system
-
-      // Simulate verification process
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      toast({
-        title: 'Verification Complete',
-        description: 'Your wallet has been verified successfully.',
-      });
-      return true;
+      try {
+        // Call the real verification function from AuthContext
+        const success = await verifyOwnership();
+        
+        if (success) {
+          toast({
+            title: 'Verification Complete',
+            description: 'Your wallet has been verified successfully.',
+          });
+        } else {
+          toast({
+            title: 'Verification Failed',
+            description: 'Failed to verify wallet ownership. Please try again.',
+            variant: 'destructive',
+          });
+        }
+        
+        return success;
     } catch (error) {
       console.error('Failed to verify wallet:', error);
       toast({
@@ -181,7 +184,7 @@ export function useAuthActions(): AuthActions {
     } finally {
       setIsVerifying(false);
     }
-  }, [isAuthenticated, verificationStatus.level, toast]);
+  }, [isAuthenticated, verificationStatus.level, verifyOwnership, toast]);
 
   // Delegate key
   const delegateKey = useCallback(
@@ -207,21 +210,24 @@ export function useAuthActions(): AuthActions {
       setIsDelegating(true);
 
       try {
-        toast({
-          title: 'Delegating Key...',
-          description: 'Please sign the delegation message in your wallet.',
-        });
-
-        // This would trigger the key delegation process
-        // The actual implementation would use the DelegationManager
-
-        const durationLabel = duration === '7days' ? '1 week' : '30 days';
-
-        toast({
-          title: 'Key Delegated',
-          description: `Your signing key has been delegated for ${durationLabel}.`,
-        });
-        return true;
+        // Call the real delegation function from AuthContext
+        const success = await delegateKeyFromContext(duration);
+        
+        if (success) {
+          const durationLabel = duration === '7days' ? '1 week' : '30 days';
+          toast({
+            title: 'Key Delegated',
+            description: `Your signing key has been delegated for ${durationLabel}.`,
+          });
+        } else {
+          toast({
+            title: 'Delegation Failed',
+            description: 'Failed to delegate signing key. Please try again.',
+            variant: 'destructive',
+          });
+        }
+        
+        return success;
       } catch (error) {
         console.error('Failed to delegate key:', error);
         toast({
@@ -234,7 +240,7 @@ export function useAuthActions(): AuthActions {
         setIsDelegating(false);
       }
     },
-    [isAuthenticated, verificationStatus.level, toast]
+    [isAuthenticated, verificationStatus.level, delegateKeyFromContext, toast]
   );
 
   // Clear delegation

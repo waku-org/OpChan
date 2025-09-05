@@ -1,4 +1,4 @@
-import { EDisplayPreference, EVerificationStatus } from "./identity";
+import { EDisplayPreference, EVerificationStatus } from './identity';
 
 /**
  * Message types for Waku communication
@@ -162,8 +162,8 @@ export interface UserIdentityCache {
       ordinalDetails: string;
     };
     callSign?: string;
-    displayPreference: EDisplayPreference
+    displayPreference: EDisplayPreference;
     lastUpdated: number;
-    verificationStatus: EVerificationStatus
+    verificationStatus: EVerificationStatus;
   };
 }

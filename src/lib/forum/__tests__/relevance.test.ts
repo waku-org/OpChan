@@ -1,6 +1,10 @@
 import { RelevanceCalculator } from '../RelevanceCalculator';
 import { Post, Comment, UserVerificationStatus } from '@/types/forum';
-import { User, EVerificationStatus, EDisplayPreference } from '@/types/identity';
+import {
+  User,
+  EVerificationStatus,
+  EDisplayPreference,
+} from '@/types/identity';
 import { VoteMessage, MessageType } from '@/types/waku';
 import { expect, describe, beforeEach, it } from 'vitest';
 

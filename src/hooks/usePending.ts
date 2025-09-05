@@ -44,5 +44,3 @@ export function usePendingVote(targetId: string | undefined) {
 
   return { isPending };
 }
-
-

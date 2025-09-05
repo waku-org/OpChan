@@ -1,7 +1,6 @@
 import {
   useForumData,
   useAuth,
-  useUserDisplay,
   useUserVotes,
   useForumActions,
   useUserActions,
@@ -23,7 +22,6 @@ export function HookDemoComponent() {
   // Core data hooks - reactive and optimized
   const forumData = useForumData();
   const auth = useAuth();
-  const userDisplay = useUserDisplay(auth.currentUser?.address || '');
 
   // Derived hooks for specific data
   const userVotes = useUserVotes();
@@ -141,17 +139,6 @@ export function HookDemoComponent() {
               {auth.delegationInfo.isActive ? 'Yes' : 'No'}
             </div>
           </div>
-
-          {userDisplay.badges.length > 0 && (
-            <div className="flex gap-2">
-              <strong>Badges:</strong>
-              {userDisplay.badges.map((badge, index) => (
-                <Badge key={index} className={badge.color}>
-                  {badge.icon} {badge.label}
-                </Badge>
-              ))}
-            </div>
-          )}
 
           <div className="flex gap-2">
             <Button

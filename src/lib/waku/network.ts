@@ -47,7 +47,6 @@ export const refreshData = async (
 
 export const initializeNetwork = async (
   toast: ToastFunction,
-  updateStateFromCache: () => void,
   setError: (error: string | null) => void
 ): Promise<void> => {
   try {

@@ -85,7 +85,10 @@ export class DelegationManager {
    */
   signMessage(message: UnsignedMessage): OpchanMessage | null {
     const now = Date.now();
-    if (!this.cachedDelegation || now - this.cachedAt > DelegationManager.CACHE_TTL_MS) {
+    if (
+      !this.cachedDelegation ||
+      now - this.cachedAt > DelegationManager.CACHE_TTL_MS
+    ) {
       this.cachedDelegation = DelegationStorage.retrieve();
       this.cachedAt = now;
     }
@@ -164,7 +167,10 @@ export class DelegationManager {
     currentWalletType?: 'bitcoin' | 'ethereum'
   ): DelegationFullStatus {
     const now = Date.now();
-    if (!this.cachedDelegation || now - this.cachedAt > DelegationManager.CACHE_TTL_MS) {
+    if (
+      !this.cachedDelegation ||
+      now - this.cachedAt > DelegationManager.CACHE_TTL_MS
+    ) {
       this.cachedDelegation = DelegationStorage.retrieve();
       this.cachedAt = now;
     }
