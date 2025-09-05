@@ -291,7 +291,7 @@ export function useForumActions(): ForumActions {
       const canModerate =
         permissions.canModerate(cellId) &&
         cell &&
-        currentUser?.address === cell.signature;
+        currentUser?.address === cell.author;
 
       if (!canModerate) {
         toast({
@@ -307,7 +307,7 @@ export function useForumActions(): ForumActions {
           cellId,
           postId,
           reason,
-          cell.signature
+          cell.author
         );
         if (result) {
           toast({
@@ -339,7 +339,7 @@ export function useForumActions(): ForumActions {
       const canModerate =
         permissions.canModerate(cellId) &&
         cell &&
-        currentUser?.address === cell.signature;
+        currentUser?.address === cell.author;
 
       if (!canModerate) {
         toast({
@@ -355,7 +355,7 @@ export function useForumActions(): ForumActions {
           cellId,
           commentId,
           reason,
-          cell.signature
+          cell.author
         );
         if (result) {
           toast({
@@ -387,7 +387,7 @@ export function useForumActions(): ForumActions {
       const canModerate =
         permissions.canModerate(cellId) &&
         cell &&
-        currentUser?.address === cell.signature;
+        currentUser?.address === cell.author;
 
       if (!canModerate) {
         toast({
@@ -412,7 +412,7 @@ export function useForumActions(): ForumActions {
           cellId,
           userAddress,
           reason,
-          cell.signature
+          cell.author
         );
         if (result) {
           toast({

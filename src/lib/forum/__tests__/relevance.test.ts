@@ -6,7 +6,17 @@ import {
   EDisplayPreference,
 } from '@/types/identity';
 import { VoteMessage, MessageType } from '@/types/waku';
+import { DelegationProof } from '@/lib/delegation/types';
 import { expect, describe, beforeEach, it } from 'vitest';
+
+// Mock delegation proof for tests
+const mockDelegationProof: DelegationProof = {
+  authMessage: 'I authorize browser key: test-key until 9999999999',
+  walletSignature: 'mock-signature',
+  expiryTimestamp: 9999999999,
+  walletAddress: 'test-address',
+  walletType: 'ethereum',
+};
 
 describe('RelevanceCalculator', () => {
   let calculator: RelevanceCalculator;
@@ -36,6 +46,7 @@ describe('RelevanceCalculator', () => {
         downvotes: [],
         signature: 'test',
         browserPubKey: 'test',
+        delegationProof: mockDelegationProof,
       };
 
       const result = calculator.calculatePostScore(
@@ -64,6 +75,7 @@ describe('RelevanceCalculator', () => {
         downvotes: [],
         signature: 'test',
         browserPubKey: 'test',
+        delegationProof: mockDelegationProof,
       };
 
       const result = calculator.calculatePostScore(
@@ -141,6 +153,7 @@ describe('RelevanceCalculator', () => {
         moderated: true,
         signature: 'test',
         browserPubKey: 'test',
+        delegationProof: mockDelegationProof,
       };
 
       const result = calculator.calculatePostScore(
@@ -168,6 +181,7 @@ describe('RelevanceCalculator', () => {
         downvotes: [],
         signature: 'test',
         browserPubKey: 'test',
+        delegationProof: mockDelegationProof,
       };
 
       const votes: VoteMessage[] = [
@@ -180,6 +194,7 @@ describe('RelevanceCalculator', () => {
           type: MessageType.VOTE,
           signature: 'test',
           browserPubKey: 'test',
+          delegationProof: mockDelegationProof,
         },
         {
           id: 'vote2',
@@ -190,6 +205,7 @@ describe('RelevanceCalculator', () => {
           type: MessageType.VOTE,
           signature: 'test',
           browserPubKey: 'test',
+          delegationProof: mockDelegationProof,
         },
       ];
 
@@ -206,6 +222,7 @@ describe('RelevanceCalculator', () => {
           author: 'user1',
           signature: 'test',
           browserPubKey: 'test',
+          delegationProof: mockDelegationProof,
         },
       ];
 
@@ -241,6 +258,7 @@ describe('RelevanceCalculator', () => {
         downvotes: [],
         signature: 'test',
         browserPubKey: 'test',
+        delegationProof: mockDelegationProof,
       };
 
       const oldPost: Post = {
@@ -256,6 +274,7 @@ describe('RelevanceCalculator', () => {
         downvotes: [],
         signature: 'test',
         browserPubKey: 'test',
+        delegationProof: mockDelegationProof,
       };
 
       const recentResult = calculator.calculatePostScore(

@@ -21,11 +21,18 @@ import {
   ArrowDown,
   RefreshCw,
   Eye,
+  Shield,
+  UserX,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { CypherImage } from './ui/CypherImage';
 import { Badge } from '@/components/ui/badge';
 import { AuthorDisplay } from './ui/author-display';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const PostList = () => {
   const { cellId } = useParams<{ cellId: string }>();
@@ -312,24 +319,38 @@ const PostList = () => {
                     </div>
                   </Link>
                   {canModerate(cell.id) && !post.moderated && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="ml-2"
-                      onClick={() => handleModerate(post.id)}
-                    >
-                      Moderate
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 text-cyber-neutral hover:text-orange-500"
+                          onClick={() => handleModerate(post.id)}
+                        >
+                          <Shield className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Moderate post</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
-                  {canModerate(cell.id) && post.author !== cell.signature && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="ml-2"
-                      onClick={() => handleModerateUser(post.author)}
-                    >
-                      Moderate User
-                    </Button>
+                  {canModerate(cell.id) && post.author !== cell.author && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 text-cyber-neutral hover:text-red-500"
+                          onClick={() => handleModerateUser(post.author)}
+                        >
+                          <UserX className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Moderate user</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                   {post.moderated && (
                     <span className="ml-2 text-xs text-red-500">

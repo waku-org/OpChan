@@ -17,12 +17,19 @@ import {
   MessageCircle,
   Send,
   Loader2,
+  Shield,
+  UserX,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 import { RelevanceIndicator } from './ui/relevance-indicator';
 import { AuthorDisplay } from './ui/author-display';
 import { usePending, usePendingVote } from '@/hooks/usePending';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 // Extracted child component to respect Rules of Hooks
 const PendingBadge: React.FC<{ id: string }> = ({ id }) => {
@@ -358,26 +365,40 @@ const PostDetail = () => {
                   </div>
                   <p className="text-sm break-words">{comment.content}</p>
                   {canModerate(cell?.id || '') && !comment.moderated && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="ml-2"
-                      onClick={() => handleModerateComment(comment.id)}
-                    >
-                      Moderate
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 text-cyber-neutral hover:text-orange-500"
+                          onClick={() => handleModerateComment(comment.id)}
+                        >
+                          <Shield className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Moderate comment</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                   {post.cell &&
                     canModerate(post.cell.id) &&
                     comment.author !== post.author && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="ml-2"
-                        onClick={() => handleModerateUser(comment.author)}
-                      >
-                        Moderate User
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6 text-cyber-neutral hover:text-red-500"
+                            onClick={() => handleModerateUser(comment.author)}
+                          >
+                            <UserX className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Moderate user</p>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                   {comment.moderated && (
                     <span className="ml-2 text-xs text-red-500">

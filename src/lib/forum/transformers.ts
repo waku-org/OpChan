@@ -29,6 +29,7 @@ export const transformCell = async (
     timestamp: cellMessage.timestamp,
     signature: cellMessage.signature,
     browserPubKey: cellMessage.browserPubKey,
+    delegationProof: cellMessage.delegationProof,
   };
 
   // Calculate relevance score if user verification status and posts are provided
@@ -100,6 +101,7 @@ export const transformPost = async (
     timestamp: postMessage.timestamp,
     signature: postMessage.signature,
     browserPubKey: postMessage.browserPubKey,
+    delegationProof: postMessage.delegationProof,
     upvotes,
     downvotes,
     moderated: isPostModerated || isUserModerated,
@@ -193,12 +195,16 @@ export const transformComment = async (
 
   const modMsg = messageManager.messageCache.moderations[commentMessage.id];
   const isCommentModerated = !!modMsg && modMsg.targetType === 'comment';
+  // Find the post to get the correct cell ID
+  const parentPost = Object.values(messageManager.messageCache.posts).find(
+    post => post.id === commentMessage.postId
+  );
   const userModMsg = Object.values(
     messageManager.messageCache.moderations
   ).find(
     m =>
       m.targetType === 'user' &&
-      m.cellId === commentMessage.postId.split('-')[0] &&
+      m.cellId === parentPost?.cellId &&
       m.targetId === commentMessage.author
   );
   const isUserModerated = !!userModMsg;
@@ -213,6 +219,7 @@ export const transformComment = async (
     timestamp: commentMessage.timestamp,
     signature: commentMessage.signature,
     browserPubKey: commentMessage.browserPubKey,
+    delegationProof: commentMessage.delegationProof,
     upvotes,
     downvotes,
     moderated: isCommentModerated || isUserModerated,

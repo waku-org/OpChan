@@ -1,4 +1,5 @@
 import { EDisplayPreference, EVerificationStatus } from './identity';
+import { DelegationProof } from '@/lib/delegation/types';
 
 /**
  * Message types for Waku communication
@@ -28,6 +29,7 @@ export interface UnsignedBaseMessage {
 export interface BaseMessage extends UnsignedBaseMessage {
   signature: string; // Message signature for verification
   browserPubKey: string; // Public key that signed the message
+  delegationProof: DelegationProof; // Cryptographic proof that browser key was authorized
 }
 
 /**

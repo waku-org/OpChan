@@ -239,6 +239,7 @@ export class UserIdentityService {
             displayPreference,
             signature: signedMessage.signature,
             browserPubKey: signedMessage.browserPubKey,
+            delegationProof: signedMessage.delegationProof,
           };
           if (callSign && callSign.trim()) {
             profileMessage.callSign = callSign.trim();

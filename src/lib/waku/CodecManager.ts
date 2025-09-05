@@ -5,6 +5,7 @@ import {
   PostMessage,
   CommentMessage,
   VoteMessage,
+  ModerateMessage,
 } from '../../types/waku';
 import { CONTENT_TOPIC } from './constants';
 import { OpchanMessage } from '@/types/forum';
@@ -42,10 +43,12 @@ export class CodecManager {
         return message as CommentMessage;
       case MessageType.VOTE:
         return message as VoteMessage;
+      case MessageType.MODERATE:
+        return message as ModerateMessage;
       case MessageType.USER_PROFILE_UPDATE:
         return message as UserProfileUpdateMessage;
       default:
-        throw new Error(`Unknown message type: ${message}`);
+        throw new Error(`Unknown message type: `, message);
     }
   }
 

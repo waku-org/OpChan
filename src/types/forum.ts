@@ -111,7 +111,7 @@ export interface Comment extends CommentMessage {
 export interface SignedMessage {
   signature: string;
   browserPubKey: string;
-  delegationProof?: DelegationProof; // Cryptographic proof that browser key was authorized
+  delegationProof: DelegationProof; // Cryptographic proof that browser key was authorized - REQUIRED
 }
 
 /**
