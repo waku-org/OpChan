@@ -4,6 +4,8 @@ import { useAuth, useNetworkStatus } from '@/hooks';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
 import { EVerificationStatus } from '@/types/identity';
 import { useForum } from '@/contexts/useForum';
+import { localDatabase } from '@/lib/database/LocalDatabase';
+import { DelegationFullStatus } from '@/lib/delegation';
 import { Button } from '@/components/ui/button';
 
 import {
@@ -31,7 +33,8 @@ import { useUserDisplay } from '@/hooks';
 const Header = () => {
   const { verificationStatus } = useAuth();
   const { getDelegationStatus } = useAuthContext();
-  const delegationInfo = getDelegationStatus();
+  const [delegationInfo, setDelegationInfo] =
+    useState<DelegationFullStatus | null>(null);
   const networkStatus = useNetworkStatus();
   const location = useLocation();
   const { toast } = useToast();
@@ -57,28 +60,38 @@ const Header = () => {
   // ✅ Get display name from enhanced hook
   const { displayName } = useUserDisplay(address || '');
 
-  // Use sessionStorage to persist wizard state across navigation
-  const getHasShownWizard = () => {
+  // Load delegation status
+  React.useEffect(() => {
+    getDelegationStatus().then(setDelegationInfo).catch(console.error);
+  }, [getDelegationStatus]);
+
+  // Use LocalDatabase to persist wizard state across navigation
+  const getHasShownWizard = async (): Promise<boolean> => {
     try {
-      return sessionStorage.getItem('hasShownWalletWizard') === 'true';
+      const value = await localDatabase.loadUIState('hasShownWalletWizard');
+      return value === true;
     } catch {
       return false;
     }
   };
 
-  const setHasShownWizard = (value: boolean) => {
+  const setHasShownWizard = async (value: boolean): Promise<void> => {
     try {
-      sessionStorage.setItem('hasShownWalletWizard', value.toString());
-    } catch {
-      // Fallback if sessionStorage is not available
+      await localDatabase.storeUIState('hasShownWalletWizard', value);
+    } catch (e) {
+      console.error('Failed to store wizard state', e);
     }
   };
 
   // Auto-open wizard when wallet connects for the first time
   React.useEffect(() => {
-    if (isConnected && !getHasShownWizard()) {
-      setWalletWizardOpen(true);
-      setHasShownWizard(true);
+    if (isConnected) {
+      getHasShownWizard().then(hasShown => {
+        if (!hasShown) {
+          setWalletWizardOpen(true);
+          setHasShownWizard(true).catch(console.error);
+        }
+      });
     }
   }, [isConnected]);
 
@@ -88,7 +101,7 @@ const Header = () => {
 
   const handleDisconnect = async () => {
     await disconnect();
-    setHasShownWizard(false); // Reset so wizard can show again on next connection
+    await setHasShownWizard(false); // Reset so wizard can show again on next connection
     toast({
       title: 'Wallet Disconnected',
       description: 'Your wallet has been disconnected successfully.',
@@ -99,7 +112,7 @@ const Header = () => {
     if (!isConnected) return 'Connect Wallet';
 
     if (verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
-      return delegationInfo.isValid ? 'Ready to Post' : 'Delegation Expired';
+      return delegationInfo?.isValid ? 'Ready to Post' : 'Delegation Expired';
     } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
       return 'Verified (Read-only)';
     } else {
@@ -112,7 +125,7 @@ const Header = () => {
 
     if (
       verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
-      delegationInfo.isValid
+      delegationInfo?.isValid
     ) {
       return 'text-green-400';
     } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
@@ -131,7 +144,7 @@ const Header = () => {
 
     if (
       verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
-      delegationInfo.isValid
+      delegationInfo?.isValid
     ) {
       return <CheckCircle className="w-4 h-4" />;
     } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
@@ -244,7 +257,7 @@ const Header = () => {
                     <div className="text-xs">
                       <div>Address: {address?.slice(0, 8)}...</div>
                       <div>Status: {getAccountStatusText()}</div>
-                      {delegationInfo.timeRemaining && (
+                      {delegationInfo?.timeRemaining && (
                         <div>
                           Delegation: {delegationInfo.timeRemaining} remaining
                         </div>

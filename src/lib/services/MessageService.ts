@@ -29,11 +29,11 @@ export class MessageService implements MessageServiceInterface {
    */
   async sendMessage(message: UnsignedMessage): Promise<MessageResult> {
     try {
-      const signedMessage = this.delegationManager.signMessage(message);
+      const signedMessage = await this.delegationManager.signMessage(message);
 
       if (!signedMessage) {
         // Check if delegation exists but is expired
-        const delegationStatus = this.delegationManager.getStatus();
+        const delegationStatus = await this.delegationManager.getStatus();
         const isDelegationExpired = !delegationStatus.isValid;
 
         return {
@@ -87,7 +87,7 @@ export class MessageService implements MessageServiceInterface {
     message: UnsignedMessage
   ): Promise<OpchanMessage | null> {
     try {
-      const signedMessage = this.delegationManager.signMessage(message);
+      const signedMessage = await this.delegationManager.signMessage(message);
       if (!signedMessage) {
         console.error('Failed to sign message');
         return null;

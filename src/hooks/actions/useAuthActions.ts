@@ -245,7 +245,7 @@ export function useAuthActions(): AuthActions {
 
   // Clear delegation
   const clearDelegation = useCallback(async (): Promise<boolean> => {
-    const delegationInfo = getDelegationStatus();
+    const delegationInfo = await getDelegationStatus();
     if (!delegationInfo.isValid) {
       toast({
         title: 'No Active Delegation',

@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo } from 'react';
+import { useCallback, useContext, useState, useEffect } from 'react';
 import { AuthContext } from '@/contexts/AuthContext';
 import { DelegationDuration } from '@/lib/delegation';
 
@@ -27,20 +27,36 @@ export const useDelegation = () => {
     contextClearDelegation();
   }, [contextClearDelegation]);
 
-  const delegationStatus = useMemo(() => {
-    const status = contextGetDelegationStatus();
+  const [delegationStatus, setDelegationStatus] = useState<{
+    hasDelegation: boolean;
+    isValid: boolean;
+    timeRemaining?: number;
+    expiresAt?: Date;
+    publicKey?: string;
+    address?: string;
+    walletType?: 'bitcoin' | 'ethereum';
+  }>({
+    hasDelegation: false,
+    isValid: false,
+  });
 
-    return {
-      hasDelegation: status.hasDelegation,
-      isValid: status.isValid,
-      timeRemaining: status.timeRemaining,
-      expiresAt: status.timeRemaining
-        ? new Date(Date.now() + status.timeRemaining)
-        : undefined,
-      publicKey: status.publicKey,
-      address: status.address,
-      walletType: status.walletType,
-    };
+  // Load delegation status
+  useEffect(() => {
+    contextGetDelegationStatus()
+      .then(status => {
+        setDelegationStatus({
+          hasDelegation: status.hasDelegation,
+          isValid: status.isValid,
+          timeRemaining: status.timeRemaining,
+          expiresAt: status.timeRemaining
+            ? new Date(Date.now() + status.timeRemaining)
+            : undefined,
+          publicKey: status.publicKey,
+          address: status.address,
+          walletType: status.walletType,
+        });
+      })
+      .catch(console.error);
   }, [contextGetDelegationStatus]);
 
   const formatTimeRemaining = useCallback((timeMs: number): string => {

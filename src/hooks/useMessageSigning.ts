@@ -18,7 +18,8 @@ export const useMessageSigning = () => {
   const signMessage = useCallback(
     async (message: OpchanMessage): Promise<OpchanMessage | null> => {
       // Check if we have a valid delegation before attempting to sign
-      if (!getDelegationStatus().isValid) {
+      const delegationStatus = await getDelegationStatus();
+      if (!delegationStatus.isValid) {
         console.warn('No valid delegation found. Cannot sign message.');
         return null;
       }
@@ -35,8 +36,9 @@ export const useMessageSigning = () => {
     [contextVerifyMessage]
   );
 
-  const canSignMessages = useCallback((): boolean => {
-    return getDelegationStatus().isValid;
+  const canSignMessages = useCallback(async (): Promise<boolean> => {
+    const delegationStatus = await getDelegationStatus();
+    return delegationStatus.isValid;
   }, [getDelegationStatus]);
 
   return {

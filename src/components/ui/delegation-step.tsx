@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './button';
 import { useAuth, useAuthActions } from '@/hooks';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
 import { CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
-import { DelegationDuration } from '@/lib/delegation';
+import { DelegationDuration, DelegationFullStatus } from '@/lib/delegation';
 
 interface DelegationStepProps {
   onComplete: () => void;
@@ -20,8 +20,14 @@ export function DelegationStep({
 }: DelegationStepProps) {
   const { currentUser, isAuthenticating } = useAuth();
   const { getDelegationStatus } = useAuthContext();
-  const delegationInfo = getDelegationStatus();
+  const [delegationInfo, setDelegationInfo] =
+    useState<DelegationFullStatus | null>(null);
   const { delegateKey, clearDelegation } = useAuthActions();
+
+  // Load delegation status
+  useEffect(() => {
+    getDelegationStatus().then(setDelegationInfo).catch(console.error);
+  }, [getDelegationStatus]);
 
   const [selectedDuration, setSelectedDuration] =
     React.useState<DelegationDuration>('7days');
@@ -128,19 +134,19 @@ export function DelegationStep({
         <div className="space-y-3">
           {/* Status */}
           <div className="flex items-center gap-2">
-            {delegationInfo.isValid ? (
+            {delegationInfo?.isValid ? (
               <CheckCircle className="h-4 w-4 text-green-500" />
             ) : (
               <AlertCircle className="h-4 w-4 text-yellow-500" />
             )}
             <span
               className={`text-sm font-medium ${
-                delegationInfo.isValid ? 'text-green-400' : 'text-yellow-400'
+                delegationInfo?.isValid ? 'text-green-400' : 'text-yellow-400'
               }`}
             >
-              {delegationInfo.isValid ? 'Delegated' : 'Required'}
+              {delegationInfo?.isValid ? 'Delegated' : 'Required'}
             </span>
-            {delegationInfo.isValid && delegationInfo.timeRemaining && (
+            {delegationInfo?.isValid && delegationInfo?.timeRemaining && (
               <span className="text-xs text-neutral-400">
                 {delegationInfo.timeRemaining} remaining
               </span>
@@ -148,7 +154,7 @@ export function DelegationStep({
           </div>
 
           {/* Duration Selection */}
-          {!delegationInfo.isValid && (
+          {!delegationInfo?.isValid && (
             <div className="space-y-3">
               <label className="text-sm font-medium text-neutral-300">
                 Delegation Duration:
@@ -187,7 +193,7 @@ export function DelegationStep({
           )}
 
           {/* Delegated Browser Public Key */}
-          {delegationInfo.isValid && currentUser?.browserPubKey && (
+          {delegationInfo?.isValid && currentUser?.browserPubKey && (
             <div className="text-xs text-neutral-400">
               <div className="font-mono break-all bg-neutral-800 p-2 rounded">
                 {currentUser.browserPubKey}
@@ -203,7 +209,7 @@ export function DelegationStep({
           )}
 
           {/* Delete Button for Active Delegations */}
-          {delegationInfo.isValid && (
+          {delegationInfo?.isValid && (
             <div className="flex justify-end">
               <Button
                 onClick={clearDelegation}
@@ -221,7 +227,7 @@ export function DelegationStep({
 
       {/* Action Buttons */}
       <div className="mt-auto space-y-2">
-        {delegationInfo.isValid ? (
+        {delegationInfo?.isValid ? (
           <Button
             onClick={handleComplete}
             className="w-full bg-green-600 hover:bg-green-700 text-white"

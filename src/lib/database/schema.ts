@@ -1,5 +1,5 @@
 export const DB_NAME = 'opchan-local';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export const STORE = {
   CELLS: 'cells',
@@ -8,6 +8,9 @@ export const STORE = {
   VOTES: 'votes',
   MODERATIONS: 'moderations',
   USER_IDENTITIES: 'userIdentities',
+  USER_AUTH: 'userAuth',
+  DELEGATION: 'delegation',
+  UI_STATE: 'uiState',
   META: 'meta',
 } as const;
 
@@ -52,6 +55,18 @@ export function openLocalDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORE.USER_IDENTITIES)) {
         // User identities keyed by address
         db.createObjectStore(STORE.USER_IDENTITIES, { keyPath: 'address' });
+      }
+      if (!db.objectStoreNames.contains(STORE.USER_AUTH)) {
+        // User authentication data with single key 'current'
+        db.createObjectStore(STORE.USER_AUTH, { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains(STORE.DELEGATION)) {
+        // Key delegation information with single key 'current'
+        db.createObjectStore(STORE.DELEGATION, { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains(STORE.UI_STATE)) {
+        // UI state like wizard flags, preferences
+        db.createObjectStore(STORE.UI_STATE, { keyPath: 'key' });
       }
       if (!db.objectStoreNames.contains(STORE.META)) {
         // Misc metadata like lastSync timestamps

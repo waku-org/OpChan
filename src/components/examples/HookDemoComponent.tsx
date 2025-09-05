@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import {
   useForumData,
   useAuth,
@@ -10,6 +11,7 @@ import {
   useForumSelectors,
 } from '@/hooks';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
+import { DelegationFullStatus } from '@/lib/delegation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +26,12 @@ export function HookDemoComponent() {
   const forumData = useForumData();
   const auth = useAuth();
   const { getDelegationStatus } = useAuthContext();
+  const [delegationStatus, setDelegationStatus] = useState<DelegationFullStatus | null>(null);
+
+  // Load delegation status
+  useEffect(() => {
+    getDelegationStatus().then(setDelegationStatus).catch(console.error);
+  }, [getDelegationStatus]);
 
   // Derived hooks for specific data
   const userVotes = useUserVotes();
@@ -137,7 +145,7 @@ export function HookDemoComponent() {
             </div>
             <div>
               <strong>Delegation Active:</strong>{' '}
-              {getDelegationStatus().isValid ? 'Yes' : 'No'}
+              {delegationStatus?.isValid ? 'Yes' : 'No'}
             </div>
           </div>
 

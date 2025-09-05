@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth, useUserActions, useForumActions } from '@/hooks';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
 import { useUserDisplay } from '@/hooks';
+import { DelegationFullStatus } from '@/lib/delegation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,8 +38,14 @@ export default function ProfilePage() {
   // Get current user from auth context for the address
   const { currentUser } = useAuth();
   const { getDelegationStatus } = useAuthContext();
-  const delegationInfo = getDelegationStatus();
+  const [delegationInfo, setDelegationInfo] =
+    useState<DelegationFullStatus | null>(null);
   const address = currentUser?.address;
+
+  // Load delegation status
+  useEffect(() => {
+    getDelegationStatus().then(setDelegationInfo).catch(console.error);
+  }, [getDelegationStatus]);
 
   // Get comprehensive user information from the unified hook
   const userInfo = useUserDisplay(address || '');
@@ -341,21 +348,21 @@ export default function ProfilePage() {
               {/* Delegation Status */}
               <div className="flex items-center gap-3">
                 <Badge
-                  variant={delegationInfo.isValid ? 'default' : 'secondary'}
+                  variant={delegationInfo?.isValid ? 'default' : 'secondary'}
                   className={
-                    delegationInfo.isValid
+                    delegationInfo?.isValid
                       ? 'bg-green-600 hover:bg-green-700'
                       : ''
                   }
                 >
-                  {delegationInfo.isValid ? 'Active' : 'Inactive'}
+                  {delegationInfo?.isValid ? 'Active' : 'Inactive'}
                 </Badge>
-                {delegationInfo.isValid && delegationInfo.timeRemaining && (
+                {delegationInfo?.isValid && delegationInfo?.timeRemaining && (
                   <span className="text-sm text-muted-foreground">
                     {delegationInfo.timeRemaining} remaining
                   </span>
                 )}
-                {!delegationInfo.isValid && (
+                {!delegationInfo?.isValid && (
                   <Badge
                     variant="outline"
                     className="text-yellow-600 border-yellow-600"
@@ -363,7 +370,7 @@ export default function ProfilePage() {
                     Renewal Recommended
                   </Badge>
                 )}
-                {!delegationInfo.isValid && (
+                {!delegationInfo?.isValid && (
                   <Badge variant="destructive">Expired</Badge>
                 )}
               </div>
@@ -426,7 +433,7 @@ export default function ProfilePage() {
                     Can Delegate
                   </Label>
                   <div className="mt-1 text-sm">
-                    {delegationInfo.hasDelegation ? (
+                    {delegationInfo?.hasDelegation ? (
                       <Badge
                         variant="outline"
                         className="text-green-600 border-green-600"
@@ -446,14 +453,14 @@ export default function ProfilePage() {
               </div>
 
               {/* Delegation Actions */}
-              {delegationInfo.hasDelegation && (
+              {delegationInfo?.hasDelegation && (
                 <div className="pt-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setWalletWizardOpen(true)}
                   >
-                    {delegationInfo.isValid
+                    {delegationInfo?.isValid
                       ? 'Renew Delegation'
                       : 'Delegate Key'}
                   </Button>

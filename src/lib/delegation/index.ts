@@ -72,7 +72,7 @@ export class DelegationManager {
         nonce,
       };
 
-      DelegationStorage.store(delegationInfo);
+      await DelegationStorage.store(delegationInfo);
       return true;
     } catch (error) {
       console.error('Error creating delegation:', error);
@@ -83,13 +83,13 @@ export class DelegationManager {
   /**
    * Sign a message with delegated key
    */
-  signMessage(message: UnsignedMessage): OpchanMessage | null {
+  async signMessage(message: UnsignedMessage): Promise<OpchanMessage | null> {
     const now = Date.now();
     if (
       !this.cachedDelegation ||
       now - this.cachedAt > DelegationManager.CACHE_TTL_MS
     ) {
-      this.cachedDelegation = DelegationStorage.retrieve();
+      this.cachedDelegation = await DelegationStorage.retrieve();
       this.cachedAt = now;
     }
     const delegation = this.cachedDelegation;
@@ -162,16 +162,16 @@ export class DelegationManager {
   /**
    * Get delegation status
    */
-  getStatus(
+  async getStatus(
     currentAddress?: string,
     currentWalletType?: 'bitcoin' | 'ethereum'
-  ): DelegationFullStatus {
+  ): Promise<DelegationFullStatus> {
     const now = Date.now();
     if (
       !this.cachedDelegation ||
       now - this.cachedAt > DelegationManager.CACHE_TTL_MS
     ) {
-      this.cachedDelegation = DelegationStorage.retrieve();
+      this.cachedDelegation = await DelegationStorage.retrieve();
       this.cachedAt = now;
     }
     const delegation = this.cachedDelegation;
@@ -202,8 +202,8 @@ export class DelegationManager {
   /**
    * Clear stored delegation
    */
-  clear(): void {
-    DelegationStorage.clear();
+  async clear(): Promise<void> {
+    await DelegationStorage.clear();
   }
 
   // ============================================================================

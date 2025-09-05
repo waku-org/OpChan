@@ -100,9 +100,9 @@ export class ForumActions {
         author: currentUser!.address, // Safe after validation
       };
 
-      const signed = this.delegationManager.signMessage(unsignedPost);
+      const signed = await this.delegationManager.signMessage(unsignedPost);
       if (!signed) {
-        const status = this.delegationManager.getStatus(
+        const status = await this.delegationManager.getStatus(
           currentUser!.address,
           currentUser!.walletType
         );
@@ -169,9 +169,9 @@ export class ForumActions {
       };
 
       // Optimistic path: sign locally, write to cache, mark pending, render immediately
-      const signed = this.delegationManager.signMessage(unsignedComment);
+      const signed = await this.delegationManager.signMessage(unsignedComment);
       if (!signed) {
-        const status = this.delegationManager.getStatus(
+        const status = await this.delegationManager.getStatus(
           currentUser!.address,
           currentUser!.walletType
         );
@@ -241,9 +241,9 @@ export class ForumActions {
         author: currentUser!.address,
       };
 
-      const signed = this.delegationManager.signMessage(unsignedCell);
+      const signed = await this.delegationManager.signMessage(unsignedCell);
       if (!signed) {
-        const status = this.delegationManager.getStatus(
+        const status = await this.delegationManager.getStatus(
           currentUser!.address,
           currentUser!.walletType
         );
@@ -313,9 +313,9 @@ export class ForumActions {
         author: currentUser!.address,
       };
 
-      const signed = this.delegationManager.signMessage(unsignedVote);
+      const signed = await this.delegationManager.signMessage(unsignedVote);
       if (!signed) {
-        const status = this.delegationManager.getStatus(
+        const status = await this.delegationManager.getStatus(
           currentUser!.address,
           currentUser!.walletType
         );
@@ -384,9 +384,9 @@ export class ForumActions {
         author: currentUser!.address,
       };
 
-      const signed = this.delegationManager.signMessage(unsignedMod);
+      const signed = await this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
-        const status = this.delegationManager.getStatus(
+        const status = await this.delegationManager.getStatus(
           currentUser!.address,
           currentUser!.walletType
         );
@@ -457,9 +457,9 @@ export class ForumActions {
         author: currentUser!.address,
       };
 
-      const signed = this.delegationManager.signMessage(unsignedMod);
+      const signed = await this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
-        const status = this.delegationManager.getStatus(
+        const status = await this.delegationManager.getStatus(
           currentUser!.address,
           currentUser!.walletType
         );
@@ -530,9 +530,9 @@ export class ForumActions {
         timestamp: Date.now(),
       };
 
-      const signed = this.delegationManager.signMessage(unsignedMod);
+      const signed = await this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
-        const status = this.delegationManager.getStatus(
+        const status = await this.delegationManager.getStatus(
           currentUser!.address,
           currentUser!.walletType
         );

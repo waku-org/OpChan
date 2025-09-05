@@ -14,7 +14,8 @@ import {
 } from '@/types/waku';
 import { OpchanMessage } from '@/types/forum';
 import { MessageValidator } from '@/lib/utils/MessageValidator';
-import { EVerificationStatus } from '@/types/identity';
+import { EVerificationStatus, User } from '@/types/identity';
+import { DelegationInfo } from '@/lib/delegation/types';
 import { openLocalDB, STORE, StoreName } from '@/lib/database/schema';
 
 export interface LocalDatabaseCache {
@@ -277,6 +278,9 @@ export class LocalDatabase {
       | ModerateMessage
       | ({ address: string } & UserIdentityCache[string])
       | { key: string; value: unknown }
+      | { key: string; value: User; timestamp: number }
+      | { key: string; value: DelegationInfo; timestamp: number }
+      | { key: string; value: unknown; timestamp: number }
   ): void {
     if (!this.db) return;
     const tx = this.db.transaction(storeName, 'readwrite');
@@ -326,6 +330,159 @@ export class LocalDatabase {
   public onPendingChange(listener: () => void): () => void {
     this.pendingListeners.add(listener);
     return () => this.pendingListeners.delete(listener);
+  }
+
+  // ===== User Authentication Storage =====
+
+  /**
+   * Store user authentication data
+   */
+  public async storeUser(user: User): Promise<void> {
+    const userData = {
+      key: 'current',
+      value: user,
+      timestamp: Date.now(),
+    };
+    this.put(STORE.USER_AUTH, userData);
+  }
+
+  /**
+   * Load user authentication data
+   */
+  public async loadUser(): Promise<User | null> {
+    if (!this.db) return null;
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STORE.USER_AUTH, 'readonly');
+      const store = tx.objectStore(STORE.USER_AUTH);
+      const request = store.get('current');
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const result = request.result as
+          | { key: string; value: User; timestamp: number }
+          | undefined;
+        if (!result) {
+          resolve(null);
+          return;
+        }
+
+        const user = result.value;
+        const lastChecked = user.lastChecked || 0;
+        const expiryTime = 24 * 60 * 60 * 1000; // 24 hours
+
+        if (Date.now() - lastChecked < expiryTime) {
+          resolve(user);
+        } else {
+          // User data expired, clear it
+          this.clearUser();
+          resolve(null);
+        }
+      };
+    });
+  }
+
+  /**
+   * Clear user authentication data
+   */
+  public async clearUser(): Promise<void> {
+    if (!this.db) return;
+
+    const tx = this.db.transaction(STORE.USER_AUTH, 'readwrite');
+    const store = tx.objectStore(STORE.USER_AUTH);
+    store.delete('current');
+  }
+
+  // ===== Delegation Storage =====
+
+  /**
+   * Store delegation information
+   */
+  public async storeDelegation(delegation: DelegationInfo): Promise<void> {
+    const delegationData = {
+      key: 'current',
+      value: delegation,
+      timestamp: Date.now(),
+    };
+    this.put(STORE.DELEGATION, delegationData);
+  }
+
+  /**
+   * Load delegation information
+   */
+  public async loadDelegation(): Promise<DelegationInfo | null> {
+    if (!this.db) return null;
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STORE.DELEGATION, 'readonly');
+      const store = tx.objectStore(STORE.DELEGATION);
+      const request = store.get('current');
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const result = request.result as
+          | { key: string; value: DelegationInfo; timestamp: number }
+          | undefined;
+        resolve(result?.value || null);
+      };
+    });
+  }
+
+  /**
+   * Clear delegation information
+   */
+  public async clearDelegation(): Promise<void> {
+    if (!this.db) return;
+
+    const tx = this.db.transaction(STORE.DELEGATION, 'readwrite');
+    const store = tx.objectStore(STORE.DELEGATION);
+    store.delete('current');
+  }
+
+  // ===== UI State Storage =====
+
+  /**
+   * Store UI state value
+   */
+  public async storeUIState(key: string, value: unknown): Promise<void> {
+    const stateData = {
+      key,
+      value,
+      timestamp: Date.now(),
+    };
+    this.put(STORE.UI_STATE, stateData);
+  }
+
+  /**
+   * Load UI state value
+   */
+  public async loadUIState(key: string): Promise<unknown> {
+    if (!this.db) return null;
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STORE.UI_STATE, 'readonly');
+      const store = tx.objectStore(STORE.UI_STATE);
+      const request = store.get(key);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const result = request.result as
+          | { key: string; value: unknown; timestamp: number }
+          | undefined;
+        resolve(result?.value || null);
+      };
+    });
+  }
+
+  /**
+   * Clear UI state value
+   */
+  public async clearUIState(key: string): Promise<void> {
+    if (!this.db) return;
+
+    const tx = this.db.transaction(STORE.UI_STATE, 'readwrite');
+    const store = tx.objectStore(STORE.UI_STATE);
+    store.delete(key);
   }
 }
 

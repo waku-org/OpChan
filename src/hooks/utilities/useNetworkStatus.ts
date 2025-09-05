@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/hooks/core/useAuth';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
+import { DelegationFullStatus } from '@/lib/delegation';
 
 export interface NetworkHealth {
   isConnected: boolean;
@@ -64,7 +65,13 @@ export function useNetworkStatus(): NetworkStatusData {
 
   const { isAuthenticated, currentUser } = useAuth();
   const { getDelegationStatus } = useAuthContext();
-  const delegationInfo = getDelegationStatus();
+  const [delegationInfo, setDelegationInfo] =
+    useState<DelegationFullStatus | null>(null);
+
+  // Load delegation status
+  useEffect(() => {
+    getDelegationStatus().then(setDelegationInfo).catch(console.error);
+  }, [getDelegationStatus]);
 
   // Network health assessment
   const health = useMemo((): NetworkHealth => {
@@ -78,7 +85,7 @@ export function useNetworkStatus(): NetworkStatusData {
       issues.push(`Forum error: ${error}`);
     }
 
-    if (isAuthenticated && !delegationInfo.isValid) {
+    if (isAuthenticated && !delegationInfo?.isValid) {
       issues.push('Key delegation expired');
     }
 
@@ -93,7 +100,7 @@ export function useNetworkStatus(): NetworkStatusData {
       syncAge,
       issues,
     };
-  }, [isNetworkConnected, error, isAuthenticated, delegationInfo.isValid]);
+  }, [isNetworkConnected, error, isAuthenticated, delegationInfo?.isValid]);
 
   // Sync status
   const sync = useMemo((): SyncStatus => {
@@ -124,9 +131,9 @@ export function useNetworkStatus(): NetworkStatusData {
         status: isAuthenticated ? 'connected' : 'disconnected',
       },
       delegation: {
-        active: delegationInfo.isValid,
-        expires: delegationInfo.timeRemaining || null,
-        status: delegationInfo.isValid ? 'active' : 'expired',
+        active: delegationInfo?.isValid || false,
+        expires: delegationInfo?.timeRemaining || null,
+        status: delegationInfo?.isValid ? 'active' : 'expired',
       },
     };
   }, [isNetworkConnected, isAuthenticated, currentUser, delegationInfo]);
@@ -134,7 +141,7 @@ export function useNetworkStatus(): NetworkStatusData {
   // Status assessment
   const canRefresh = !isRefreshing && !isInitialLoading;
   const canSync = isNetworkConnected && !isRefreshing;
-  const needsAttention = !health.isHealthy || !delegationInfo.isValid;
+  const needsAttention = !health.isHealthy || !delegationInfo?.isValid;
 
   // Helper methods
   const getStatusMessage = useMemo(() => {
@@ -157,10 +164,15 @@ export function useNetworkStatus(): NetworkStatusData {
   const getHealthColor = useMemo(() => {
     return (): 'green' | 'yellow' | 'red' => {
       if (!isNetworkConnected || error) return 'red';
-      if (health.issues.length > 0 || !delegationInfo.isValid) return 'yellow';
+      if (health.issues.length > 0 || !delegationInfo?.isValid) return 'yellow';
       return 'green';
     };
-  }, [isNetworkConnected, error, health.issues.length, delegationInfo.isValid]);
+  }, [
+    isNetworkConnected,
+    error,
+    health.issues.length,
+    delegationInfo?.isValid,
+  ]);
 
   const getRecommendedActions = useMemo(() => {
     return (): string[] => {
@@ -175,13 +187,13 @@ export function useNetworkStatus(): NetworkStatusData {
         actions.push('Connect your wallet');
       }
 
-      if (!delegationInfo.isValid) {
+      if (!delegationInfo?.isValid) {
         actions.push('Renew key delegation');
       }
 
       if (
-        delegationInfo.isValid &&
-        delegationInfo.timeRemaining &&
+        delegationInfo?.isValid &&
+        delegationInfo?.timeRemaining &&
         delegationInfo.timeRemaining < 3600
       ) {
         actions.push('Consider renewing key delegation soon');

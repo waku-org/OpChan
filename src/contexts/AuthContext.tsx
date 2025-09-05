@@ -12,6 +12,7 @@ import {
   DelegationDuration,
   DelegationFullStatus,
 } from '@/lib/delegation';
+import { localDatabase } from '@/lib/database/LocalDatabase';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 
 // Removed VerificationStatus type - using EVerificationStatus enum directly
@@ -25,8 +26,8 @@ interface AuthContextType {
   disconnectWallet: () => void;
   verifyOwnership: () => Promise<boolean>;
   delegateKey: (duration?: DelegationDuration) => Promise<boolean>;
-  getDelegationStatus: () => DelegationFullStatus;
-  clearDelegation: () => void;
+  getDelegationStatus: () => Promise<DelegationFullStatus>;
+  clearDelegation: () => Promise<void>;
   signMessage: (message: OpchanMessage) => Promise<OpchanMessage | null>;
   verifyMessage: (message: OpchanMessage) => Promise<boolean>;
 }
@@ -73,30 +74,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [bitcoinAccount, ethereumAccount]);
 
   // Helper functions for user persistence
-  const loadStoredUser = (): User | null => {
-    const storedUser = localStorage.getItem('opchan-user');
-    if (!storedUser) return null;
-
+  const loadStoredUser = async (): Promise<User | null> => {
     try {
-      const user = JSON.parse(storedUser);
-      const lastChecked = user.lastChecked || 0;
-      const expiryTime = 24 * 60 * 60 * 1000;
-
-      if (Date.now() - lastChecked < expiryTime) {
-        return user;
-      } else {
-        localStorage.removeItem('opchan-user');
-        return null;
-      }
+      return await localDatabase.loadUser();
     } catch (e) {
-      console.error('Failed to parse stored user data', e);
-      localStorage.removeItem('opchan-user');
+      console.error('Failed to load stored user data', e);
       return null;
     }
   };
 
-  const saveUser = (user: User): void => {
-    localStorage.setItem('opchan-user', JSON.stringify(user));
+  const saveUser = async (user: User): Promise<void> => {
+    try {
+      await localDatabase.storeUser(user);
+    } catch (e) {
+      console.error('Failed to save user data', e);
+    }
   };
 
   // Helper function for ownership verification
@@ -188,83 +180,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isConnected && address) {
       // Check if we have a stored user for this address
-      const storedUser = loadStoredUser();
+      loadStoredUser().then(async storedUser => {
+        if (storedUser && storedUser.address === address) {
+          // Use stored user data
+          setCurrentUser(storedUser);
+          setVerificationStatus(getVerificationStatus(storedUser));
+        } else {
+          // Create new user from AppKit wallet
+          const newUser: User = {
+            address,
+            walletType: isBitcoinConnected ? 'bitcoin' : 'ethereum',
+            verificationStatus: EVerificationStatus.WALLET_CONNECTED, // Connected wallets get basic verification by default
+            displayPreference: EDisplayPreference.WALLET_ADDRESS,
+            lastChecked: Date.now(),
+          };
 
-      if (storedUser && storedUser.address === address) {
-        // Use stored user data
-        setCurrentUser(storedUser);
-        setVerificationStatus(getVerificationStatus(storedUser));
-      } else {
-        // Create new user from AppKit wallet
-        const newUser: User = {
-          address,
-          walletType: isBitcoinConnected ? 'bitcoin' : 'ethereum',
-          verificationStatus: EVerificationStatus.WALLET_CONNECTED, // Connected wallets get basic verification by default
-          displayPreference: EDisplayPreference.WALLET_ADDRESS,
-          lastChecked: Date.now(),
-        };
-
-        // For Ethereum wallets, try to check ENS ownership immediately
-        if (isEthereumConnected) {
-          try {
-            const walletManager = WalletManager.getInstance();
-            walletManager
-              .getWalletInfo()
-              .then(walletInfo => {
-                if (walletInfo?.ensName) {
-                  const updatedUser = {
-                    ...newUser,
-                    ensDetails: { ensName: walletInfo.ensName },
-                    verificationStatus:
-                      EVerificationStatus.ENS_ORDINAL_VERIFIED,
-                  };
-                  setCurrentUser(updatedUser);
-                  setVerificationStatus(
-                    EVerificationStatus.ENS_ORDINAL_VERIFIED
-                  );
-                  saveUser(updatedUser);
-                } else {
+          // For Ethereum wallets, try to check ENS ownership immediately
+          if (isEthereumConnected) {
+            try {
+              const walletManager = WalletManager.getInstance();
+              walletManager
+                .getWalletInfo()
+                .then(async walletInfo => {
+                  if (walletInfo?.ensName) {
+                    const updatedUser = {
+                      ...newUser,
+                      ensDetails: { ensName: walletInfo.ensName },
+                      verificationStatus:
+                        EVerificationStatus.ENS_ORDINAL_VERIFIED,
+                    };
+                    setCurrentUser(updatedUser);
+                    setVerificationStatus(
+                      EVerificationStatus.ENS_ORDINAL_VERIFIED
+                    );
+                    await saveUser(updatedUser);
+                  } else {
+                    setCurrentUser(newUser);
+                    setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
+                    await saveUser(newUser);
+                  }
+                })
+                .catch(async () => {
+                  // Fallback to basic verification if ENS check fails
                   setCurrentUser(newUser);
                   setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
-                  saveUser(newUser);
-                }
-              })
-              .catch(() => {
-                // Fallback to basic verification if ENS check fails
-                setCurrentUser(newUser);
-                setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
-                saveUser(newUser);
-              });
-          } catch {
-            // WalletManager not ready, fallback to basic verification
+                  await saveUser(newUser);
+                });
+            } catch {
+              // WalletManager not ready, fallback to basic verification
+              setCurrentUser(newUser);
+              setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
+              await saveUser(newUser);
+            }
+          } else {
             setCurrentUser(newUser);
             setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
-            saveUser(newUser);
+            await saveUser(newUser);
           }
-        } else {
-          setCurrentUser(newUser);
-          setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
-          saveUser(newUser);
+
+          const chainName = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
+          // Note: We can't use useUserDisplay hook here since this is not a React component
+          // This is just for toast messages, so simple truncation is acceptable
+          const displayName = `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+          toast({
+            title: 'Wallet Connected',
+            description: `Connected to ${chainName} with ${displayName}`,
+          });
+
+          const verificationType = isBitcoinConnected
+            ? 'Ordinal ownership'
+            : 'ENS ownership';
+          toast({
+            title: 'Action Required',
+            description: `You can participate in the forum now! Verify your ${verificationType} for premium features and delegate a signing key for better UX.`,
+          });
         }
-
-        const chainName = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
-        // Note: We can't use useUserDisplay hook here since this is not a React component
-        // This is just for toast messages, so simple truncation is acceptable
-        const displayName = `${address.slice(0, 6)}...${address.slice(-4)}`;
-
-        toast({
-          title: 'Wallet Connected',
-          description: `Connected to ${chainName} with ${displayName}`,
-        });
-
-        const verificationType = isBitcoinConnected
-          ? 'Ordinal ownership'
-          : 'ENS ownership';
-        toast({
-          title: 'Action Required',
-          description: `You can participate in the forum now! Verify your ${verificationType} for premium features and delegate a signing key for better UX.`,
-        });
-      }
+      });
     } else {
       // Wallet disconnected
       setCurrentUser(null);
@@ -327,7 +319,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const updatedUser = await verifyUserOwnership(currentUser);
       setCurrentUser(updatedUser);
-      saveUser(updatedUser);
+      await saveUser(updatedUser);
 
       // Update verification status
       setVerificationStatus(getVerificationStatus(updatedUser));
@@ -411,7 +403,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Update user with delegation info
-      const delegationStatus = delegationManager.getStatus(
+      const delegationStatus = await delegationManager.getStatus(
         currentUser.address,
         currentUser.walletType
       );
@@ -426,7 +418,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       setCurrentUser(updatedUser);
-      saveUser(updatedUser);
+      await saveUser(updatedUser);
 
       // Format date for user-friendly display
       const expiryDate = new Date(updatedUser.delegationExpiry!);
@@ -458,15 +450,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const getDelegationStatus = (): DelegationFullStatus => {
-    return delegationManager.getStatus(
+  const getDelegationStatus = async (): Promise<DelegationFullStatus> => {
+    return await delegationManager.getStatus(
       currentUser?.address,
       currentUser?.walletType
     );
   };
 
-  const clearDelegation = (): void => {
-    delegationManager.clear();
+  const clearDelegation = async (): Promise<void> => {
+    await delegationManager.clear();
 
     // Update the current user to remove delegation info
     if (currentUser) {
@@ -476,7 +468,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         browserPublicKey: undefined,
       };
       setCurrentUser(updatedUser);
-      saveUser(updatedUser);
+      await saveUser(updatedUser);
     }
 
     toast({
@@ -490,7 +482,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signMessage: async (
       message: OpchanMessage
     ): Promise<OpchanMessage | null> => {
-      return delegationManager.signMessage(message);
+      return await delegationManager.signMessage(message);
     },
     verifyMessage: async (message: OpchanMessage): Promise<boolean> => {
       return await delegationManager.verify(message);

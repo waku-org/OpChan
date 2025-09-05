@@ -1,39 +1,35 @@
-import { LOCAL_STORAGE_KEYS } from '@/lib/waku/constants';
+import { localDatabase } from '@/lib/database/LocalDatabase';
 import { DelegationInfo } from './types';
 
 export class DelegationStorage {
-  private static readonly STORAGE_KEY = LOCAL_STORAGE_KEYS.KEY_DELEGATION;
-
   /**
-   * Store delegation information in localStorage
+   * Store delegation information in IndexedDB
    */
-  static store(delegation: DelegationInfo): void {
+  static async store(delegation: DelegationInfo): Promise<void> {
     // Reduce verbose logging in production; keep minimal signal
     if (import.meta.env?.MODE !== 'production') {
       console.log('DelegationStorage.store');
     }
 
-    localStorage.setItem(
-      DelegationStorage.STORAGE_KEY,
-      JSON.stringify(delegation)
-    );
+    try {
+      await localDatabase.storeDelegation(delegation);
+    } catch (e) {
+      console.error('Failed to store delegation information', e);
+    }
   }
 
   /**
-   * Retrieve delegation information from localStorage
+   * Retrieve delegation information from IndexedDB
    */
-  static retrieve(): DelegationInfo | null {
-    const delegationJson = localStorage.getItem(DelegationStorage.STORAGE_KEY);
-    if (!delegationJson) return null;
-
+  static async retrieve(): Promise<DelegationInfo | null> {
     try {
-      const delegation = JSON.parse(delegationJson);
+      const delegation = await localDatabase.loadDelegation();
       if (import.meta.env?.MODE !== 'production') {
         console.log('DelegationStorage.retrieve');
       }
       return delegation;
     } catch (e) {
-      console.error('Failed to parse delegation information', e);
+      console.error('Failed to retrieve delegation information', e);
       return null;
     }
   }
@@ -41,7 +37,11 @@ export class DelegationStorage {
   /**
    * Clear stored delegation information
    */
-  static clear(): void {
-    localStorage.removeItem(DelegationStorage.STORAGE_KEY);
+  static async clear(): Promise<void> {
+    try {
+      await localDatabase.clearDelegation();
+    } catch (e) {
+      console.error('Failed to clear delegation information', e);
+    }
   }
 }

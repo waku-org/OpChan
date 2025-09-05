@@ -9,10 +9,17 @@ interface ValidationReport {
 }
 
 export class MessageValidator {
-  private delegationManager: DelegationManager;
+  private delegationManager?: DelegationManager;
 
   constructor(delegationManager?: DelegationManager) {
-    this.delegationManager = delegationManager || new DelegationManager();
+    this.delegationManager = delegationManager;
+  }
+
+  private getDelegationManager(): DelegationManager {
+    if (!this.delegationManager) {
+      this.delegationManager = new DelegationManager();
+    }
+    return this.delegationManager;
   }
 
   /**
@@ -26,7 +33,7 @@ export class MessageValidator {
 
     // Verify signature and delegation proof - we know it's safe to cast here since hasRequiredFields passed
     try {
-      return await this.delegationManager.verify(
+      return await this.getDelegationManager().verify(
         message as unknown as OpchanMessage
       );
     } catch {
@@ -80,7 +87,7 @@ export class MessageValidator {
 
         // Verify signature
         try {
-          const isValid = await this.delegationManager.verify(
+          const isValid = await this.getDelegationManager().verify(
             message as unknown as OpchanMessage
           );
           if (!isValid) {
@@ -120,7 +127,7 @@ export class MessageValidator {
 
     // Verify signature and delegation proof
     try {
-      const isValid = await this.delegationManager.verify(
+      const isValid = await this.getDelegationManager().verify(
         message as unknown as OpchanMessage
       );
       if (!isValid) {

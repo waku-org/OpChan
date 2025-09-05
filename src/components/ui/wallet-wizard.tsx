@@ -11,6 +11,7 @@ import { CheckCircle, Circle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
 import { EVerificationStatus } from '@/types/identity';
+import { DelegationFullStatus } from '@/lib/delegation';
 import { WalletConnectionStep } from './wallet-connection-step';
 import { VerificationStep } from './verification-step';
 import { DelegationStep } from './delegation-step';
@@ -32,8 +33,14 @@ export function WalletWizard({
   const [isLoading, setIsLoading] = React.useState(false);
   const { isAuthenticated, verificationStatus } = useAuth();
   const { getDelegationStatus } = useAuthContext();
-  const delegationInfo = getDelegationStatus();
+  const [delegationInfo, setDelegationInfo] =
+    React.useState<DelegationFullStatus | null>(null);
   const hasInitialized = React.useRef(false);
+
+  // Load delegation status
+  React.useEffect(() => {
+    getDelegationStatus().then(setDelegationInfo).catch(console.error);
+  }, [getDelegationStatus]);
 
   // Reset wizard when opened and determine starting step
   React.useEffect(() => {
@@ -50,7 +57,7 @@ export function WalletWizard({
         isAuthenticated &&
         (verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED ||
           verificationStatus === EVerificationStatus.WALLET_CONNECTED) &&
-        !delegationInfo.isValid
+        !delegationInfo?.isValid
       ) {
         setCurrentStep(3); // Start at delegation step if verified but no valid delegation
       } else {
@@ -92,7 +99,7 @@ export function WalletWizard({
       ) {
         return 'disabled';
       }
-      return delegationInfo.isValid ? 'complete' : 'current';
+      return delegationInfo?.isValid ? 'complete' : 'current';
     }
     return 'disabled';
   };
