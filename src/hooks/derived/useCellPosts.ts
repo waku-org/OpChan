@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useForumData, PostWithVoteStatus } from '@/hooks/core/useForumData';
 import { useAuth } from '@/hooks/core/useAuth';
+import { useModeration } from '@/contexts/ModerationContext';
 
 export interface CellPostsOptions {
   includeModerated?: boolean;
@@ -24,8 +25,13 @@ export function useCellPosts(
 ): CellPostsData {
   const { postsByCell, isInitialLoading, cellsWithStats } = useForumData();
   const { currentUser } = useAuth();
+  const { showModerated } = useModeration();
 
-  const { includeModerated = false, sortBy = 'relevance', limit } = options;
+  const {
+    includeModerated = showModerated,
+    sortBy = 'relevance',
+    limit,
+  } = options;
 
   return useMemo(() => {
     if (!cellId) {

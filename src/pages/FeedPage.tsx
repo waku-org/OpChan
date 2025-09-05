@@ -11,36 +11,29 @@ import {
 } from '@/components/ui/select';
 import PostCard from '@/components/PostCard';
 import FeedSidebar from '@/components/FeedSidebar';
+import { ModerationToggle } from '@/components/ui/moderation-toggle';
 import { useForumData, useAuth, useForumActions } from '@/hooks';
 import { EVerificationStatus } from '@/types/identity';
 import { sortPosts, SortOption } from '@/lib/utils/sorting';
 
 const FeedPage: React.FC = () => {
-  // ✅ Use reactive hooks
   const forumData = useForumData();
-  // const selectors = useForumSelectors(forumData); // Available if needed
   const { verificationStatus } = useAuth();
   const { refreshData } = useForumActions();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
-  const {
-    postsWithVoteStatus,
-    commentsByPost,
-    isInitialLoading,
-    isRefreshing,
-  } = forumData;
+  const { filteredPosts, filteredCommentsByPost, isInitialLoading, isRefreshing } =
+    forumData;
 
-  // ✅ Use pre-computed data and selectors
+  // ✅ Use pre-computed filtered data
   const allPosts = useMemo(() => {
-    const filteredPosts = postsWithVoteStatus.filter(post => !post.moderated);
     return sortPosts(filteredPosts, sortOption);
-  }, [postsWithVoteStatus, sortOption]);
+  }, [filteredPosts, sortOption]);
 
-  // ✅ Get comment count from organized data
+  // ✅ Get comment count from filtered organized data
   const getCommentCount = (postId: string) => {
-    return (
-      commentsByPost[postId]?.filter(comment => !comment.moderated).length || 0
-    );
+    const comments = filteredCommentsByPost[postId] || [];
+    return comments.length;
   };
 
   // Loading skeleton
@@ -112,6 +105,8 @@ const FeedPage: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center space-x-2">
+            <ModerationToggle />
+
             <Select
               value={sortOption}
               onValueChange={(value: SortOption) => setSortOption(value)}

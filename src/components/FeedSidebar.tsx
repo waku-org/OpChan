@@ -4,7 +4,7 @@ import { TrendingUp, Users, Eye } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useForumData, useForumSelectors, useAuth } from '@/hooks';
+import { useForumData, useAuth } from '@/hooks';
 import { EVerificationStatus } from '@/types/identity';
 import { CypherImage } from '@/components/ui/CypherImage';
 import { useUserDisplay } from '@/hooks';
@@ -12,7 +12,6 @@ import { useUserDisplay } from '@/hooks';
 const FeedSidebar: React.FC = () => {
   // ✅ Use reactive hooks for data
   const forumData = useForumData();
-  const selectors = useForumSelectors(forumData);
   const { currentUser, verificationStatus } = useAuth();
 
   // Get user display information using the hook
@@ -20,11 +19,29 @@ const FeedSidebar: React.FC = () => {
     currentUser?.address || ''
   );
 
-  // ✅ Get pre-computed stats and trending data from selectors
-  const stats = selectors.selectStats();
-  // Use cellsWithStats from forumData to get post counts
-  const { cellsWithStats } = forumData;
-  const trendingCells = cellsWithStats
+  // ✅ Get stats from filtered data
+  const {
+    filteredPosts,
+    filteredComments,
+    filteredCellsWithStats,
+    cells,
+    userVerificationStatus,
+  } = forumData;
+
+  const stats = {
+    totalCells: cells.length,
+    totalPosts: filteredPosts.length,
+    totalComments: filteredComments.length,
+    totalUsers: new Set([
+      ...filteredPosts.map(post => post.author),
+      ...filteredComments.map(comment => comment.author),
+    ]).size,
+    verifiedUsers: Object.values(userVerificationStatus).filter(
+      status => status.isVerified
+    ).length,
+  };
+  // Use filtered cells with stats for trending cells
+  const trendingCells = filteredCellsWithStats
     .sort((a, b) => b.recentActivity - a.recentActivity)
     .slice(0, 5);
 

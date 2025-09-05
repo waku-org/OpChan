@@ -51,7 +51,7 @@ const PostDetail = () => {
 
   // ✅ Use reactive hooks for data and actions
   const post = usePost(postId);
-  const comments = usePostComments(postId, { includeModerated: false });
+  const comments = usePostComments(postId);
   const {
     createComment,
     votePost,

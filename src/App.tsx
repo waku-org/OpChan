@@ -18,6 +18,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ForumProvider } from '@/contexts/ForumContext';
+import { ModerationProvider } from '@/contexts/ModerationContext';
 import CellPage from './pages/CellPage';
 import PostPage from './pages/PostPage';
 import NotFound from './pages/NotFound';
@@ -39,18 +40,20 @@ const App = () => (
         <Router>
           <AuthProvider>
             <ForumProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/cells" element={<Index />} />
-                  <Route path="/cell/:cellId" element={<CellPage />} />
-                  <Route path="/post/:postId" element={<PostPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </TooltipProvider>
+              <ModerationProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/cells" element={<Index />} />
+                    <Route path="/cell/:cellId" element={<CellPage />} />
+                    <Route path="/post/:postId" element={<PostPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </TooltipProvider>
+              </ModerationProvider>
             </ForumProvider>
           </AuthProvider>
         </Router>

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { CypherImage } from './ui/CypherImage';
 import { RelevanceIndicator } from './ui/relevance-indicator';
+import { ModerationToggle } from './ui/moderation-toggle';
 import { sortCells, SortOption } from '@/lib/utils/sorting';
 import { Cell } from '@/types/forum';
 import { usePending } from '@/hooks/usePending';
@@ -121,6 +122,8 @@ const CellList = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          <ModerationToggle />
+
           <Select
             value={sortOption}
             onValueChange={(value: SortOption) => setSortOption(value)}

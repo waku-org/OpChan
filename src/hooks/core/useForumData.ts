@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
+import { useModeration } from '@/contexts/ModerationContext';
 import { Cell, Post, Comment, UserVerificationStatus } from '@/types/forum';
 import { EVerificationStatus } from '@/types/identity';
 
@@ -44,6 +45,12 @@ export interface ForumData {
   postsWithVoteStatus: PostWithVoteStatus[];
   commentsWithVoteStatus: CommentWithVoteStatus[];
 
+  // Filtered data based on moderation settings
+  filteredPosts: PostWithVoteStatus[];
+  filteredComments: CommentWithVoteStatus[];
+  filteredCellsWithStats: CellWithStats[];
+  filteredCommentsByPost: Record<string, CommentWithVoteStatus[]>;
+
   // Organized data
   postsByCell: Record<string, PostWithVoteStatus[]>;
   commentsByPost: Record<string, CommentWithVoteStatus[]>;
@@ -72,6 +79,7 @@ export function useForumData(): ForumData {
   } = useForum();
 
   const { currentUser } = useAuth();
+  const { showModerated } = useModeration();
 
   // Compute cells with statistics
   const cellsWithStats = useMemo((): CellWithStats[] => {
@@ -287,6 +295,55 @@ export function useForumData(): ForumData {
     return createdComments;
   }, [comments, currentUser]);
 
+  // Filtered data based on moderation settings
+  const filteredPosts = useMemo(() => {
+    return showModerated
+      ? postsWithVoteStatus
+      : postsWithVoteStatus.filter(post => !post.moderated);
+  }, [postsWithVoteStatus, showModerated]);
+
+  const filteredComments = useMemo(() => {
+    return showModerated
+      ? commentsWithVoteStatus
+      : commentsWithVoteStatus.filter(comment => !comment.moderated);
+  }, [commentsWithVoteStatus, showModerated]);
+
+  // Filtered cells with stats based on filtered posts
+  const filteredCellsWithStats = useMemo((): CellWithStats[] => {
+    return cells.map(cell => {
+      const cellPosts = filteredPosts.filter(post => post.cellId === cell.id);
+      const recentPosts = cellPosts.filter(
+        post => Date.now() - post.timestamp < 7 * 24 * 60 * 60 * 1000 // 7 days
+      );
+
+      const uniqueAuthors = new Set(cellPosts.map(post => post.author));
+
+      return {
+        ...cell,
+        postCount: cellPosts.length,
+        activeUsers: uniqueAuthors.size,
+        recentActivity: recentPosts.length,
+      };
+    });
+  }, [cells, filteredPosts]);
+
+  // Filtered comments organized by post
+  const filteredCommentsByPost = useMemo((): Record<
+    string,
+    CommentWithVoteStatus[]
+  > => {
+    const organized: Record<string, CommentWithVoteStatus[]> = {};
+
+    filteredComments.forEach(comment => {
+      if (!organized[comment.postId]) {
+        organized[comment.postId] = [];
+      }
+      organized[comment.postId].push(comment);
+    });
+
+    return organized;
+  }, [filteredComments]);
+
   return {
     // Raw data
     cells,
@@ -304,6 +361,12 @@ export function useForumData(): ForumData {
     cellsWithStats,
     postsWithVoteStatus,
     commentsWithVoteStatus,
+
+    // Filtered data based on moderation settings
+    filteredPosts,
+    filteredComments,
+    filteredCellsWithStats,
+    filteredCommentsByPost,
 
     // Organized data
     postsByCell,

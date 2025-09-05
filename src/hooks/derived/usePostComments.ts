@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useForumData, CommentWithVoteStatus } from '@/hooks/core/useForumData';
 import { useAuth } from '@/hooks/core/useAuth';
+import { useModeration } from '@/contexts/ModerationContext';
 
 export interface PostCommentsOptions {
   includeModerated?: boolean;
@@ -29,8 +30,13 @@ export function usePostComments(
     cellsWithStats,
   } = useForumData();
   const { currentUser } = useAuth();
+  const { showModerated } = useModeration();
 
-  const { includeModerated = false, sortBy = 'timestamp', limit } = options;
+  const {
+    includeModerated = showModerated,
+    sortBy = 'timestamp',
+    limit,
+  } = options;
 
   return useMemo(() => {
     if (!postId) {
