@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useForum } from '@/contexts/useForum';
-import { useAuth } from '@/hooks/core/useEnhancedAuth';
+import { useAuth } from '@/hooks/core/useAuth';
+import { usePermissions } from '@/hooks/core/usePermissions';
 import { EDisplayPreference } from '@/types/identity';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -25,7 +26,8 @@ export interface UserActions extends UserActionStates {
  */
 export function useUserActions(): UserActions {
   const { userIdentityService } = useForum();
-  const { currentUser, permissions } = useAuth();
+  const { currentUser } = useAuth();
+  const permissions = usePermissions();
   const { toast } = useToast();
 
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);

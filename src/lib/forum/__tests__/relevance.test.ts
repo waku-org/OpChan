@@ -81,7 +81,7 @@ describe('RelevanceCalculator', () => {
       const verifiedUser: User = {
         address: 'user1',
         walletType: 'ethereum',
-        verificationStatus: EVerificationStatus.VERIFIED_OWNER,
+        verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
         displayPreference: EDisplayPreference.WALLET_ADDRESS,
         ensDetails: {
           ensName: 'test.eth',
@@ -98,7 +98,7 @@ describe('RelevanceCalculator', () => {
       const verifiedUser: User = {
         address: 'user3',
         walletType: 'bitcoin',
-        verificationStatus: EVerificationStatus.VERIFIED_OWNER,
+        verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
         displayPreference: EDisplayPreference.WALLET_ADDRESS,
         ordinalDetails: {
           ordinalId: '1',
@@ -115,7 +115,7 @@ describe('RelevanceCalculator', () => {
       const unverifiedUser: User = {
         address: 'user2',
         walletType: 'ethereum',
-        verificationStatus: EVerificationStatus.UNVERIFIED,
+        verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
         displayPreference: EDisplayPreference.WALLET_ADDRESS,
         ensDetails: undefined,
         ordinalDetails: undefined,
@@ -281,7 +281,7 @@ describe('RelevanceCalculator', () => {
         {
           address: 'user1',
           walletType: 'ethereum',
-          verificationStatus: EVerificationStatus.VERIFIED_OWNER,
+          verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
           displayPreference: EDisplayPreference.WALLET_ADDRESS,
           ensDetails: {
             ensName: 'test.eth',
@@ -292,7 +292,7 @@ describe('RelevanceCalculator', () => {
         {
           address: 'user2',
           walletType: 'bitcoin',
-          verificationStatus: EVerificationStatus.UNVERIFIED,
+          verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
           displayPreference: EDisplayPreference.WALLET_ADDRESS,
           ensDetails: undefined,
           ordinalDetails: undefined,

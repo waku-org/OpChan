@@ -23,7 +23,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
     callSign: null,
     ensName: null,
     ordinalDetails: null,
-    verificationLevel: EVerificationStatus.UNVERIFIED,
+    verificationLevel: EVerificationStatus.WALLET_UNCONNECTED,
     displayPreference: null,
     isLoading: true,
     error: null,
@@ -35,7 +35,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
       userVerificationStatus[address] || {
         isVerified: false,
         ensName: null,
-        verificationStatus: EVerificationStatus.UNVERIFIED,
+        verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
       }
     );
   }, [userVerificationStatus, address]);
@@ -63,7 +63,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
           ordinalDetails: null,
           verificationLevel:
             verificationInfo.verificationStatus ||
-            EVerificationStatus.UNVERIFIED,
+            EVerificationStatus.WALLET_UNCONNECTED,
           displayPreference: null,
           isLoading: false,
           error: null,
@@ -109,7 +109,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
             ordinalDetails: null,
             verificationLevel:
               verificationInfo.verificationStatus ||
-              EVerificationStatus.UNVERIFIED,
+              EVerificationStatus.WALLET_UNCONNECTED,
             displayPreference: null,
             isLoading: false,
             error: null,
@@ -125,7 +125,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
           callSign: null,
           ensName: null,
           ordinalDetails: null,
-          verificationLevel: EVerificationStatus.UNVERIFIED,
+          verificationLevel: EVerificationStatus.WALLET_UNCONNECTED,
           displayPreference: null,
           isLoading: false,
           error: error instanceof Error ? error.message : 'Unknown error',

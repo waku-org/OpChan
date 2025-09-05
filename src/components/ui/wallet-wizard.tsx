@@ -9,6 +9,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Circle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks';
+import { useAuth as useAuthContext } from '@/contexts/useAuth';
+import { EVerificationStatus } from '@/types/identity';
 import { WalletConnectionStep } from './wallet-connection-step';
 import { VerificationStep } from './verification-step';
 import { DelegationStep } from './delegation-step';
@@ -28,7 +30,9 @@ export function WalletWizard({
 }: WalletWizardProps) {
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1);
   const [isLoading, setIsLoading] = React.useState(false);
-  const { isAuthenticated, verificationStatus, delegationInfo } = useAuth();
+  const { isAuthenticated, verificationStatus } = useAuth();
+  const { getDelegationStatus } = useAuthContext();
+  const delegationInfo = getDelegationStatus();
   const hasInitialized = React.useRef(false);
 
   // Reset wizard when opened and determine starting step
@@ -39,15 +43,14 @@ export function WalletWizard({
         setCurrentStep(1); // Start at connection step if not authenticated
       } else if (
         isAuthenticated &&
-        (verificationStatus.level === 'unverified' ||
-          verificationStatus.level === 'verifying')
+        verificationStatus === EVerificationStatus.WALLET_UNCONNECTED
       ) {
         setCurrentStep(2); // Start at verification step if authenticated but not verified
       } else if (
         isAuthenticated &&
-        (verificationStatus.level === 'verified-owner' ||
-          verificationStatus.level === 'verified-basic') &&
-        !delegationInfo.isActive
+        (verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED ||
+          verificationStatus === EVerificationStatus.WALLET_CONNECTED) &&
+        !delegationInfo.isValid
       ) {
         setCurrentStep(3); // Start at delegation step if verified but no valid delegation
       } else {
@@ -79,12 +82,17 @@ export function WalletWizard({
       return isAuthenticated ? 'complete' : 'current';
     } else if (step === 2) {
       if (!isAuthenticated) return 'disabled';
-      return verificationStatus.level !== 'unverified' ? 'complete' : 'current';
+      return verificationStatus !== EVerificationStatus.WALLET_UNCONNECTED
+        ? 'complete'
+        : 'current';
     } else if (step === 3) {
-      if (!isAuthenticated || verificationStatus.level === 'unverified') {
+      if (
+        !isAuthenticated ||
+        verificationStatus === EVerificationStatus.WALLET_UNCONNECTED
+      ) {
         return 'disabled';
       }
-      return delegationInfo.isActive ? 'complete' : 'current';
+      return delegationInfo.isValid ? 'complete' : 'current';
     }
     return 'disabled';
   };

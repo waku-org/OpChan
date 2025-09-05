@@ -14,18 +14,13 @@ import {
 } from '@/lib/delegation';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 
-export type VerificationStatus =
-  | 'unverified'
-  | 'verified-none'
-  | 'verified-basic'
-  | 'verified-owner'
-  | 'verifying';
+// Removed VerificationStatus type - using EVerificationStatus enum directly
 
 interface AuthContextType {
   currentUser: User | null;
   isAuthenticating: boolean;
   isAuthenticated: boolean;
-  verificationStatus: VerificationStatus;
+  verificationStatus: EVerificationStatus;
   connectWallet: () => Promise<boolean>;
   disconnectWallet: () => void;
   verifyOwnership: () => Promise<boolean>;
@@ -44,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [verificationStatus, setVerificationStatus] =
-    useState<VerificationStatus>('unverified');
+    useState<EVerificationStatus>(EVerificationStatus.WALLET_UNCONNECTED);
   const { toast } = useToast();
 
   // Use AppKit hooks for multi-chain support
@@ -118,8 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ? { ordinalId: 'mock', ordinalDetails: 'Mock ordinal for testing' }
           : undefined,
         verificationStatus: hasOperators
-          ? EVerificationStatus.VERIFIED_OWNER
-          : EVerificationStatus.VERIFIED_BASIC,
+          ? EVerificationStatus.ENS_ORDINAL_VERIFIED
+          : EVerificationStatus.WALLET_CONNECTED,
         lastChecked: Date.now(),
       };
     } else if (user.walletType === 'ethereum') {
@@ -134,8 +129,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ...user,
           ensDetails: hasENS && ensName ? { ensName } : undefined,
           verificationStatus: hasENS
-            ? EVerificationStatus.VERIFIED_OWNER
-            : EVerificationStatus.VERIFIED_BASIC,
+            ? EVerificationStatus.ENS_ORDINAL_VERIFIED
+            : EVerificationStatus.WALLET_CONNECTED,
           lastChecked: Date.now(),
         };
       } catch (error) {
@@ -143,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return {
           ...user,
           ensDetails: undefined,
-          verificationStatus: EVerificationStatus.VERIFIED_BASIC,
+          verificationStatus: EVerificationStatus.WALLET_CONNECTED,
           lastChecked: Date.now(),
         };
       }
@@ -204,7 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const newUser: User = {
           address,
           walletType: isBitcoinConnected ? 'bitcoin' : 'ethereum',
-          verificationStatus: EVerificationStatus.VERIFIED_BASIC, // Connected wallets get basic verification by default
+          verificationStatus: EVerificationStatus.WALLET_CONNECTED, // Connected wallets get basic verification by default
           displayPreference: EDisplayPreference.WALLET_ADDRESS,
           lastChecked: Date.now(),
         };
@@ -220,32 +215,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   const updatedUser = {
                     ...newUser,
                     ensDetails: { ensName: walletInfo.ensName },
-                    verificationStatus: EVerificationStatus.VERIFIED_OWNER,
+                    verificationStatus:
+                      EVerificationStatus.ENS_ORDINAL_VERIFIED,
                   };
                   setCurrentUser(updatedUser);
-                  setVerificationStatus('verified-owner');
+                  setVerificationStatus(
+                    EVerificationStatus.ENS_ORDINAL_VERIFIED
+                  );
                   saveUser(updatedUser);
                 } else {
                   setCurrentUser(newUser);
-                  setVerificationStatus('verified-basic');
+                  setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
                   saveUser(newUser);
                 }
               })
               .catch(() => {
                 // Fallback to basic verification if ENS check fails
                 setCurrentUser(newUser);
-                setVerificationStatus('verified-basic');
+                setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
                 saveUser(newUser);
               });
           } catch {
             // WalletManager not ready, fallback to basic verification
             setCurrentUser(newUser);
-            setVerificationStatus('verified-basic');
+            setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
             saveUser(newUser);
           }
         } else {
           setCurrentUser(newUser);
-          setVerificationStatus('verified-basic');
+          setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
           saveUser(newUser);
         }
 
@@ -270,7 +268,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       // Wallet disconnected
       setCurrentUser(null);
-      setVerificationStatus('unverified');
+      setVerificationStatus(EVerificationStatus.WALLET_UNCONNECTED);
     }
   }, [isConnected, address, isBitcoinConnected, isEthereumConnected, toast]);
 
@@ -293,13 +291,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     disconnect();
   };
 
-  const getVerificationStatus = (user: User): VerificationStatus => {
+  const getVerificationStatus = (user: User): EVerificationStatus => {
     if (user.walletType === 'bitcoin') {
-      return user.ordinalDetails ? 'verified-owner' : 'verified-basic';
+      return user.ordinalDetails
+        ? EVerificationStatus.ENS_ORDINAL_VERIFIED
+        : EVerificationStatus.WALLET_CONNECTED;
     } else if (user.walletType === 'ethereum') {
-      return user.ensDetails ? 'verified-owner' : 'verified-basic';
+      return user.ensDetails
+        ? EVerificationStatus.ENS_ORDINAL_VERIFIED
+        : EVerificationStatus.WALLET_CONNECTED;
     }
-    return 'unverified';
+    return EVerificationStatus.WALLET_UNCONNECTED;
   };
 
   const verifyOwnership = async (): Promise<boolean> => {
@@ -313,7 +315,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setIsAuthenticating(true);
-    setVerificationStatus('verifying');
+    setVerificationStatus(EVerificationStatus.WALLET_CONNECTED); // Temporary state during verification
 
     try {
       const verificationType =
@@ -363,7 +365,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
     } catch (error) {
       console.error('Error verifying ownership:', error);
-      setVerificationStatus('unverified');
+      setVerificationStatus(EVerificationStatus.WALLET_UNCONNECTED);
 
       let errorMessage = 'Failed to verify ownership. Please try again.';
       if (error instanceof Error) {

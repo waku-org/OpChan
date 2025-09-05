@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth, useUserActions, useForumActions } from '@/hooks';
+import { useAuth as useAuthContext } from '@/contexts/useAuth';
 import { useUserDisplay } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +35,9 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   // Get current user from auth context for the address
-  const { currentUser, delegationInfo } = useAuth();
+  const { currentUser } = useAuth();
+  const { getDelegationStatus } = useAuthContext();
+  const delegationInfo = getDelegationStatus();
   const address = currentUser?.address;
 
   // Get comprehensive user information from the unified hook
@@ -137,11 +140,11 @@ export default function ProfilePage() {
 
   const getVerificationIcon = () => {
     switch (userInfo.verificationLevel) {
-      case EVerificationStatus.VERIFIED_OWNER:
+      case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case EVerificationStatus.VERIFIED_BASIC:
+      case EVerificationStatus.WALLET_CONNECTED:
         return <Shield className="h-4 w-4 text-blue-500" />;
-      case EVerificationStatus.UNVERIFIED:
+      case EVerificationStatus.WALLET_UNCONNECTED:
         return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
       default:
         return <XCircle className="h-4 w-4 text-red-500" />;
@@ -150,12 +153,12 @@ export default function ProfilePage() {
 
   const getVerificationText = () => {
     switch (userInfo.verificationLevel) {
-      case EVerificationStatus.VERIFIED_OWNER:
-        return 'Fully Verified';
-      case EVerificationStatus.VERIFIED_BASIC:
-        return 'Basic Verification';
-      case EVerificationStatus.UNVERIFIED:
-        return 'Unverified';
+      case EVerificationStatus.ENS_ORDINAL_VERIFIED:
+        return 'Owns ENS or Ordinal';
+      case EVerificationStatus.WALLET_CONNECTED:
+        return 'Connected Wallet';
+      case EVerificationStatus.WALLET_UNCONNECTED:
+        return 'Unconnected Wallet';
       default:
         return 'Unknown';
     }
@@ -163,11 +166,11 @@ export default function ProfilePage() {
 
   const getVerificationColor = () => {
     switch (userInfo.verificationLevel) {
-      case EVerificationStatus.VERIFIED_OWNER:
+      case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return 'bg-green-100 text-green-800 border-green-200';
-      case EVerificationStatus.VERIFIED_BASIC:
+      case EVerificationStatus.WALLET_CONNECTED:
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case EVerificationStatus.UNVERIFIED:
+      case EVerificationStatus.WALLET_UNCONNECTED:
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -337,26 +340,31 @@ export default function ProfilePage() {
             <div className="space-y-4">
               {/* Delegation Status */}
               <div className="flex items-center gap-3">
-                <Badge 
-                  variant={delegationInfo.isActive ? "default" : "secondary"}
-                  className={delegationInfo.isActive ? "bg-green-600 hover:bg-green-700" : ""}
+                <Badge
+                  variant={delegationInfo.isValid ? 'default' : 'secondary'}
+                  className={
+                    delegationInfo.isValid
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : ''
+                  }
                 >
-                  {delegationInfo.isActive ? 'Active' : 'Inactive'}
+                  {delegationInfo.isValid ? 'Active' : 'Inactive'}
                 </Badge>
-                {delegationInfo.isActive && delegationInfo.timeRemaining && (
+                {delegationInfo.isValid && delegationInfo.timeRemaining && (
                   <span className="text-sm text-muted-foreground">
                     {delegationInfo.timeRemaining} remaining
                   </span>
                 )}
-                {delegationInfo.needsRenewal && !delegationInfo.isExpired && (
-                  <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                {!delegationInfo.isValid && (
+                  <Badge
+                    variant="outline"
+                    className="text-yellow-600 border-yellow-600"
+                  >
                     Renewal Recommended
                   </Badge>
                 )}
-                {delegationInfo.isExpired && (
-                  <Badge variant="destructive">
-                    Expired
-                  </Badge>
+                {!delegationInfo.isValid && (
+                  <Badge variant="destructive">Expired</Badge>
                 )}
               </div>
 
@@ -367,19 +375,22 @@ export default function ProfilePage() {
                     Browser Public Key
                   </Label>
                   <div className="mt-1 text-sm font-mono bg-muted px-3 py-2 rounded-md break-all">
-                    {currentUser.browserPubKey ? (
-                      `${currentUser.browserPubKey.slice(0, 12)}...${currentUser.browserPubKey.slice(-8)}`
-                    ) : 'Not delegated'}
+                    {currentUser.browserPubKey
+                      ? `${currentUser.browserPubKey.slice(0, 12)}...${currentUser.browserPubKey.slice(-8)}`
+                      : 'Not delegated'}
                   </div>
                 </div>
-                
+
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">
                     Delegation Signature
                   </Label>
                   <div className="mt-1 text-sm">
                     {currentUser.delegationSignature === 'valid' ? (
-                      <Badge variant="outline" className="text-green-600 border-green-600">
+                      <Badge
+                        variant="outline"
+                        className="text-green-600 border-green-600"
+                      >
                         Valid
                       </Badge>
                     ) : (
@@ -404,10 +415,9 @@ export default function ProfilePage() {
                     Last Updated
                   </Label>
                   <div className="mt-1 text-sm">
-                    {currentUser.lastChecked ? 
-                      new Date(currentUser.lastChecked).toLocaleString() : 
-                      'Never'
-                    }
+                    {currentUser.lastChecked
+                      ? new Date(currentUser.lastChecked).toLocaleString()
+                      : 'Never'}
                   </div>
                 </div>
 
@@ -416,12 +426,18 @@ export default function ProfilePage() {
                     Can Delegate
                   </Label>
                   <div className="mt-1 text-sm">
-                    {delegationInfo.canDelegate ? (
-                      <Badge variant="outline" className="text-green-600 border-green-600">
+                    {delegationInfo.hasDelegation ? (
+                      <Badge
+                        variant="outline"
+                        className="text-green-600 border-green-600"
+                      >
                         Yes
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-red-600 border-red-600">
+                      <Badge
+                        variant="outline"
+                        className="text-red-600 border-red-600"
+                      >
                         No
                       </Badge>
                     )}
@@ -430,14 +446,16 @@ export default function ProfilePage() {
               </div>
 
               {/* Delegation Actions */}
-              {delegationInfo.canDelegate && (
+              {delegationInfo.hasDelegation && (
                 <div className="pt-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => setWalletWizardOpen(true)}
                   >
-                    {delegationInfo.isActive ? 'Renew Delegation' : 'Delegate Key'}
+                    {delegationInfo.isValid
+                      ? 'Renew Delegation'
+                      : 'Delegate Key'}
                   </Button>
                 </div>
               )}

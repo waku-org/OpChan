@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
-import { useAuth } from '@/hooks/core/useEnhancedAuth';
+import { useAuth } from '@/hooks/core/useAuth';
 import { DelegationDuration } from '@/lib/delegation';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
+import { EVerificationStatus } from '@/types/identity';
 
 export interface AuthActionStates {
   isConnecting: boolean;
@@ -32,14 +33,13 @@ export interface AuthActions extends AuthActionStates {
  * Hook for authentication and verification actions
  */
 export function useAuthActions(): AuthActions {
-  const {
-    isAuthenticated,
-    isAuthenticating,
-    delegationInfo,
-    verificationStatus,
-  } = useAuth();
+  const { isAuthenticated, isAuthenticating, verificationStatus } = useAuth();
 
-  const { verifyOwnership, delegateKey: delegateKeyFromContext } = useAuthContext();
+  const {
+    verifyOwnership,
+    delegateKey: delegateKeyFromContext,
+    getDelegationStatus,
+  } = useAuthContext();
   const { toast } = useToast();
 
   const [isConnecting, setIsConnecting] = useState(false);
@@ -145,7 +145,7 @@ export function useAuthActions(): AuthActions {
       return false;
     }
 
-    if (verificationStatus.level !== 'unverified') {
+    if (verificationStatus !== EVerificationStatus.WALLET_UNCONNECTED) {
       toast({
         title: 'Already Verified',
         description: 'Your wallet is already verified.',
@@ -155,24 +155,24 @@ export function useAuthActions(): AuthActions {
 
     setIsVerifying(true);
 
-      try {
-        // Call the real verification function from AuthContext
-        const success = await verifyOwnership();
-        
-        if (success) {
-          toast({
-            title: 'Verification Complete',
-            description: 'Your wallet has been verified successfully.',
-          });
-        } else {
-          toast({
-            title: 'Verification Failed',
-            description: 'Failed to verify wallet ownership. Please try again.',
-            variant: 'destructive',
-          });
-        }
-        
-        return success;
+    try {
+      // Call the real verification function from AuthContext
+      const success = await verifyOwnership();
+
+      if (success) {
+        toast({
+          title: 'Verification Complete',
+          description: 'Your wallet has been verified successfully.',
+        });
+      } else {
+        toast({
+          title: 'Verification Failed',
+          description: 'Failed to verify wallet ownership. Please try again.',
+          variant: 'destructive',
+        });
+      }
+
+      return success;
     } catch (error) {
       console.error('Failed to verify wallet:', error);
       toast({
@@ -184,7 +184,7 @@ export function useAuthActions(): AuthActions {
     } finally {
       setIsVerifying(false);
     }
-  }, [isAuthenticated, verificationStatus.level, verifyOwnership, toast]);
+  }, [isAuthenticated, verificationStatus, verifyOwnership, toast]);
 
   // Delegate key
   const delegateKey = useCallback(
@@ -198,7 +198,7 @@ export function useAuthActions(): AuthActions {
         return false;
       }
 
-      if (verificationStatus.level === 'unverified') {
+      if (verificationStatus === EVerificationStatus.WALLET_UNCONNECTED) {
         toast({
           title: 'Verification Required',
           description: 'Please verify your wallet before delegating keys.',
@@ -212,7 +212,7 @@ export function useAuthActions(): AuthActions {
       try {
         // Call the real delegation function from AuthContext
         const success = await delegateKeyFromContext(duration);
-        
+
         if (success) {
           const durationLabel = duration === '7days' ? '1 week' : '30 days';
           toast({
@@ -226,7 +226,7 @@ export function useAuthActions(): AuthActions {
             variant: 'destructive',
           });
         }
-        
+
         return success;
       } catch (error) {
         console.error('Failed to delegate key:', error);
@@ -240,12 +240,13 @@ export function useAuthActions(): AuthActions {
         setIsDelegating(false);
       }
     },
-    [isAuthenticated, verificationStatus.level, delegateKeyFromContext, toast]
+    [isAuthenticated, verificationStatus, delegateKeyFromContext, toast]
   );
 
   // Clear delegation
   const clearDelegation = useCallback(async (): Promise<boolean> => {
-    if (!delegationInfo.isActive) {
+    const delegationInfo = getDelegationStatus();
+    if (!delegationInfo.isValid) {
       toast({
         title: 'No Active Delegation',
         description: 'There is no active key delegation to clear.',
@@ -271,7 +272,7 @@ export function useAuthActions(): AuthActions {
       });
       return false;
     }
-  }, [delegationInfo.isActive, toast]);
+  }, [getDelegationStatus, toast]);
 
   // Renew delegation
   const renewDelegation = useCallback(

@@ -5,7 +5,7 @@ import {
   RelevanceScoreDetails,
   UserVerificationStatus,
 } from '@/types/forum';
-import { User } from '@/types/identity';
+import { EVerificationStatus, User } from '@/types/identity';
 import { VoteMessage } from '@/types/waku';
 
 export class RelevanceCalculator {
@@ -225,7 +225,7 @@ export class RelevanceCalculator {
     return !!(
       user.ensDetails ||
       user.ordinalDetails ||
-      user.verificationStatus === 'verified-basic'
+      user.verificationStatus === EVerificationStatus.WALLET_CONNECTED
     );
   }
 
@@ -286,10 +286,15 @@ export class RelevanceCalculator {
 
     // Apply different bonuses based on verification level
     let bonus = 0;
-    if (authorStatus?.verificationStatus === 'verified-owner') {
+    if (
+      authorStatus?.verificationStatus ===
+      EVerificationStatus.ENS_ORDINAL_VERIFIED
+    ) {
       // Full bonus for ENS/Ordinal owners
       bonus = score * (RelevanceCalculator.VERIFICATION_BONUS - 1);
-    } else if (authorStatus?.verificationStatus === 'verified-basic') {
+    } else if (
+      authorStatus?.verificationStatus === EVerificationStatus.WALLET_CONNECTED
+    ) {
       // Lower bonus for basic verified users
       bonus = score * (RelevanceCalculator.BASIC_VERIFICATION_BONUS - 1);
     }

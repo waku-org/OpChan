@@ -176,7 +176,7 @@ export class LocalDatabase {
             callSign,
             displayPreference,
             lastUpdated: timestamp,
-            verificationStatus: EVerificationStatus.UNVERIFIED,
+            verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
           };
           // Persist with address keyPath
           this.put(STORE.USER_IDENTITIES, {

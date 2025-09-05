@@ -4,7 +4,7 @@ import {
   PostWithVoteStatus,
   CommentWithVoteStatus,
 } from '@/hooks/core/useForumData';
-import { useAuth } from '@/hooks/core/useEnhancedAuth';
+import { useAuth } from '@/hooks/core/useAuth';
 
 export interface PostData extends PostWithVoteStatus {
   cell: {

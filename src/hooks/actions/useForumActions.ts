@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useForum } from '@/contexts/useForum';
-import { useAuth } from '@/hooks/core/useEnhancedAuth';
+import { useAuth } from '@/hooks/core/useAuth';
+import { usePermissions } from '@/hooks/core/usePermissions';
 import { Cell, Post, Comment } from '@/types/forum';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -74,7 +75,8 @@ export function useForumActions(): ForumActions {
     getCellById,
   } = useForum();
 
-  const { currentUser, permissions } = useAuth();
+  const { currentUser } = useAuth();
+  const permissions = usePermissions();
   const { toast } = useToast();
 
   // Cell creation
@@ -87,7 +89,7 @@ export function useForumActions(): ForumActions {
       if (!permissions.canCreateCell) {
         toast({
           title: 'Permission Denied',
-          description: 'You need to verify Ordinal ownership to create cells.',
+          description: permissions.createCellReason,
           variant: 'destructive',
         });
         return null;
@@ -176,8 +178,7 @@ export function useForumActions(): ForumActions {
       if (!permissions.canComment) {
         toast({
           title: 'Permission Denied',
-          description:
-            'You need to verify Ordinal ownership to create comments.',
+          description: permissions.commentReason,
           variant: 'destructive',
         });
         return null;
@@ -219,8 +220,7 @@ export function useForumActions(): ForumActions {
       if (!permissions.canVote) {
         toast({
           title: 'Permission Denied',
-          description:
-            'You need to verify wallet ownership or have ENS/Ordinals to vote.',
+          description: permissions.voteReason,
           variant: 'destructive',
         });
         return false;
@@ -253,8 +253,7 @@ export function useForumActions(): ForumActions {
       if (!permissions.canVote) {
         toast({
           title: 'Permission Denied',
-          description:
-            'You need to verify wallet ownership or have ENS/Ordinals to vote.',
+          description: permissions.voteReason,
           variant: 'destructive',
         });
         return false;

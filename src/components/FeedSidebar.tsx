@@ -5,6 +5,7 @@ import { TrendingUp, Users, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useForumData, useForumSelectors, useAuth } from '@/hooks';
+import { EVerificationStatus } from '@/types/identity';
 import { CypherImage } from '@/components/ui/CypherImage';
 import { useUserDisplay } from '@/hooks';
 
@@ -29,9 +30,9 @@ const FeedSidebar: React.FC = () => {
 
   // User's verification status display
   const getVerificationBadge = () => {
-    if (verificationStatus.level === 'verified-owner') {
+    if (verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
       return { text: 'Verified Owner', color: 'bg-green-500' };
-    } else if (verificationStatus.level === 'verified-basic') {
+    } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
       return { text: 'Verified', color: 'bg-blue-500' };
     } else if (ensName) {
       return { text: 'ENS User', color: 'bg-purple-500' };
@@ -67,14 +68,14 @@ const FeedSidebar: React.FC = () => {
               </div>
             </div>
 
-            {verificationStatus.level === 'unverified' && (
+            {verificationStatus === EVerificationStatus.WALLET_UNCONNECTED && (
               <div className="text-xs text-muted-foreground">
                 <Eye className="w-3 h-3 inline mr-1" />
                 Read-only mode. Verify wallet to participate.
               </div>
             )}
 
-            {verificationStatus.level === 'verified-basic' &&
+            {verificationStatus === EVerificationStatus.WALLET_CONNECTED &&
               !ordinalDetails && (
                 <div className="text-xs text-muted-foreground">
                   <Eye className="w-3 h-3 inline mr-1" />

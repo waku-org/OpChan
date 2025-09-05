@@ -164,8 +164,8 @@ const FeedPage: React.FC = () => {
                     <p className="text-cyber-neutral">
                       Be the first to create a post in a cell!
                     </p>
-                    {verificationStatus.level !==
-                      EVerificationStatus.VERIFIED_OWNER && (
+                    {verificationStatus !==
+                      EVerificationStatus.ENS_ORDINAL_VERIFIED && (
                       <p className="text-sm text-cyber-neutral/80">
                         Connect your wallet and verify Ordinal ownership to
                         start posting

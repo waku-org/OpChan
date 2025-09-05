@@ -9,6 +9,7 @@ import {
   useNetworkStatus,
   useForumSelectors,
 } from '@/hooks';
+import { useAuth as useAuthContext } from '@/contexts/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ export function HookDemoComponent() {
   // Core data hooks - reactive and optimized
   const forumData = useForumData();
   const auth = useAuth();
+  const { getDelegationStatus } = useAuthContext();
 
   // Derived hooks for specific data
   const userVotes = useUserVotes();
@@ -131,12 +133,11 @@ export function HookDemoComponent() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <strong>Verification Level:</strong>{' '}
-              {auth.verificationStatus.level}
+              <strong>Verification Level:</strong> {auth.verificationStatus}
             </div>
             <div>
               <strong>Delegation Active:</strong>{' '}
-              {auth.delegationInfo.isActive ? 'Yes' : 'No'}
+              {getDelegationStatus().isValid ? 'Yes' : 'No'}
             </div>
           </div>
 

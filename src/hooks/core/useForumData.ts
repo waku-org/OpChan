@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
 import { Cell, Post, Comment, UserVerificationStatus } from '@/types/forum';
+import { EVerificationStatus } from '@/types/identity';
 
 export interface CellWithStats extends Cell {
   postCount: number;
@@ -96,8 +97,9 @@ export function useForumData(): ForumData {
     if (!currentUser) return false;
 
     return (
-      currentUser.verificationStatus === 'verified-owner' ||
-      currentUser.verificationStatus === 'verified-basic' ||
+      currentUser.verificationStatus ===
+        EVerificationStatus.ENS_ORDINAL_VERIFIED ||
+      currentUser.verificationStatus === EVerificationStatus.WALLET_CONNECTED ||
       Boolean(currentUser.ensDetails) ||
       Boolean(currentUser.ordinalDetails)
     );

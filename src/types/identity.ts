@@ -19,10 +19,9 @@ export type User = {
 };
 
 export enum EVerificationStatus {
-  UNVERIFIED = 'unverified',
-  VERIFIED_BASIC = 'verified-basic',
-  VERIFIED_OWNER = 'verified-owner',
-  VERIFYING = 'verifying',
+  WALLET_UNCONNECTED = 'wallet-unconnected',
+  WALLET_CONNECTED = 'wallet-connected',
+  ENS_ORDINAL_VERIFIED = 'ens-ordinal-verified',
 }
 
 export interface OrdinalDetails {

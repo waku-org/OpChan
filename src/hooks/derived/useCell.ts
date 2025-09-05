@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useForumData, CellWithStats } from '@/hooks/core/useForumData';
-import { useAuth } from '@/hooks/core/useEnhancedAuth';
+import { useAuth } from '@/hooks/core/useAuth';
+import { EVerificationStatus } from '@/types/identity';
 
 export interface CellData extends CellWithStats {
   posts: Array<{
@@ -49,8 +50,10 @@ export function useCell(cellId: string | undefined): CellData | null {
       : false;
     const canModerate = isUserAdmin;
     const canPost = currentUser
-      ? currentUser.verificationStatus === 'verified-owner' ||
-        currentUser.verificationStatus === 'verified-basic' ||
+      ? currentUser.verificationStatus ===
+          EVerificationStatus.ENS_ORDINAL_VERIFIED ||
+        currentUser.verificationStatus ===
+          EVerificationStatus.WALLET_CONNECTED ||
         Boolean(currentUser.ensDetails) ||
         Boolean(currentUser.ordinalDetails)
       : false;

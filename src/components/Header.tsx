@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth, useNetworkStatus } from '@/hooks';
+import { useAuth as useAuthContext } from '@/contexts/useAuth';
+import { EVerificationStatus } from '@/types/identity';
 import { useForum } from '@/contexts/useForum';
 import { Button } from '@/components/ui/button';
 
@@ -27,7 +29,9 @@ import { WalletWizard } from '@/components/ui/wallet-wizard';
 import { useUserDisplay } from '@/hooks';
 
 const Header = () => {
-  const { verificationStatus, delegationInfo } = useAuth();
+  const { verificationStatus } = useAuth();
+  const { getDelegationStatus } = useAuthContext();
+  const delegationInfo = getDelegationStatus();
   const networkStatus = useNetworkStatus();
   const location = useLocation();
   const { toast } = useToast();
@@ -94,14 +98,10 @@ const Header = () => {
   const getAccountStatusText = () => {
     if (!isConnected) return 'Connect Wallet';
 
-    if (verificationStatus.level === 'verified-owner') {
-      return delegationInfo.isActive ? 'Ready to Post' : 'Delegation Expired';
-    } else if (verificationStatus.level === 'verified-basic') {
+    if (verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
+      return delegationInfo.isValid ? 'Ready to Post' : 'Delegation Expired';
+    } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
       return 'Verified (Read-only)';
-    } else if (verificationStatus.level === 'unverified') {
-      return verificationStatus.hasOrdinal
-        ? 'Verify Wallet'
-        : 'No Ordinals Found';
     } else {
       return 'Verify Wallet';
     }
@@ -111,13 +111,15 @@ const Header = () => {
     if (!isConnected) return 'text-red-400';
 
     if (
-      verificationStatus.level === 'verified-owner' &&
-      delegationInfo.isActive
+      verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
+      delegationInfo.isValid
     ) {
       return 'text-green-400';
-    } else if (verificationStatus.level === 'verified-basic') {
+    } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
       return 'text-yellow-400';
-    } else if (verificationStatus.hasOrdinal || verificationStatus.hasENS) {
+    } else if (
+      verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
+    ) {
       return 'text-orange-400';
     } else {
       return 'text-red-400';
@@ -128,13 +130,15 @@ const Header = () => {
     if (!isConnected) return <CircleSlash className="w-4 h-4" />;
 
     if (
-      verificationStatus.level === 'verified-owner' &&
-      delegationInfo.isActive
+      verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
+      delegationInfo.isValid
     ) {
       return <CheckCircle className="w-4 h-4" />;
-    } else if (verificationStatus.level === 'verified-basic') {
+    } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
       return <AlertTriangle className="w-4 h-4" />;
-    } else if (verificationStatus.hasOrdinal || verificationStatus.hasENS) {
+    } else if (
+      verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
+    ) {
       return <Key className="w-4 h-4" />;
     } else {
       return <AlertTriangle className="w-4 h-4" />;

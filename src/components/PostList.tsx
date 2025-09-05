@@ -8,6 +8,7 @@ import {
   useUserVotes,
   useAuth,
 } from '@/hooks';
+import { EVerificationStatus } from '@/types/identity';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -218,21 +219,22 @@ const PostList = () => {
         </div>
       )}
 
-      {!canPost && verificationStatus.level === 'verified-basic' && (
-        <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20">
-          <div className="flex items-center gap-2 mb-2">
-            <Eye className="w-4 h-4 text-cyber-neutral" />
-            <h3 className="font-medium">Read-Only Mode</h3>
+      {!canPost &&
+        verificationStatus === EVerificationStatus.WALLET_CONNECTED && (
+          <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Eye className="w-4 h-4 text-cyber-neutral" />
+              <h3 className="font-medium">Read-Only Mode</h3>
+            </div>
+            <p className="text-sm text-cyber-neutral mb-2">
+              Your wallet does not contain any Ordinal Operators. You can browse
+              threads but cannot post or interact.
+            </p>
+            <Badge variant="outline" className="text-xs">
+              No Ordinals Found
+            </Badge>
           </div>
-          <p className="text-sm text-cyber-neutral mb-2">
-            Your wallet does not contain any Ordinal Operators. You can browse
-            threads but cannot post or interact.
-          </p>
-          <Badge variant="outline" className="text-xs">
-            No Ordinals Found
-          </Badge>
-        </div>
-      )}
+        )}
 
       {!canPost && !currentUser && (
         <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 text-center">

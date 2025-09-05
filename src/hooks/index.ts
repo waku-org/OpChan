@@ -11,12 +11,12 @@ export type {
   CommentWithVoteStatus,
 } from './core/useForumData';
 
+export type { AuthState } from './core/useAuth';
 export type {
   Permission,
-  DetailedVerificationStatus,
-  DelegationInfo,
-  EnhancedAuthState,
-} from './core/useEnhancedAuth';
+  PermissionReasons,
+  PermissionResult,
+} from './core/usePermissions';
 
 export type { UserDisplayInfo } from './core/useEnhancedUserDisplay';
 
@@ -53,11 +53,7 @@ export { useAuthActions } from './actions/useAuthActions';
 export type { AuthActionStates, AuthActions } from './actions/useAuthActions';
 
 // Utility hooks
-export { usePermissions } from './utilities/usePermissions';
-export type {
-  PermissionCheck,
-  DetailedPermissions,
-} from './utilities/usePermissions';
+export { usePermissions } from './core/usePermissions';
 
 export { useNetworkStatus } from './utilities/useNetworkStatus';
 export type {

@@ -223,9 +223,9 @@ export class UserIdentityService {
 
       // Default verification status based on what we can resolve
       let verificationStatus: EVerificationStatus =
-        EVerificationStatus.UNVERIFIED;
+        EVerificationStatus.WALLET_UNCONNECTED;
       if (ensName || ordinalDetails) {
-        verificationStatus = EVerificationStatus.VERIFIED_OWNER;
+        verificationStatus = EVerificationStatus.ENS_ORDINAL_VERIFIED;
       }
 
       return {
@@ -300,7 +300,7 @@ export class UserIdentityService {
             ? EDisplayPreference.CALL_SIGN
             : EDisplayPreference.WALLET_ADDRESS,
         lastUpdated: timestamp,
-        verificationStatus: EVerificationStatus.UNVERIFIED,
+        verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
       };
     }
 
@@ -324,13 +324,13 @@ export class UserIdentityService {
   private mapVerificationStatus(status: string): EVerificationStatus {
     switch (status) {
       case 'verified-basic':
-        return EVerificationStatus.VERIFIED_BASIC;
+        return EVerificationStatus.WALLET_CONNECTED;
       case 'verified-owner':
-        return EVerificationStatus.VERIFIED_OWNER;
+        return EVerificationStatus.ENS_ORDINAL_VERIFIED;
       case 'verifying':
-        return EVerificationStatus.VERIFYING;
+        return EVerificationStatus.WALLET_CONNECTED; // Temporary state during verification
       default:
-        return EVerificationStatus.UNVERIFIED;
+        return EVerificationStatus.WALLET_UNCONNECTED;
     }
   }
 

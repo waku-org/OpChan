@@ -187,7 +187,7 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
               walletType: address.startsWith('0x')
                 ? ('ethereum' as const)
                 : ('bitcoin' as const),
-              verificationStatus: EVerificationStatus.UNVERIFIED,
+              verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
               displayPreference: EDisplayPreference.WALLET_ADDRESS,
             };
           }

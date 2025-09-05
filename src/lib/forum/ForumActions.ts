@@ -30,6 +30,42 @@ export class ForumActions {
     this.delegationManager = delegationManager || new DelegationManager();
   }
 
+  /**
+   * Unified permission validation system
+   */
+  private validatePermission(
+    action: 'createCell' | 'createPost' | 'createComment' | 'vote',
+    currentUser: User | null,
+    _isAuthenticated: boolean
+  ): { valid: boolean; error?: string } {
+    const verificationStatus =
+      currentUser?.verificationStatus || EVerificationStatus.WALLET_UNCONNECTED;
+
+    switch (action) {
+      case 'createCell':
+        if (verificationStatus !== EVerificationStatus.ENS_ORDINAL_VERIFIED) {
+          return {
+            valid: false,
+            error: 'Only ENS or Logos ordinal owners can create cells',
+          };
+        }
+        break;
+
+      case 'createPost':
+      case 'createComment':
+      case 'vote':
+        if (verificationStatus === EVerificationStatus.WALLET_UNCONNECTED) {
+          return {
+            valid: false,
+            error: 'Connect your wallet to perform this action',
+          };
+        }
+        break;
+    }
+
+    return { valid: true };
+  }
+
   /* ------------------------------------------------------------------
      POST / COMMENT / CELL CREATION
   -------------------------------------------------------------------*/
@@ -40,32 +76,15 @@ export class ForumActions {
   ): Promise<ActionResult<Post>> {
     const { cellId, title, content, currentUser, isAuthenticated } = params;
 
-    if (!isAuthenticated || !currentUser) {
-      return {
-        success: false,
-        error:
-          'Authentication required. You need to connect your wallet to post.',
-      };
-    }
-
-    // Check if user has basic verification or better, or owns ENS/Ordinal
-    const hasENSOrOrdinal = !!(
-      currentUser.ensDetails || currentUser.ordinalDetails
+    const validation = this.validatePermission(
+      'createPost',
+      currentUser,
+      isAuthenticated
     );
-    const isVerified =
-      currentUser.verificationStatus === EVerificationStatus.VERIFIED_OWNER ||
-      currentUser.verificationStatus === EVerificationStatus.VERIFIED_BASIC ||
-      hasENSOrOrdinal;
-
-    if (
-      !isVerified &&
-      (currentUser.verificationStatus === EVerificationStatus.UNVERIFIED ||
-        currentUser.verificationStatus === EVerificationStatus.VERIFYING)
-    ) {
+    if (!validation.valid) {
       return {
         success: false,
-        error:
-          'Verification required. Please complete wallet verification to post.',
+        error: validation.error!,
       };
     }
 
@@ -78,14 +97,14 @@ export class ForumActions {
         title,
         content,
         timestamp: Date.now(),
-        author: currentUser.address,
+        author: currentUser!.address, // Safe after validation
       };
 
       const signed = this.delegationManager.signMessage(unsignedPost);
       if (!signed) {
         const status = this.delegationManager.getStatus(
-          currentUser.address,
-          currentUser.walletType
+          currentUser!.address,
+          currentUser!.walletType
         );
         return {
           success: false,
@@ -125,32 +144,16 @@ export class ForumActions {
   ): Promise<ActionResult<Comment>> {
     const { postId, content, currentUser, isAuthenticated } = params;
 
-    if (!isAuthenticated || !currentUser) {
-      return {
-        success: false,
-        error:
-          'Authentication required. You need to connect your wallet to comment.',
-      };
-    }
-
-    // Check if user has basic verification or better, or owns ENS/Ordinal
-    const hasENSOrOrdinal = !!(
-      currentUser.ensDetails || currentUser.ordinalDetails
+    // Use unified validation
+    const validation = this.validatePermission(
+      'createComment',
+      currentUser,
+      isAuthenticated
     );
-    const isVerified =
-      currentUser.verificationStatus === EVerificationStatus.VERIFIED_OWNER ||
-      currentUser.verificationStatus === EVerificationStatus.VERIFIED_BASIC ||
-      hasENSOrOrdinal;
-
-    if (
-      !isVerified &&
-      (currentUser.verificationStatus === EVerificationStatus.UNVERIFIED ||
-        currentUser.verificationStatus === EVerificationStatus.VERIFYING)
-    ) {
+    if (!validation.valid) {
       return {
         success: false,
-        error:
-          'Verification required. Please complete wallet verification to comment.',
+        error: validation.error!,
       };
     }
 
@@ -162,15 +165,15 @@ export class ForumActions {
         postId,
         content,
         timestamp: Date.now(),
-        author: currentUser.address,
+        author: currentUser!.address,
       };
 
       // Optimistic path: sign locally, write to cache, mark pending, render immediately
       const signed = this.delegationManager.signMessage(unsignedComment);
       if (!signed) {
         const status = this.delegationManager.getStatus(
-          currentUser.address,
-          currentUser.walletType
+          currentUser!.address,
+          currentUser!.walletType
         );
         return {
           success: false,
@@ -213,11 +216,16 @@ export class ForumActions {
   ): Promise<ActionResult<Cell>> {
     const { name, description, icon, currentUser, isAuthenticated } = params;
 
-    if (!isAuthenticated || !currentUser) {
+    // Use unified validation
+    const validation = this.validatePermission(
+      'createCell',
+      currentUser,
+      isAuthenticated
+    );
+    if (!validation.valid) {
       return {
         success: false,
-        error:
-          'Authentication required. You need to verify Ordinal ownership to create a cell.',
+        error: validation.error!,
       };
     }
 
@@ -230,14 +238,14 @@ export class ForumActions {
         description,
         ...(icon && { icon }),
         timestamp: Date.now(),
-        author: currentUser.address,
+        author: currentUser!.address,
       };
 
       const signed = this.delegationManager.signMessage(unsignedCell);
       if (!signed) {
         const status = this.delegationManager.getStatus(
-          currentUser.address,
-          currentUser.walletType
+          currentUser!.address,
+          currentUser!.walletType
         );
         return {
           success: false,
@@ -281,32 +289,16 @@ export class ForumActions {
   ): Promise<ActionResult<boolean>> {
     const { targetId, isUpvote, currentUser, isAuthenticated } = params;
 
-    if (!isAuthenticated || !currentUser) {
-      return {
-        success: false,
-        error:
-          'Authentication required. You need to connect your wallet to vote.',
-      };
-    }
-
-    // Check if user has basic verification or better, or owns ENS/Ordinal
-    const hasENSOrOrdinal = !!(
-      currentUser.ensDetails || currentUser.ordinalDetails
+    // Use unified validation
+    const validation = this.validatePermission(
+      'vote',
+      currentUser,
+      isAuthenticated
     );
-    const isVerified =
-      currentUser.verificationStatus === EVerificationStatus.VERIFIED_OWNER ||
-      currentUser.verificationStatus === EVerificationStatus.VERIFIED_BASIC ||
-      hasENSOrOrdinal;
-
-    if (
-      !isVerified &&
-      (currentUser.verificationStatus === EVerificationStatus.UNVERIFIED ||
-        currentUser.verificationStatus === EVerificationStatus.VERIFYING)
-    ) {
+    if (!validation.valid) {
       return {
         success: false,
-        error:
-          'Verification required. Please complete wallet verification to vote.',
+        error: validation.error!,
       };
     }
 
@@ -318,14 +310,14 @@ export class ForumActions {
         targetId,
         value: isUpvote ? 1 : -1,
         timestamp: Date.now(),
-        author: currentUser.address,
+        author: currentUser!.address,
       };
 
       const signed = this.delegationManager.signMessage(unsignedVote);
       if (!signed) {
         const status = this.delegationManager.getStatus(
-          currentUser.address,
-          currentUser.walletType
+          currentUser!.address,
+          currentUser!.walletType
         );
         return {
           success: false,
@@ -389,14 +381,14 @@ export class ForumActions {
         targetId: postId,
         reason,
         timestamp: Date.now(),
-        author: currentUser.address,
+        author: currentUser!.address,
       };
 
       const signed = this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
         const status = this.delegationManager.getStatus(
-          currentUser.address,
-          currentUser.walletType
+          currentUser!.address,
+          currentUser!.walletType
         );
         return {
           success: false,
@@ -462,14 +454,14 @@ export class ForumActions {
         targetId: commentId,
         reason,
         timestamp: Date.now(),
-        author: currentUser.address,
+        author: currentUser!.address,
       };
 
       const signed = this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
         const status = this.delegationManager.getStatus(
-          currentUser.address,
-          currentUser.walletType
+          currentUser!.address,
+          currentUser!.walletType
         );
         return {
           success: false,
@@ -534,15 +526,15 @@ export class ForumActions {
         targetType: 'user',
         targetId: userAddress,
         reason,
-        author: currentUser.address,
+        author: currentUser!.address,
         timestamp: Date.now(),
       };
 
       const signed = this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
         const status = this.delegationManager.getStatus(
-          currentUser.address,
-          currentUser.walletType
+          currentUser!.address,
+          currentUser!.walletType
         );
         return {
           success: false,

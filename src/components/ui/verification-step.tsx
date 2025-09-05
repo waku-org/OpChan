@@ -9,6 +9,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useAuth, useAuthActions } from '@/hooks';
+import { EVerificationStatus } from '@/types/identity';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { OrdinalDetails, EnsDetails } from '@/types/identity';
 
@@ -217,7 +218,7 @@ export function VerificationStep({
   }
 
   // Show verification status
-  if (verificationStatus.level === 'verified-owner') {
+  if (verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 space-y-4">
