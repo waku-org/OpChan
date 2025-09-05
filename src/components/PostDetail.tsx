@@ -6,6 +6,7 @@ import {
   useForumActions,
   usePermissions,
   useUserVotes,
+  usePostBookmark,
 } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,33 +18,14 @@ import {
   MessageCircle,
   Send,
   Loader2,
-  Shield,
-  UserX,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 import { RelevanceIndicator } from './ui/relevance-indicator';
 import { AuthorDisplay } from './ui/author-display';
+import { BookmarkButton } from './ui/bookmark-button';
+import CommentCard from './CommentCard';
 import { usePending, usePendingVote } from '@/hooks/usePending';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-
-// Extracted child component to respect Rules of Hooks
-const PendingBadge: React.FC<{ id: string }> = ({ id }) => {
-  const { isPending } = usePending(id);
-  if (!isPending) return null;
-  return (
-    <>
-      <span>•</span>
-      <span className="px-2 py-0.5 rounded-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-        syncing…
-      </span>
-    </>
-  );
-};
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -55,7 +37,6 @@ const PostDetail = () => {
   const {
     createComment,
     votePost,
-    voteComment,
     moderateComment,
     moderateUser,
     isCreatingComment,
@@ -63,6 +44,11 @@ const PostDetail = () => {
   } = useForumActions();
   const { canVote, canComment, canModerate } = usePermissions();
   const userVotes = useUserVotes();
+  const {
+    isBookmarked,
+    loading: bookmarkLoading,
+    toggleBookmark,
+  } = usePostBookmark(post!, post?.cellId);
 
   // ✅ Move ALL hook calls to the top, before any conditional logic
   const postPending = usePending(post?.id);
@@ -118,19 +104,18 @@ const PostDetail = () => {
     await votePost(post.id, isUpvote);
   };
 
-  const handleVoteComment = async (commentId: string, isUpvote: boolean) => {
-    // ✅ Permission checking handled in hook
-    await voteComment(commentId, isUpvote);
+  const handleBookmark = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    await toggleBookmark();
   };
 
   // ✅ Get vote status from hooks
   const postVoteType = userVotes.getPostVoteType(post.id);
   const isPostUpvoted = postVoteType === 'upvote';
   const isPostDownvoted = postVoteType === 'downvote';
-
-  const getCommentVoteType = (commentId: string) => {
-    return userVotes.getCommentVoteType(commentId);
-  };
 
   const handleModerateComment = async (commentId: string) => {
     const reason =
@@ -239,7 +224,17 @@ const PostDetail = () => {
                 )}
               </div>
 
-              <h1 className="text-2xl font-bold mb-3">{post.title}</h1>
+              <div className="flex items-start justify-between mb-3">
+                <h1 className="text-2xl font-bold flex-1">{post.title}</h1>
+                <BookmarkButton
+                  isBookmarked={isBookmarked}
+                  loading={bookmarkLoading}
+                  onClick={handleBookmark}
+                  size="lg"
+                  variant="ghost"
+                  showText={true}
+                />
+              </div>
               <p className="text-sm whitespace-pre-wrap break-words">
                 {post.content}
               </p>
@@ -316,98 +311,15 @@ const PostDetail = () => {
           </div>
         ) : (
           visibleComments.map(comment => (
-            <div
+            <CommentCard
               key={comment.id}
-              className="border border-muted rounded-sm p-4 bg-card"
-            >
-              <div className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <button
-                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
-                      getCommentVoteType(comment.id) === 'upvote'
-                        ? 'text-cyber-accent'
-                        : ''
-                    }`}
-                    onClick={() => handleVoteComment(comment.id, true)}
-                    disabled={!canVote || isVoting}
-                  >
-                    <ArrowUp className="w-3 h-3" />
-                  </button>
-                  <span className="text-sm font-bold">{comment.voteScore}</span>
-                  <button
-                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
-                      getCommentVoteType(comment.id) === 'downvote'
-                        ? 'text-cyber-accent'
-                        : ''
-                    }`}
-                    onClick={() => handleVoteComment(comment.id, false)}
-                    disabled={!canVote || isVoting}
-                  >
-                    <ArrowDown className="w-3 h-3" />
-                  </button>
-                </div>
-
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                    <AuthorDisplay
-                      address={comment.author}
-                      className="text-xs"
-                      showBadge={false}
-                    />
-                    <span>•</span>
-                    <Clock className="w-3 h-3" />
-                    <span>
-                      {formatDistanceToNow(new Date(comment.timestamp), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                    <PendingBadge id={comment.id} />
-                  </div>
-                  <p className="text-sm break-words">{comment.content}</p>
-                  {canModerate(cell?.id || '') && !comment.moderated && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 text-cyber-neutral hover:text-orange-500"
-                          onClick={() => handleModerateComment(comment.id)}
-                        >
-                          <Shield className="h-3 w-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Moderate comment</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                  {post.cell &&
-                    canModerate(post.cell.id) &&
-                    comment.author !== post.author && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-cyber-neutral hover:text-red-500"
-                            onClick={() => handleModerateUser(comment.author)}
-                          >
-                            <UserX className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Moderate user</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  {comment.moderated && (
-                    <span className="ml-2 text-xs text-red-500">
-                      [Moderated]
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+              comment={comment}
+              postId={postId}
+              cellId={cell?.id}
+              canModerate={canModerate(cell?.id || '')}
+              onModerateComment={handleModerateComment}
+              onModerateUser={handleModerateUser}
+            />
           ))
         )}
       </div>

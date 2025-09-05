@@ -2,6 +2,11 @@
 export { useForumData } from './core/useForumData';
 export { useAuth } from './core/useAuth';
 export { useUserDisplay } from './core/useUserDisplay';
+export {
+  useBookmarks,
+  usePostBookmark,
+  useCommentBookmark,
+} from './core/useBookmarks';
 
 // Core types
 export type {

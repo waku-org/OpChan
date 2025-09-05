@@ -338,7 +338,7 @@ export function useForumData(): ForumData {
       if (!organized[comment.postId]) {
         organized[comment.postId] = [];
       }
-      organized[comment.postId].push(comment);
+      organized[comment.postId]!.push(comment);
     });
 
     return organized;

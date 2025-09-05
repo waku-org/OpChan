@@ -126,3 +126,34 @@ export interface UserVerificationStatus {
     verificationStatus?: EVerificationStatus;
   };
 }
+
+/**
+ * Bookmark types for posts and comments
+ */
+export enum BookmarkType {
+  POST = 'post',
+  COMMENT = 'comment',
+}
+
+/**
+ * Bookmark data structure
+ */
+export interface Bookmark {
+  id: string; // Composite key: `${type}:${targetId}`
+  type: BookmarkType;
+  targetId: string; // Post ID or Comment ID
+  userId: string; // User's wallet address
+  createdAt: number; // Timestamp when bookmarked
+  // Optional metadata for display
+  title?: string; // Post title or comment preview
+  author?: string; // Author address
+  cellId?: string; // For posts, the cell they belong to
+  postId?: string; // For comments, the post they belong to
+}
+
+/**
+ * Bookmark cache for in-memory storage
+ */
+export interface BookmarkCache {
+  [bookmarkId: string]: Bookmark;
+}

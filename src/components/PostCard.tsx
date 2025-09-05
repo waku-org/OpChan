@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, MessageSquare } from 'lucide-react';
+import { ArrowUp, ArrowDown, MessageSquare, Clipboard } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Post } from '@/types/forum';
 import {
@@ -8,10 +8,13 @@ import {
   usePermissions,
   useUserVotes,
   useForumData,
+  usePostBookmark,
 } from '@/hooks';
 import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
 import { AuthorDisplay } from '@/components/ui/author-display';
+import { BookmarkButton } from '@/components/ui/bookmark-button';
 import { usePending, usePendingVote } from '@/hooks/usePending';
+import { useToast } from '@/components/ui/use-toast';
 
 interface PostCardProps {
   post: Post;
@@ -19,11 +22,16 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
-  // ✅ Use reactive hooks instead of direct context access
   const { cellsWithStats } = useForumData();
   const { votePost, isVoting } = useForumActions();
   const { canVote } = usePermissions();
   const userVotes = useUserVotes();
+  const {
+    isBookmarked,
+    loading: bookmarkLoading,
+    toggleBookmark,
+  } = usePostBookmark(post, post.cellId);
+  const { toast } = useToast();
 
   // ✅ Get pre-computed cell data
   const cell = cellsWithStats.find(c => c.id === post.cellId);
@@ -52,6 +60,42 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
     e.preventDefault();
     // ✅ All validation and permission checking handled in hook
     await votePost(post.id, isUpvote);
+  };
+
+  const handleBookmark = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    await toggleBookmark();
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const postUrl = `${window.location.origin}/post/${post.id}`;
+
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      toast({
+        title: 'Link copied!',
+        description: 'Post link has been copied to your clipboard.',
+      });
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = postUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      toast({
+        title: 'Link copied!',
+        description: 'Post link has been copied to your clipboard.',
+      });
+    }
   };
 
   return (
@@ -147,22 +191,33 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
             </p>
 
             {/* Post actions */}
-            <div className="flex items-center space-x-4 text-xs text-cyber-neutral">
-              <div className="flex items-center space-x-1 hover:text-cyber-accent transition-colors">
-                <MessageSquare className="w-4 h-4" />
-                <span>{commentCount} comments</span>
+            <div className="flex items-center justify-between text-xs text-cyber-neutral">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-1 hover:text-cyber-accent transition-colors">
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{commentCount} comments</span>
+                </div>
+                {isPending && (
+                  <span className="px-2 py-0.5 rounded-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                    syncing…
+                  </span>
+                )}
+                <button
+                  onClick={handleShare}
+                  className="hover:text-cyber-accent transition-colors flex items-center gap-1"
+                  title="Copy link"
+                >
+                  <Clipboard size={14} />
+                  Share
+                </button>
               </div>
-              {isPending && (
-                <span className="px-2 py-0.5 rounded-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                  syncing…
-                </span>
-              )}
-              <button className="hover:text-cyber-accent transition-colors">
-                Share
-              </button>
-              <button className="hover:text-cyber-accent transition-colors">
-                Save
-              </button>
+              <BookmarkButton
+                isBookmarked={isBookmarked}
+                loading={bookmarkLoading}
+                onClick={handleBookmark}
+                size="sm"
+                variant="ghost"
+              />
             </div>
           </Link>
         </div>

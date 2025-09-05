@@ -22,8 +22,12 @@ const FeedPage: React.FC = () => {
   const { refreshData } = useForumActions();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
-  const { filteredPosts, filteredCommentsByPost, isInitialLoading, isRefreshing } =
-    forumData;
+  const {
+    filteredPosts,
+    filteredCommentsByPost,
+    isInitialLoading,
+    isRefreshing,
+  } = forumData;
 
   // ✅ Use pre-computed filtered data
   const allPosts = useMemo(() => {

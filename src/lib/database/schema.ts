@@ -1,5 +1,5 @@
 export const DB_NAME = 'opchan-local';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export const STORE = {
   CELLS: 'cells',
@@ -12,6 +12,7 @@ export const STORE = {
   DELEGATION: 'delegation',
   UI_STATE: 'uiState',
   META: 'meta',
+  BOOKMARKS: 'bookmarks',
 } as const;
 
 export type StoreName = (typeof STORE)[keyof typeof STORE];
@@ -71,6 +72,15 @@ export function openLocalDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORE.META)) {
         // Misc metadata like lastSync timestamps
         db.createObjectStore(STORE.META, { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains(STORE.BOOKMARKS)) {
+        const store = db.createObjectStore(STORE.BOOKMARKS, { keyPath: 'id' });
+        // Index to fetch bookmarks by user
+        store.createIndex('by_userId', 'userId', { unique: false });
+        // Index to fetch bookmarks by type
+        store.createIndex('by_type', 'type', { unique: false });
+        // Index to fetch bookmarks by targetId
+        store.createIndex('by_targetId', 'targetId', { unique: false });
       }
     };
   });

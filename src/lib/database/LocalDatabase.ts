@@ -17,6 +17,7 @@ import { MessageValidator } from '@/lib/utils/MessageValidator';
 import { EVerificationStatus, User } from '@/types/identity';
 import { DelegationInfo } from '@/lib/delegation/types';
 import { openLocalDB, STORE, StoreName } from '@/lib/database/schema';
+import { Bookmark, BookmarkCache } from '@/types/forum';
 
 export interface LocalDatabaseCache {
   cells: CellCache;
@@ -25,6 +26,7 @@ export interface LocalDatabaseCache {
   votes: VoteCache;
   moderations: { [targetId: string]: ModerateMessage };
   userIdentities: UserIdentityCache;
+  bookmarks: BookmarkCache;
 }
 
 /**
@@ -47,6 +49,7 @@ export class LocalDatabase {
     votes: {},
     moderations: {},
     userIdentities: {},
+    bookmarks: {},
   };
 
   constructor() {
@@ -109,6 +112,7 @@ export class LocalDatabase {
     this.cache.votes = {};
     this.cache.moderations = {};
     this.cache.userIdentities = {};
+    this.cache.bookmarks = {};
   }
 
   private storeMessage(message: OpchanMessage): void {
@@ -204,13 +208,14 @@ export class LocalDatabase {
   private async hydrateFromIndexedDB(): Promise<void> {
     if (!this.db) return;
 
-    const [cells, posts, comments, votes, moderations, identities]: [
+    const [cells, posts, comments, votes, moderations, identities, bookmarks]: [
       CellMessage[],
       PostMessage[],
       CommentMessage[],
       (VoteMessage & { key: string })[],
       ModerateMessage[],
       ({ address: string } & UserIdentityCache[string])[],
+      Bookmark[],
     ] = await Promise.all([
       this.getAllFromStore<CellMessage>(STORE.CELLS),
       this.getAllFromStore<PostMessage>(STORE.POSTS),
@@ -220,6 +225,7 @@ export class LocalDatabase {
       this.getAllFromStore<{ address: string } & UserIdentityCache[string]>(
         STORE.USER_IDENTITIES
       ),
+      this.getAllFromStore<Bookmark>(STORE.BOOKMARKS),
     ]);
 
     this.cache.cells = Object.fromEntries(cells.map(c => [c.id, c]));
@@ -241,6 +247,7 @@ export class LocalDatabase {
         return [address, record];
       })
     );
+    this.cache.bookmarks = Object.fromEntries(bookmarks.map(b => [b.id, b]));
   }
 
   private async hydratePendingFromMeta(): Promise<void> {
@@ -283,6 +290,7 @@ export class LocalDatabase {
       | { key: string; value: User; timestamp: number }
       | { key: string; value: DelegationInfo; timestamp: number }
       | { key: string; value: unknown; timestamp: number }
+      | Bookmark
   ): void {
     if (!this.db) return;
     const tx = this.db.transaction(storeName, 'readwrite');
@@ -485,6 +493,96 @@ export class LocalDatabase {
     const tx = this.db.transaction(STORE.UI_STATE, 'readwrite');
     const store = tx.objectStore(STORE.UI_STATE);
     store.delete(key);
+  }
+
+  // ===== Bookmark Storage =====
+
+  /**
+   * Add a bookmark
+   */
+  public async addBookmark(bookmark: Bookmark): Promise<void> {
+    this.cache.bookmarks[bookmark.id] = bookmark;
+    this.put(STORE.BOOKMARKS, bookmark);
+  }
+
+  /**
+   * Remove a bookmark
+   */
+  public async removeBookmark(bookmarkId: string): Promise<void> {
+    delete this.cache.bookmarks[bookmarkId];
+    if (!this.db) return;
+
+    const tx = this.db.transaction(STORE.BOOKMARKS, 'readwrite');
+    const store = tx.objectStore(STORE.BOOKMARKS);
+    store.delete(bookmarkId);
+  }
+
+  /**
+   * Get all bookmarks for a user
+   */
+  public async getUserBookmarks(userId: string): Promise<Bookmark[]> {
+    if (!this.db) return [];
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STORE.BOOKMARKS, 'readonly');
+      const store = tx.objectStore(STORE.BOOKMARKS);
+      const index = store.index('by_userId');
+      const request = index.getAll(userId);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result as Bookmark[]);
+    });
+  }
+
+  /**
+   * Get bookmarks by type for a user
+   */
+  public async getUserBookmarksByType(
+    userId: string,
+    type: 'post' | 'comment'
+  ): Promise<Bookmark[]> {
+    if (!this.db) return [];
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STORE.BOOKMARKS, 'readonly');
+      const store = tx.objectStore(STORE.BOOKMARKS);
+      const index = store.index('by_userId');
+      const request = index.getAll(userId);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const bookmarks = request.result as Bookmark[];
+        const filtered = bookmarks.filter(b => b.type === type);
+        resolve(filtered);
+      };
+    });
+  }
+
+  /**
+   * Check if an item is bookmarked by a user
+   */
+  public isBookmarked(
+    userId: string,
+    type: 'post' | 'comment',
+    targetId: string
+  ): boolean {
+    const bookmarkId = `${type}:${targetId}`;
+    const bookmark = this.cache.bookmarks[bookmarkId];
+    return bookmark?.userId === userId;
+  }
+
+  /**
+   * Get bookmark by ID
+   */
+  public getBookmark(bookmarkId: string): Bookmark | undefined {
+    return this.cache.bookmarks[bookmarkId];
+  }
+
+  /**
+   * Get all bookmarks from cache
+   */
+  public getAllBookmarks(): Bookmark[] {
+    return Object.values(this.cache.bookmarks);
   }
 }
 

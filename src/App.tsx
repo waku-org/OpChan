@@ -25,6 +25,7 @@ import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import Index from './pages/Index';
 import ProfilePage from './pages/ProfilePage';
+import BookmarksPage from './pages/BookmarksPage';
 import { appkitConfig } from './lib/wallet/config';
 import { WagmiProvider } from 'wagmi';
 import { config } from './lib/wallet/config';
@@ -50,6 +51,7 @@ const App = () => (
                     <Route path="/cell/:cellId" element={<CellPage />} />
                     <Route path="/post/:postId" element={<PostPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/bookmarks" element={<BookmarksPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </TooltipProvider>

@@ -18,6 +18,7 @@ import {
   Home,
   Grid3X3,
   User,
+  Bookmark,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -197,17 +198,30 @@ const Header = () => {
                 <span>Cells</span>
               </Link>
               {isConnected && (
-                <Link
-                  to="/profile"
-                  className={`flex items-center space-x-1 px-3 py-1 rounded-sm text-sm transition-colors ${
-                    location.pathname === '/profile'
-                      ? 'bg-cyber-accent/20 text-cyber-accent'
-                      : 'text-cyber-neutral hover:text-cyber-accent hover:bg-cyber-muted/50'
-                  }`}
-                >
-                  <User className="w-4 h-4" />
-                  <span>Profile</span>
-                </Link>
+                <>
+                  <Link
+                    to="/bookmarks"
+                    className={`flex items-center space-x-1 px-3 py-1 rounded-sm text-sm transition-colors ${
+                      location.pathname === '/bookmarks'
+                        ? 'bg-cyber-accent/20 text-cyber-accent'
+                        : 'text-cyber-neutral hover:text-cyber-accent hover:bg-cyber-muted/50'
+                    }`}
+                  >
+                    <Bookmark className="w-4 h-4" />
+                    <span>Bookmarks</span>
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className={`flex items-center space-x-1 px-3 py-1 rounded-sm text-sm transition-colors ${
+                      location.pathname === '/profile'
+                        ? 'bg-cyber-accent/20 text-cyber-accent'
+                        : 'text-cyber-neutral hover:text-cyber-accent hover:bg-cyber-muted/50'
+                    }`}
+                  >
+                    <User className="w-4 h-4" />
+                    <span>Profile</span>
+                  </Link>
+                </>
               )}
             </nav>
           </div>
