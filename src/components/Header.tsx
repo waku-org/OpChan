@@ -7,6 +7,7 @@ import { useForum } from '@/contexts/useForum';
 import { localDatabase } from '@/lib/database/LocalDatabase';
 import { DelegationFullStatus } from '@/lib/delegation';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 import {
   LogOut,
@@ -19,12 +20,18 @@ import {
   Grid3X3,
   User,
   Bookmark,
+  Settings,
+  Menu,
+  X,
+  Clock,
 } from 'lucide-react';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/use-toast';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
@@ -58,6 +65,7 @@ const Header = () => {
     : undefined;
 
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ✅ Get display name from enhanced hook
   const { displayName } = useUserDisplay(address || '');
@@ -101,6 +109,10 @@ const Header = () => {
     setWalletWizardOpen(true);
   };
 
+  const handleOpenWizard = () => {
+    setWalletWizardOpen(true);
+  };
+
   const handleDisconnect = async () => {
     await disconnect();
     await setHasShownWizard(false); // Reset so wizard can show again on next connection
@@ -110,36 +122,6 @@ const Header = () => {
     });
   };
 
-  const getAccountStatusText = () => {
-    if (!isConnected) return 'Connect Wallet';
-
-    if (verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
-      return delegationInfo?.isValid ? 'Ready to Post' : 'Delegation Expired';
-    } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
-      return 'Verified (Read-only)';
-    } else {
-      return 'Verify Wallet';
-    }
-  };
-
-  const getStatusColor = () => {
-    if (!isConnected) return 'text-red-400';
-
-    if (
-      verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
-      delegationInfo?.isValid
-    ) {
-      return 'text-green-400';
-    } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
-      return 'text-yellow-400';
-    } else if (
-      verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
-    ) {
-      return 'text-orange-400';
-    } else {
-      return 'text-red-400';
-    }
-  };
 
   const getStatusIcon = () => {
     if (!isConnected) return <CircleSlash className="w-4 h-4" />;
@@ -161,140 +143,278 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-cyber-muted/20 border-b border-cyber-muted sticky top-0 z-50 backdrop-blur-sm">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Logo and Navigation */}
-          <div className="flex items-center space-x-6">
-            <Link
-              to="/"
-              className="text-xl font-bold text-glow hover:text-cyber-accent transition-colors"
-            >
-              <Terminal className="w-6 h-6 inline mr-2" />
-              opchan
-            </Link>
-
-            <nav className="hidden md:flex space-x-4">
+    <>
+      <header className="bg-black/80 border-b border-cyber-muted/30 sticky top-0 z-50 backdrop-blur-md">
+        <div className="container mx-auto px-4">
+          {/* Top Row - Logo, Network Status, User Actions */}
+          <div className="flex items-center justify-between h-16">
+            {/* Left: Logo */}
+            <div className="flex items-center">
               <Link
                 to="/"
-                className={`flex items-center space-x-1 px-3 py-1 rounded-sm text-sm transition-colors ${
+                className="flex items-center space-x-2 text-xl font-mono font-bold text-white hover:text-cyber-accent transition-colors"
+              >
+                <Terminal className="w-6 h-6" />
+                <span className="tracking-wider">opchan</span>
+              </Link>
+            </div>
+
+            {/* Center: Network Status (Desktop) */}
+            <div className="hidden lg:flex items-center space-x-3">
+              <div className="flex items-center space-x-2 px-3 py-1 bg-cyber-muted/20 rounded-full border border-cyber-muted/30">
+                <WakuHealthDot />
+                <span className="text-xs font-mono text-cyber-neutral">
+                  {wakuHealth.statusMessage}
+                </span>
+                {forum.lastSync && (
+                  <div className="flex items-center space-x-1 text-xs text-cyber-neutral/70">
+                    <Clock className="w-3 h-3" />
+                    <span>
+                      {new Date(forum.lastSync).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: User Actions */}
+            <div className="flex items-center space-x-3">
+              {/* Network Status (Mobile) */}
+              <div className="lg:hidden">
+                <WakuHealthDot />
+              </div>
+
+              {/* User Status & Actions */}
+              {isConnected ? (
+                <div className="flex items-center space-x-2">
+                  {/* Status Badge */}
+                  <Badge 
+                    variant="outline" 
+                    className={`font-mono text-xs border-0 ${
+                      verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED && delegationInfo?.isValid
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                        : verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
+                        ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                        : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                    }`}
+                  >
+                    {getStatusIcon()}
+                    <span className="ml-1">
+                      {verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED && delegationInfo?.isValid
+                        ? 'READY'
+                        : verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
+                        ? 'EXPIRED'
+                        : 'VERIFY'
+                      }
+                    </span>
+                  </Badge>
+
+                  {/* User Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center space-x-2 text-white hover:bg-cyber-muted/30"
+                      >
+                        <div className="text-sm font-mono">{displayName}</div>
+                        <Settings className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 bg-black/95 border-cyber-muted/30">
+                      <div className="px-3 py-2 border-b border-cyber-muted/30">
+                        <div className="text-sm font-medium text-white">{displayName}</div>
+                        <div className="text-xs text-cyber-neutral">{address?.slice(0, 8)}...{address?.slice(-4)}</div>
+                      </div>
+                      
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile" className="flex items-center space-x-2">
+                          <User className="w-4 h-4" />
+                          <span>Profile</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem asChild>
+                        <Link to="/bookmarks" className="flex items-center space-x-2">
+                          <Bookmark className="w-4 h-4" />
+                          <span>Bookmarks</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuSeparator className="bg-cyber-muted/30" />
+                      
+                      <DropdownMenuItem onClick={handleOpenWizard} className="flex items-center space-x-2">
+                        <Settings className="w-4 h-4" />
+                        <span>Setup Wizard</span>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuSeparator className="bg-cyber-muted/30" />
+                      
+                      <DropdownMenuItem 
+                        onClick={handleDisconnect} 
+                        className="flex items-center space-x-2 text-red-400 focus:text-red-400"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Disconnect</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleConnect}
+                  className="bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono font-medium"
+                >
+                  Connect
+                </Button>
+              )}
+
+              {/* Mobile Menu Toggle */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden text-white hover:bg-cyber-muted/30"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </Button>
+            </div>
+          </div>
+
+          {/* Navigation Bar (Desktop) */}
+          <div className="hidden md:flex items-center justify-center border-t border-cyber-muted/20 py-2">
+            <nav className="flex items-center space-x-1">
+              <Link
+                to="/"
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
                   location.pathname === '/'
-                    ? 'bg-cyber-accent/20 text-cyber-accent'
-                    : 'text-cyber-neutral hover:text-cyber-accent hover:bg-cyber-muted/50'
+                    ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
+                    : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
                 }`}
               >
                 <Home className="w-4 h-4" />
-                <span>Home</span>
+                <span>HOME</span>
               </Link>
               <Link
                 to="/cells"
-                className={`flex items-center space-x-1 px-3 py-1 rounded-sm text-sm transition-colors ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
                   location.pathname === '/cells'
-                    ? 'bg-cyber-accent/20 text-cyber-accent'
-                    : 'text-cyber-neutral hover:text-cyber-accent hover:bg-cyber-muted/50'
+                    ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
+                    : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
                 }`}
               >
                 <Grid3X3 className="w-4 h-4" />
-                <span>Cells</span>
+                <span>CELLS</span>
               </Link>
               {isConnected && (
                 <>
                   <Link
                     to="/bookmarks"
-                    className={`flex items-center space-x-1 px-3 py-1 rounded-sm text-sm transition-colors ${
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
                       location.pathname === '/bookmarks'
-                        ? 'bg-cyber-accent/20 text-cyber-accent'
-                        : 'text-cyber-neutral hover:text-cyber-accent hover:bg-cyber-muted/50'
+                        ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
+                        : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
                     }`}
                   >
                     <Bookmark className="w-4 h-4" />
-                    <span>Bookmarks</span>
+                    <span>BOOKMARKS</span>
                   </Link>
                   <Link
                     to="/profile"
-                    className={`flex items-center space-x-1 px-3 py-1 rounded-sm text-sm transition-colors ${
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
                       location.pathname === '/profile'
-                        ? 'bg-cyber-accent/20 text-cyber-accent'
-                        : 'text-cyber-neutral hover:text-cyber-accent hover:bg-cyber-muted/50'
+                        ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
+                        : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
                     }`}
                   >
                     <User className="w-4 h-4" />
-                    <span>Profile</span>
+                    <span>PROFILE</span>
                   </Link>
                 </>
               )}
             </nav>
           </div>
 
-          {/* Right side - Status and User */}
-          <div className="flex items-center space-x-4">
-            {/* Network Status */}
-            <div className="flex items-center space-x-2">
-              <WakuHealthDot />
-              <span className="text-xs text-cyber-neutral">
-                {wakuHealth.statusMessage}
-              </span>
-              {forum.lastSync && (
-                <span className="text-xs text-cyber-neutral ml-2">
-                  Last updated{' '}
-                  {new Date(forum.lastSync).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                  })}
-                  {forum.isSyncing ? ' • syncing…' : ''}
-                </span>
-              )}
-            </div>
-
-            {/* User Status */}
-            {isConnected ? (
-              <div className="flex items-center space-x-3">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center space-x-2">
-                      <div className={getStatusColor()}>{getStatusIcon()}</div>
-                      <div className="text-sm">
-                        <div className="font-medium">{displayName}</div>
-                        <div className={`text-xs ${getStatusColor()}`}>
-                          {getAccountStatusText()}
-                        </div>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="text-xs">
-                      <div>Address: {address?.slice(0, 8)}...</div>
-                      <div>Status: {getAccountStatusText()}</div>
-                      {delegationInfo?.timeRemaining && (
-                        <div>
-                          Delegation: {delegationInfo.timeRemaining} remaining
-                        </div>
-                      )}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDisconnect}
-                  className="text-cyber-neutral hover:text-red-400"
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-cyber-muted/20 py-4 space-y-2">
+              <nav className="space-y-1">
+                <Link
+                  to="/"
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-mono transition-all ${
+                    location.pathname === '/'
+                      ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
+                      : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  <LogOut className="w-4 h-4" />
-                </Button>
+                  <Home className="w-4 h-4" />
+                  <span>HOME</span>
+                </Link>
+                <Link
+                  to="/cells"
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-mono transition-all ${
+                    location.pathname === '/cells'
+                      ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
+                      : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Grid3X3 className="w-4 h-4" />
+                  <span>CELLS</span>
+                </Link>
+                {isConnected && (
+                  <>
+                    <Link
+                      to="/bookmarks"
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-mono transition-all ${
+                        location.pathname === '/bookmarks'
+                          ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
+                          : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                      }`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Bookmark className="w-4 h-4" />
+                      <span>BOOKMARKS</span>
+                    </Link>
+                    <Link
+                      to="/profile"
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-mono transition-all ${
+                        location.pathname === '/profile'
+                          ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
+                          : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                      }`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <User className="w-4 h-4" />
+                      <span>PROFILE</span>
+                    </Link>
+                  </>
+                )}
+              </nav>
+              
+              {/* Mobile Network Status */}
+              <div className="px-4 py-3 border-t border-cyber-muted/20">
+                <div className="flex items-center space-x-2 text-xs text-cyber-neutral">
+                  <WakuHealthDot />
+                  <span>{wakuHealth.statusMessage}</span>
+                  {forum.lastSync && (
+                    <span className="ml-auto">
+                      {new Date(forum.lastSync).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  )}
+                </div>
               </div>
-            ) : (
-              <Button
-                onClick={handleConnect}
-                className="bg-cyber-accent hover:bg-cyber-accent/80"
-              >
-                Connect Wallet
-              </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      </div>
+      </header>
 
       {/* Wallet Wizard */}
       <WalletWizard
@@ -308,7 +428,7 @@ const Header = () => {
           });
         }}
       />
-    </header>
+    </>
   );
 };
 

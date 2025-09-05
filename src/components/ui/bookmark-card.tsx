@@ -12,6 +12,7 @@ import { Bookmark, BookmarkType } from '@/types/forum';
 import { useUserDisplay } from '@/hooks';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -27,6 +28,7 @@ export function BookmarkCard({
   className,
 }: BookmarkCardProps) {
   const authorInfo = useUserDisplay(bookmark.author || '');
+  const navigate = useNavigate();
 
   const handleNavigate = () => {
     if (onNavigate) {
@@ -34,9 +36,9 @@ export function BookmarkCard({
     } else {
       // Default navigation behavior
       if (bookmark.type === BookmarkType.POST) {
-        window.location.href = `/post/${bookmark.targetId}`;
+        navigate(`/post/${bookmark.targetId}`);
       } else if (bookmark.type === BookmarkType.COMMENT && bookmark.postId) {
-        window.location.href = `/post/${bookmark.postId}#comment-${bookmark.targetId}`;
+        navigate(`/post/${bookmark.postId}#comment-${bookmark.targetId}`);
       }
     }
   };

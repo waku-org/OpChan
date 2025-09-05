@@ -96,18 +96,19 @@ const FeedPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-cyber-dark">
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+    <div className="page-container">
+      <div className="page-main">
         {/* Page Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-glow text-cyber-accent">
-              Popular Posts
-            </h1>
-            <p className="text-cyber-neutral text-sm">
-              Latest posts from all cells
-            </p>
-          </div>
+        <div className="page-header">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="page-title text-glow text-cyber-accent">
+                Popular Posts
+              </h1>
+              <p className="page-subtitle">
+                Latest posts from all cells
+              </p>
+            </div>
           <div className="flex items-center space-x-2">
             <ModerationToggle />
 
@@ -147,6 +148,7 @@ const FeedPage: React.FC = () => {
               <span>Refresh</span>
             </Button>
           </div>
+          </div>
         </div>
 
         <div className="flex gap-6">
@@ -155,12 +157,12 @@ const FeedPage: React.FC = () => {
             {/* Posts Feed */}
             <div className="space-y-0">
               {allPosts.length === 0 ? (
-                <div className="bg-cyber-muted/20 border border-cyber-muted rounded-sm p-12 text-center">
+                <div className="empty-state">
                   <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-glow">
+                    <h3 className="empty-state-title text-glow">
                       No posts yet
                     </h3>
-                    <p className="text-cyber-neutral">
+                    <p className="empty-state-description">
                       Be the first to create a post in a cell!
                     </p>
                     {verificationStatus !==

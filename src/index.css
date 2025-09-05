@@ -113,16 +113,149 @@
 }
 
 @layer components {
+  /* Page Layout Components */
+  .page-container {
+    @apply min-h-screen flex flex-col bg-cyber-dark text-white;
+  }
+
+  .page-header {
+    @apply mb-8;
+  }
+
+  .page-title {
+    @apply text-3xl font-mono font-bold text-white mb-2;
+  }
+
+  .page-subtitle {
+    @apply text-cyber-neutral;
+  }
+
+  .page-content {
+    @apply flex-1 pt-16;
+  }
+
+  .page-main {
+    @apply container mx-auto px-4 py-8 max-w-6xl;
+  }
+
+  .page-footer {
+    @apply border-t border-cyber-muted py-4 text-center text-xs text-cyber-neutral;
+  }
+
+  /* Card Components */
+  .card-base {
+    @apply bg-cyber-muted/20 border border-cyber-muted/30 rounded-sm transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:bg-cyber-muted/30 hover:border-cyber-accent/50;
+  }
+
+  .card-padding {
+    @apply p-6;
+  }
+
+  .card-padding-sm {
+    @apply p-4;
+  }
+
   .thread-card {
-    @apply border border-cyber-muted bg-cyber-dark hover:bg-cyber-muted/20 transition-colors rounded-sm p-4 mb-4;
+    @apply card-base card-hover card-padding-sm mb-4;
   }
 
   .board-card {
-    @apply border border-cyber-muted bg-cyber-dark hover:bg-cyber-muted/20 transition-colors rounded-sm p-3 mb-3;
+    @apply card-base card-hover card-padding-sm mb-3;
   }
 
   .comment-card {
     @apply border-l-2 border-muted pl-3 py-2 my-2 hover:border-primary transition-colors;
+  }
+
+  /* Content Cards */
+  .content-card {
+    @apply card-base card-hover card-padding;
+  }
+
+  .content-card-sm {
+    @apply card-base card-hover card-padding-sm;
+  }
+
+  /* Status Indicators */
+  .status-ready {
+    @apply bg-green-500/20 text-green-400 border-green-500/30;
+  }
+
+  .status-warning {
+    @apply bg-orange-500/20 text-orange-400 border-orange-500/30;
+  }
+
+  .status-error {
+    @apply bg-red-500/20 text-red-400 border-red-500/30;
+  }
+
+  .status-neutral {
+    @apply bg-cyber-muted/20 text-cyber-neutral border-cyber-muted/30;
+  }
+
+  /* Button Variants */
+  .btn-cyber {
+    @apply bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono font-medium;
+  }
+
+  .btn-cyber-outline {
+    @apply border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30;
+  }
+
+  /* Typography */
+  .text-glow {
+    text-shadow: 0 0 8px rgba(15, 160, 206, 0.5);
+  }
+
+  .text-glow-subtle {
+    text-shadow: 0 0 4px rgba(15, 160, 206, 0.3);
+  }
+
+  /* Spacing Utilities */
+  .section-spacing {
+    @apply mb-8;
+  }
+
+  .content-spacing {
+    @apply mb-6;
+  }
+
+  .item-spacing {
+    @apply mb-4;
+  }
+
+  /* Grid Layouts */
+  .grid-main-sidebar {
+    @apply grid grid-cols-1 lg:grid-cols-3 gap-6;
+  }
+
+  .grid-main-content {
+    @apply lg:col-span-2;
+  }
+
+  .grid-sidebar {
+    @apply lg:col-span-1;
+  }
+
+  /* Empty States */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 px-4 text-center;
+  }
+
+  .empty-state-icon {
+    @apply w-16 h-16 text-cyber-accent/50 mb-4;
+  }
+
+  .empty-state-title {
+    @apply text-xl font-mono font-bold text-white mb-2;
+  }
+
+  .empty-state-description {
+    @apply text-cyber-neutral mb-4;
   }
 }
 

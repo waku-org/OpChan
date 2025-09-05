@@ -99,7 +99,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
   };
 
   return (
-    <div className="bg-cyber-muted/20 border border-cyber-muted rounded-sm hover:border-cyber-accent/50 hover:bg-cyber-muted/30 transition-all duration-200 mb-2">
+    <div className="thread-card mb-2">
       <div className="flex">
         {/* Voting column */}
         <div className="flex flex-col items-center p-2 bg-cyber-muted/50 border-r border-cyber-muted">

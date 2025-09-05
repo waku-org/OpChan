@@ -48,7 +48,7 @@ const PostDetail = () => {
     isBookmarked,
     loading: bookmarkLoading,
     toggleBookmark,
-  } = usePostBookmark(post!, post?.cellId);
+  } = usePostBookmark(post, post?.cellId);
 
   // ✅ Move ALL hook calls to the top, before any conditional logic
   const postPending = usePending(post?.id);

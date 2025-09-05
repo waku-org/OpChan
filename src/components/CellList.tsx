@@ -8,6 +8,9 @@ import {
   Loader2,
   TrendingUp,
   Clock,
+  Grid3X3,
+  Shield,
+  Hash,
 } from 'lucide-react';
 import { CreateCellDialog } from './CreateCellDialog';
 import { Button } from '@/components/ui/button';
@@ -25,6 +28,49 @@ import { sortCells, SortOption } from '@/lib/utils/sorting';
 import { Cell } from '@/types/forum';
 import { usePending } from '@/hooks/usePending';
 
+// Empty State Component
+const EmptyState: React.FC<{ canCreateCell: boolean }> = ({ canCreateCell }) => {
+  return (
+    <div className="col-span-2 flex flex-col items-center justify-center py-16 px-4">
+      {/* Visual Element */}
+      <div className="relative mb-8">
+        <div className="w-32 h-32 bg-cyber-muted/20 border border-cyber-muted/30 rounded-lg flex items-center justify-center">
+          <Grid3X3 className="w-16 h-16 text-cyber-accent/50" />
+        </div>
+        {/* Floating elements */}
+        <div className="absolute -top-2 -right-2 w-6 h-6 bg-cyber-accent/20 border border-cyber-accent/30 rounded-full flex items-center justify-center">
+          <Hash className="w-3 h-3 text-cyber-accent" />
+        </div>
+        <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center">
+          <Shield className="w-3 h-3 text-green-400" />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="text-center max-w-2xl">
+        <h2 className="text-2xl font-mono font-bold text-white mb-4">
+          No Cells Found
+        </h2>
+
+        {canCreateCell ? (
+          <div className="space-y-4">
+            <p className="text-cyber-neutral">
+              Ready to start your own decentralized community?
+            </p>
+            <CreateCellDialog />
+          </div>
+        ) : (
+          <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-md">
+            <p className="text-orange-400 text-sm">
+              Connect your wallet and verify ownership to create cells
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Separate component to properly use hooks
 const CellItem: React.FC<{ cell: Cell }> = ({ cell }) => {
   const pending = usePending(cell.id);
@@ -32,7 +78,7 @@ const CellItem: React.FC<{ cell: Cell }> = ({ cell }) => {
   return (
     <Link
       to={`/cell/${cell.id}`}
-      className="group block p-4 border border-cyber-muted rounded-sm bg-cyber-muted/10 hover:bg-cyber-muted/20 hover:border-cyber-accent/50 transition-all duration-200"
+      className="group block board-card"
     >
       <div className="flex items-start gap-4">
         <CypherImage
@@ -109,84 +155,81 @@ const CellList = () => {
     );
   }
 
+  const hasCells = sortedCells.length > 0;
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-glow mb-2">
-            Decentralized Cells
-          </h1>
-          <p className="text-cyber-neutral">
-            Discover communities built on Bitcoin Ordinals
-          </p>
-        </div>
+    <div className="page-main">
+      <div className="page-header">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="page-title">
+              Decentralized Cells
+            </h1>
+            <p className="page-subtitle">
+              Discover communities built on Bitcoin Ordinals
+            </p>
+          </div>
 
-        <div className="flex items-center gap-4">
-          <ModerationToggle />
+        {/* Only show controls when cells exist */}
+        {hasCells && (
+          <div className="flex items-center gap-4">
+            <ModerationToggle />
 
-          <Select
-            value={sortOption}
-            onValueChange={(value: SortOption) => setSortOption(value)}
-          >
-            <SelectTrigger className="w-40 bg-cyber-muted/50 border-cyber-muted">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="relevance">
-                <TrendingUp className="w-4 h-4 mr-2 inline" />
-                Relevance
-              </SelectItem>
-              <SelectItem value="activity">
-                <MessageSquare className="w-4 h-4 mr-2 inline" />
-                Activity
-              </SelectItem>
-              <SelectItem value="newest">
-                <Clock className="w-4 h-4 mr-2 inline" />
-                Newest
-              </SelectItem>
-              <SelectItem value="alphabetical">
-                <Layout className="w-4 h-4 mr-2 inline" />
-                A-Z
-              </SelectItem>
-            </SelectContent>
-          </Select>
+            <Select
+              value={sortOption}
+              onValueChange={(value: SortOption) => setSortOption(value)}
+            >
+              <SelectTrigger className="w-40 bg-cyber-muted/50 border-cyber-muted text-cyber-light">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-cyber-dark border-cyber-muted/30">
+                <SelectItem value="relevance" className="text-cyber-light hover:bg-cyber-muted/30">
+                  <TrendingUp className="w-4 h-4 mr-2 inline" />
+                  Relevance
+                </SelectItem>
+                <SelectItem value="activity" className="text-cyber-light hover:bg-cyber-muted/30">
+                  <MessageSquare className="w-4 h-4 mr-2 inline" />
+                  Activity
+                </SelectItem>
+                <SelectItem value="newest" className="text-cyber-light hover:bg-cyber-muted/30">
+                  <Clock className="w-4 h-4 mr-2 inline" />
+                  Newest
+                </SelectItem>
+                <SelectItem value="alphabetical" className="text-cyber-light hover:bg-cyber-muted/30">
+                  <Layout className="w-4 h-4 mr-2 inline" />
+                  A-Z
+                </SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={refreshData}
-            disabled={isInitialLoading}
-            title="Refresh data"
-            className="px-3"
-          >
-            <RefreshCw
-              className={`w-4 h-4 ${isInitialLoading ? 'animate-spin' : ''}`}
-            />
-          </Button>
-          <CreateCellDialog />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={refreshData}
+              disabled={isInitialLoading}
+              title="Refresh data"
+              className="px-3 border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${isInitialLoading ? 'animate-spin' : ''}`}
+              />
+            </Button>
+            
+            {canCreateCell && (
+              <CreateCellDialog />
+            )}
+          </div>
+        )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {sortedCells.length === 0 ? (
-          <div className="col-span-2 text-center py-12">
-            <div className="text-cyber-neutral mb-4">
-              No cells found. Be the first to create one!
-            </div>
-          </div>
+        {!hasCells ? (
+          <EmptyState canCreateCell={canCreateCell} />
         ) : (
           sortedCells.map(cell => <CellItem key={cell.id} cell={cell} />)
         )}
       </div>
-
-      {canCreateCell && (
-        <div className="text-center mt-8">
-          <p className="text-cyber-neutral text-sm mb-4">
-            Ready to start your own community?
-          </p>
-          <CreateCellDialog />
-        </div>
-      )}
     </div>
   );
 };

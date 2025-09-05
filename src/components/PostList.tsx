@@ -151,8 +151,8 @@ const PostList = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-6">
+    <div className="page-main">
+      <div className="content-spacing">
         <Link
           to="/"
           className="text-cyber-accent hover:underline flex items-center gap-1 text-sm"
@@ -161,7 +161,7 @@ const PostList = () => {
         </Link>
       </div>
 
-      <div className="flex gap-4 items-start mb-6">
+      <div className="flex gap-4 items-start content-spacing">
         <CypherImage
           src={cell.icon}
           alt={cell.name}
@@ -170,7 +170,7 @@ const PostList = () => {
         />
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-glow">{cell.name}</h1>
+            <h1 className="page-title text-glow">{cell.name}</h1>
             <Button
               variant="outline"
               size="icon"
@@ -183,12 +183,12 @@ const PostList = () => {
               />
             </Button>
           </div>
-          <p className="text-cyber-neutral">{cell.description}</p>
+          <p className="page-subtitle">{cell.description}</p>
         </div>
       </div>
 
       {canPost && (
-        <div className="mb-8">
+        <div className="section-spacing">
           <form onSubmit={handleCreatePost}>
             <h2 className="text-sm font-bold mb-2 flex items-center gap-1">
               <MessageSquare className="w-4 h-4" />
@@ -228,7 +228,7 @@ const PostList = () => {
 
       {!canPost &&
         verificationStatus === EVerificationStatus.WALLET_CONNECTED && (
-          <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20">
+          <div className="section-spacing content-card-sm">
             <div className="flex items-center gap-2 mb-2">
               <Eye className="w-4 h-4 text-cyber-neutral" />
               <h3 className="font-medium">Read-Only Mode</h3>
@@ -244,7 +244,7 @@ const PostList = () => {
         )}
 
       {!canPost && !currentUser && (
-        <div className="mb-8 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 text-center">
+        <div className="section-spacing content-card-sm text-center">
           <p className="text-sm mb-3">
             Connect wallet and verify Ordinal ownership to post
           </p>
@@ -256,10 +256,10 @@ const PostList = () => {
 
       <div className="space-y-4">
         {visiblePosts.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageCircle className="w-12 h-12 mx-auto mb-4 text-cyber-neutral opacity-50" />
-            <h2 className="text-xl font-bold mb-2">No Threads Yet</h2>
-            <p className="text-cyber-neutral">
+          <div className="empty-state">
+            <MessageCircle className="empty-state-icon text-cyber-neutral opacity-50" />
+            <h2 className="empty-state-title">No Threads Yet</h2>
+            <p className="empty-state-description">
               {canPost
                 ? 'Be the first to post in this cell!'
                 : 'Connect your wallet and verify Ordinal ownership to start a thread.'}
@@ -269,7 +269,7 @@ const PostList = () => {
           visiblePosts.map(post => (
             <div
               key={post.id}
-              className="post-card p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 hover:bg-cyber-muted/30 transition duration-200"
+              className="thread-card"
             >
               <div className="flex gap-4">
                 <div className="flex flex-col items-center">

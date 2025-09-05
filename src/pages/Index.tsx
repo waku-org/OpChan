@@ -9,9 +9,9 @@ const Index = () => {
   const { refreshData } = useForumActions();
 
   return (
-    <div className="min-h-screen flex flex-col bg-cyber-dark text-white">
+    <div className="page-container">
       <Header />
-      <main className="flex-1 relative">
+      <main className="page-content relative">
         <CellList />
         {!health.isConnected && (
           <div className="fixed bottom-4 right-4">
@@ -26,7 +26,7 @@ const Index = () => {
           </div>
         )}
       </main>
-      <footer className="border-t border-cyber-muted py-4 text-center text-xs text-cyber-neutral">
+      <footer className="page-footer">
         <p>OpChan - A decentralized forum built on Waku & Bitcoin Ordinals</p>
       </footer>
     </div>

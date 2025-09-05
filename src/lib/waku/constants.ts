@@ -2,7 +2,7 @@
  * Single content topic for all message types
  * Different message types are parsed from the message content itself
  */
-export const CONTENT_TOPIC = '/opchan-sds-ab/1/messages/proto';
+export const CONTENT_TOPIC = '/opchan-test-1/1/messages/proto';
 
 /**
  * Bootstrap nodes for the Waku network
@@ -14,8 +14,4 @@ export const BOOTSTRAP_NODES = {
     '/dns4/node-01.do-ams3.waku.sandbox.status.im/tcp/30303/p2p/16Uiu2HAmNaeL4p3WEYzC9mgXBmBWSgWjPHRvatZTXnp8Jgv3iKsb',
     '/dns4/vps-aaa00d52.vps.ovh.ca/tcp/8000/wss/p2p/16Uiu2HAm9PftGgHZwWE3wzdMde4m3kT2eYJFXLZfGoSED3gysofk',
   ],
-};
-
-export const LOCAL_STORAGE_KEYS = {
-  KEY_DELEGATION: 'opchan-key-delegation',
 };

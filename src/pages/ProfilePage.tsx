@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth, useUserActions, useForumActions } from '@/hooks';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
 import { useUserDisplay } from '@/hooks';
+import { useDelegation } from '@/hooks/useDelegation';
 import { DelegationFullStatus } from '@/lib/delegation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,17 +16,21 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
+import Header from '@/components/Header';
 import {
   Loader2,
-  Wallet,
-  Hash,
   User,
   Shield,
   CheckCircle,
   AlertTriangle,
   XCircle,
+  Settings,
+  Copy,
+  Globe,
+  Edit3,
+  Save,
+  X,
 } from 'lucide-react';
 import { EDisplayPreference, EVerificationStatus } from '@/types/identity';
 import { useToast } from '@/hooks/use-toast';
@@ -36,8 +41,9 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   // Get current user from auth context for the address
-  const { currentUser } = useAuth();
+  const { currentUser, verificationStatus } = useAuth();
   const { getDelegationStatus } = useAuthContext();
+  const { delegationStatus } = useDelegation();
   const [delegationInfo, setDelegationInfo] =
     useState<DelegationFullStatus | null>(null);
   const address = currentUser?.address;
@@ -68,16 +74,38 @@ export default function ProfilePage() {
     }
   }, [currentUser]);
 
+  // Copy to clipboard function
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: 'Copied!',
+        description: `${label} copied to clipboard`,
+      });
+    } catch {
+      toast({
+        title: 'Copy Failed',
+        description: 'Failed to copy to clipboard',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (!currentUser) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-muted-foreground">
-              Please connect your wallet to view your profile.
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex flex-col bg-cyber-dark text-white">
+        <Header />
+        <main className="flex-1 flex items-center justify-center pt-16">
+          <Card className="w-full max-w-md bg-cyber-muted/20 border-cyber-muted/30">
+            <CardContent className="pt-6">
+              <div className="text-center text-cyber-neutral">
+                <User className="w-12 h-12 mx-auto mb-4 text-cyber-accent" />
+                <h2 className="text-xl font-mono font-bold mb-2">Connect Required</h2>
+                <p className="text-sm">Please connect your wallet to view your profile.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
       </div>
     );
   }
@@ -146,7 +174,7 @@ export default function ProfilePage() {
   };
 
   const getVerificationIcon = () => {
-    switch (userInfo.verificationLevel) {
+    switch (verificationStatus) {
       case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case EVerificationStatus.WALLET_CONNECTED:
@@ -159,7 +187,7 @@ export default function ProfilePage() {
   };
 
   const getVerificationText = () => {
-    switch (userInfo.verificationLevel) {
+    switch (verificationStatus) {
       case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return 'Owns ENS or Ordinal';
       case EVerificationStatus.WALLET_CONNECTED:
@@ -172,7 +200,7 @@ export default function ProfilePage() {
   };
 
   const getVerificationColor = () => {
-    switch (userInfo.verificationLevel) {
+    switch (verificationStatus) {
       case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return 'bg-green-100 text-green-800 border-green-200';
       case EVerificationStatus.WALLET_CONNECTED:
@@ -185,316 +213,308 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Profile
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Wallet Information */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
-              Wallet Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">
-                  Address
-                </Label>
-                <div className="mt-1 font-mono text-sm bg-muted px-3 py-2 rounded-md break-all">
-                  {currentUser.address}
-                </div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">
-                  Network
-                </Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge variant="outline" className="capitalize">
-                    {currentUser.walletType}
-                  </Badge>
-                </div>
-              </div>
-            </div>
+    <div className="page-container">
+      <Header />
+      <main className="page-content">
+        <div className="page-main">
+          {/* Page Header */}
+          <div className="page-header">
+            <h1 className="page-title">Profile</h1>
+            <p className="page-subtitle">Manage your account settings and preferences</p>
           </div>
 
-          <Separator />
-
-          {/* Identity Information */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Hash className="h-4 w-4" />
-              Identity
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">
-                  ENS Name
-                </Label>
-                <div className="mt-1 text-sm">
-                  {currentUser.ensDetails?.ensName || 'N/A'}
-                </div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">
-                  Current Display Name
-                </Label>
-                <div className="mt-1 text-sm font-medium">
-                  {userInfo.displayName}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Editable Profile Fields */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Profile Settings</h3>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="callSign" className="text-sm font-medium">
-                  Call Sign
-                </Label>
-                {isEditing ? (
-                  <Input
-                    id="callSign"
-                    value={callSign}
-                    onChange={e => setCallSign(e.target.value)}
-                    placeholder="Enter your call sign"
-                    className="mt-1"
-                    disabled={isSubmitting}
-                  />
-                ) : (
-                  <div className="mt-1 text-sm bg-muted px-3 py-2 rounded-md">
-                    {userInfo.callSign || currentUser.callSign || 'Not set'}
-                  </div>
-                )}
-                <p className="mt-1 text-xs text-muted-foreground">
-                  3-20 characters, letters, numbers, underscores, and hyphens
-                  only
-                </p>
-              </div>
-
-              <div>
-                <Label
-                  htmlFor="displayPreference"
-                  className="text-sm font-medium"
-                >
-                  Display Preference
-                </Label>
-                {isEditing ? (
-                  <Select
-                    value={displayPreference}
-                    onValueChange={value =>
-                      setDisplayPreference(value as EDisplayPreference)
-                    }
-                    disabled={isSubmitting}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={EDisplayPreference.CALL_SIGN}>
-                        Call Sign (when available)
-                      </SelectItem>
-                      <SelectItem value={EDisplayPreference.WALLET_ADDRESS}>
-                        Wallet Address
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="mt-1 text-sm bg-muted px-3 py-2 rounded-md">
-                    {(userInfo.displayPreference || displayPreference) ===
-                    EDisplayPreference.CALL_SIGN
-                      ? 'Call Sign (when available)'
-                      : 'Wallet Address'}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Verification Status */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Verification Status
-            </h3>
-            <div className="flex items-center gap-3">
-              {getVerificationIcon()}
-              <Badge className={getVerificationColor()}>
-                {getVerificationText()}
-              </Badge>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Delegation Details */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Key Delegation
-            </h3>
-            <div className="space-y-4">
-              {/* Delegation Status */}
-              <div className="flex items-center gap-3">
-                <Badge
-                  variant={delegationInfo?.isValid ? 'default' : 'secondary'}
-                  className={
-                    delegationInfo?.isValid
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : ''
-                  }
-                >
-                  {delegationInfo?.isValid ? 'Active' : 'Inactive'}
-                </Badge>
-                {delegationInfo?.isValid && delegationInfo?.timeRemaining && (
-                  <span className="text-sm text-muted-foreground">
-                    {delegationInfo.timeRemaining} remaining
-                  </span>
-                )}
-                {!delegationInfo?.isValid && (
-                  <Badge
-                    variant="outline"
-                    className="text-yellow-600 border-yellow-600"
-                  >
-                    Renewal Recommended
-                  </Badge>
-                )}
-                {!delegationInfo?.isValid && (
-                  <Badge variant="destructive">Expired</Badge>
-                )}
-              </div>
-
-              {/* Delegation Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Browser Public Key
-                  </Label>
-                  <div className="mt-1 text-sm font-mono bg-muted px-3 py-2 rounded-md break-all">
-                    {currentUser.browserPubKey
-                      ? `${currentUser.browserPubKey.slice(0, 12)}...${currentUser.browserPubKey.slice(-8)}`
-                      : 'Not delegated'}
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Delegation Signature
-                  </Label>
-                  <div className="mt-1 text-sm">
-                    {currentUser.delegationSignature === 'valid' ? (
-                      <Badge
+          {/* Two-Card Layout: User Profile + Security Status */}
+          <div className="grid-main-sidebar content-spacing">
+            {/* User Profile Card - Primary (2/3 width) */}
+            <div className="grid-main-content">
+              <Card className="content-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between text-white">
+                    <div className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-cyber-accent" />
+                      User Profile
+                    </div>
+                    {!isEditing && (
+                      <Button
                         variant="outline"
-                        className="text-green-600 border-green-600"
+                        size="sm"
+                        onClick={() => setIsEditing(true)}
+                        className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
                       >
-                        Valid
-                      </Badge>
-                    ) : (
-                      'Not signed'
+                        <Edit3 className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
                     )}
-                  </div>
-                </div>
-
-                {currentUser.delegationExpiry && (
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Expires At
-                    </Label>
-                    <div className="mt-1 text-sm">
-                      {new Date(currentUser.delegationExpiry).toLocaleString()}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Identity Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-cyber-accent/20 border border-cyber-accent/30 rounded-lg flex items-center justify-center">
+                        <User className="w-8 h-8 text-cyber-accent" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-xl font-mono font-bold text-white">
+                          {userInfo.displayName}
+                        </div>
+                        <div className="text-sm text-cyber-neutral">
+                          {currentUser.ensDetails?.ensName || 'No ENS name'}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          {getVerificationIcon()}
+                          <Badge className={getVerificationColor()}>
+                            {getVerificationText()}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
 
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Last Updated
-                  </Label>
-                  <div className="mt-1 text-sm">
-                    {currentUser.lastChecked
-                      ? new Date(currentUser.lastChecked).toLocaleString()
-                      : 'Never'}
+                  {/* Wallet Section */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-cyber-neutral uppercase tracking-wide">
+                      Wallet Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-cyber-neutral">
+                          Address
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 font-mono text-sm bg-cyber-dark/50 border border-cyber-muted/30 px-3 py-2 rounded-md text-cyber-light">
+                            {currentUser.address.slice(0, 8)}...{currentUser.address.slice(-6)}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(currentUser.address, 'Address')}
+                            className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-cyber-neutral">
+                          Network
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-cyber-neutral" />
+                          <Badge variant="outline" className="capitalize bg-cyber-accent/20 text-cyber-accent border-cyber-accent/30">
+                            {currentUser.walletType}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Can Delegate
-                  </Label>
-                  <div className="mt-1 text-sm">
-                    {delegationInfo?.hasDelegation ? (
-                      <Badge
+                  {/* Settings Section */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-cyber-neutral uppercase tracking-wide">
+                      Profile Settings
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="callSign" className="text-sm font-medium text-cyber-neutral">
+                          Call Sign
+                        </Label>
+                        {isEditing ? (
+                          <Input
+                            id="callSign"
+                            value={callSign}
+                            onChange={e => setCallSign(e.target.value)}
+                            placeholder="Enter your call sign"
+                            className="bg-cyber-dark/50 border-cyber-muted/30 text-cyber-light"
+                            disabled={isSubmitting}
+                          />
+                        ) : (
+                          <div className="text-sm bg-cyber-dark/50 border border-cyber-muted/30 px-3 py-2 rounded-md text-cyber-light">
+                            {userInfo.callSign || currentUser.callSign || 'Not set'}
+                          </div>
+                        )}
+                        <p className="text-xs text-cyber-neutral">
+                          3-20 characters, letters, numbers, underscores, and hyphens only
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="displayPreference" className="text-sm font-medium text-cyber-neutral">
+                          Display Preference
+                        </Label>
+                        {isEditing ? (
+                          <Select
+                            value={displayPreference}
+                            onValueChange={value =>
+                              setDisplayPreference(value as EDisplayPreference)
+                            }
+                            disabled={isSubmitting}
+                          >
+                            <SelectTrigger className="bg-cyber-dark/50 border-cyber-muted/30 text-cyber-light">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-cyber-dark border-cyber-muted/30">
+                              <SelectItem value={EDisplayPreference.CALL_SIGN} className="text-cyber-light hover:bg-cyber-muted/30">
+                                Call Sign (when available)
+                              </SelectItem>
+                              <SelectItem value={EDisplayPreference.WALLET_ADDRESS} className="text-cyber-light hover:bg-cyber-muted/30">
+                                Wallet Address
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="text-sm bg-cyber-dark/50 border border-cyber-muted/30 px-3 py-2 rounded-md text-cyber-light">
+                            {(userInfo.displayPreference || displayPreference) ===
+                            EDisplayPreference.CALL_SIGN
+                              ? 'Call Sign (when available)'
+                              : 'Wallet Address'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  {isEditing && (
+                    <div className="flex justify-end gap-3 pt-4 border-t border-cyber-muted/30">
+                      <Button
                         variant="outline"
-                        className="text-green-600 border-green-600"
+                        onClick={handleCancel}
+                        disabled={isSubmitting}
+                        className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
                       >
-                        Yes
-                      </Badge>
-                    ) : (
-                      <Badge
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleSave} 
+                        disabled={isSubmitting}
+                        className="bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono"
+                      >
+                        {isSubmitting ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="mr-2 h-4 w-4" />
+                        )}
+                        Save Changes
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Security Status Card - Secondary (1/3 width) */}
+            <div className="grid-sidebar">
+              <Card className="content-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between text-white">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-cyber-accent" />
+                      Security
+                    </div>
+                    {(delegationStatus.hasDelegation || delegationInfo?.hasDelegation) && (
+                      <Button
                         variant="outline"
-                        className="text-red-600 border-red-600"
+                        size="sm"
+                        onClick={() => setWalletWizardOpen(true)}
+                        className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
                       >
-                        No
-                      </Badge>
+                        <Settings className="w-4 h-4 mr-2" />
+                        {(delegationStatus.isValid || delegationInfo?.isValid) ? 'Renew' : 'Setup'}
+                      </Button>
                     )}
-                  </div>
-                </div>
-              </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Delegation Status */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-cyber-neutral">Delegation</span>
+                      <Badge
+                        variant={(delegationStatus.isValid || delegationInfo?.isValid) ? 'default' : 'secondary'}
+                        className={
+                          (delegationStatus.isValid || delegationInfo?.isValid)
+                            ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                            : 'bg-red-500/20 text-red-400 border-red-500/30'
+                        }
+                      >
+                        {(delegationStatus.isValid || delegationInfo?.isValid) ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
 
-              {/* Delegation Actions */}
-              {delegationInfo?.hasDelegation && (
-                <div className="pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setWalletWizardOpen(true)}
-                  >
-                    {delegationInfo?.isValid
-                      ? 'Renew Delegation'
-                      : 'Delegate Key'}
-                  </Button>
-                </div>
-              )}
+                    {/* Expiry Date */}
+                    {(delegationStatus.expiresAt || currentUser.delegationExpiry) && (
+                      <div className="space-y-1">
+                        <span className="text-xs text-cyber-neutral">Valid until</span>
+                        <div className="text-sm font-mono text-cyber-light">
+                          {(delegationStatus.expiresAt || new Date(currentUser.delegationExpiry!)).toLocaleDateString()}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Signature Status */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-cyber-neutral">Signature</span>
+                      <Badge
+                        variant="outline"
+                        className={
+                          (delegationStatus.isValid || currentUser.delegationSignature === 'valid')
+                            ? 'text-green-400 border-green-500/30 bg-green-500/10'
+                            : 'text-red-400 border-red-500/30 bg-red-500/10'
+                        }
+                      >
+                        {(delegationStatus.isValid || currentUser.delegationSignature === 'valid') ? 'Valid' : 'Not signed'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Browser Public Key */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-cyber-neutral">
+                      Browser Public Key
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 font-mono text-xs bg-cyber-dark/50 border border-cyber-muted/30 px-2 py-1 rounded text-cyber-light">
+                        {(delegationStatus.publicKey || currentUser.browserPubKey)
+                          ? `${(delegationStatus.publicKey || currentUser.browserPubKey!).slice(0, 12)}...${(delegationStatus.publicKey || currentUser.browserPubKey!).slice(-8)}`
+                          : 'Not delegated'}
+                      </div>
+                      {(delegationStatus.publicKey || currentUser.browserPubKey) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(delegationStatus.publicKey || currentUser.browserPubKey!, 'Public Key')}
+                          className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Warning for expired delegation */}
+                  {(!delegationStatus.isValid && delegationStatus.hasDelegation) || (!delegationInfo?.isValid && delegationInfo?.hasDelegation) && (
+                    <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
+                      <div className="flex items-center gap-2 text-orange-400">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span className="text-xs font-medium">
+                          Delegation expired. Renew to continue using your browser key.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
 
-          <Separator />
+        </div>
+      </main>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4">
-            {isEditing ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleSave} disabled={isSubmitting}>
-                  {isSubmitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Save Changes
-                </Button>
-              </>
-            ) : (
-              <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <footer className="page-footer">
+        <p>OpChan - A decentralized forum built on Waku & Bitcoin Ordinals</p>
+      </footer>
 
       {/* Wallet Wizard */}
       <WalletWizard

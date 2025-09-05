@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { BookmarkList } from '@/components/ui/bookmark-card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ import { useAuth } from '@/contexts/useAuth';
 
 const BookmarksPage = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const {
     bookmarks,
     loading,
@@ -75,9 +77,9 @@ const BookmarksPage = () => {
 
   const handleNavigate = (bookmark: Bookmark) => {
     if (bookmark.type === BookmarkType.POST) {
-      window.location.href = `/post/${bookmark.targetId}`;
+      navigate(`/post/${bookmark.targetId}`);
     } else if (bookmark.type === BookmarkType.COMMENT && bookmark.postId) {
-      window.location.href = `/post/${bookmark.postId}#comment-${bookmark.targetId}`;
+      navigate(`/post/${bookmark.postId}#comment-${bookmark.targetId}`);
     }
   };
 
@@ -117,19 +119,20 @@ const BookmarksPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-cyber-dark text-white">
+    <div className="page-container">
       <Header />
 
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <BookmarkIcon className="text-cyber-accent" size={32} />
-              <h1 className="text-3xl font-bold text-cyber-light">
-                My Bookmarks
-              </h1>
-            </div>
+      <main className="page-content">
+        <div className="page-main">
+          {/* Header Section */}
+          <div className="page-header">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <BookmarkIcon className="text-cyber-accent" size={32} />
+                <h1 className="page-title">
+                  My Bookmarks
+                </h1>
+              </div>
 
             {bookmarks.length > 0 && (
               <AlertDialog>
@@ -165,11 +168,11 @@ const BookmarksPage = () => {
             )}
           </div>
 
-          <p className="text-cyber-neutral">
-            Your saved posts and comments. Bookmarks are stored locally and
-            won't be shared.
-          </p>
-        </div>
+            <p className="page-subtitle">
+              Your saved posts and comments. Bookmarks are stored locally and
+              won't be shared.
+            </p>
+          </div>
 
         {/* Stats */}
         {bookmarks.length > 0 && (
@@ -248,9 +251,10 @@ const BookmarksPage = () => {
             />
           </TabsContent>
         </Tabs>
+        </div>
       </main>
 
-      <footer className="border-t border-cyber-muted py-4 text-center text-xs text-cyber-neutral">
+      <footer className="page-footer">
         <p>OpChan - A decentralized forum built on Waku & Bitcoin Ordinals</p>
       </footer>
     </div>

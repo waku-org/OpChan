@@ -161,14 +161,14 @@ export function useBookmarks() {
  * Hook for bookmarking a specific post
  * Provides bookmark state and toggle function for a single post
  */
-export function usePostBookmark(post: Post, cellId?: string) {
+export function usePostBookmark(post: Post | null, cellId?: string) {
   const { currentUser } = useAuth();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Check initial bookmark status
   useEffect(() => {
-    if (currentUser?.address) {
+    if (currentUser?.address && post?.id) {
       const bookmarked = BookmarkService.isPostBookmarked(
         currentUser.address,
         post.id
@@ -177,10 +177,10 @@ export function usePostBookmark(post: Post, cellId?: string) {
     } else {
       setIsBookmarked(false);
     }
-  }, [currentUser?.address, post.id]);
+  }, [currentUser?.address, post?.id]);
 
   const toggleBookmark = useCallback(async () => {
-    if (!currentUser?.address) return false;
+    if (!currentUser?.address || !post) return false;
 
     setLoading(true);
     try {
