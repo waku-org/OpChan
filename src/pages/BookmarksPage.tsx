@@ -129,44 +129,42 @@ const BookmarksPage = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <BookmarkIcon className="text-cyber-accent" size={32} />
-                <h1 className="page-title">
-                  My Bookmarks
-                </h1>
+                <h1 className="page-title">My Bookmarks</h1>
               </div>
 
-            {bookmarks.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-red-400 border-red-400/30 hover:bg-red-400/10"
-                  >
-                    <Trash2 size={16} className="mr-2" />
-                    Clear All
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Clear All Bookmarks</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to remove all your bookmarks? This
-                      action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleClearAll}
-                      className="bg-red-600 hover:bg-red-700"
+              {bookmarks.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-400 border-red-400/30 hover:bg-red-400/10"
                     >
+                      <Trash2 size={16} className="mr-2" />
                       Clear All
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear All Bookmarks</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to remove all your bookmarks? This
+                        action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleClearAll}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Clear All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
 
             <p className="page-subtitle">
               Your saved posts and comments. Bookmarks are stored locally and
@@ -174,83 +172,83 @@ const BookmarksPage = () => {
             </p>
           </div>
 
-        {/* Stats */}
-        {bookmarks.length > 0 && (
-          <div className="flex gap-4 mb-6">
-            <Badge
-              variant="outline"
-              className="border-cyber-accent/30 text-cyber-accent"
-            >
-              <FileText size={14} className="mr-1" />
-              {postBookmarks.length} Posts
-            </Badge>
-            <Badge
-              variant="outline"
-              className="border-cyber-accent/30 text-cyber-accent"
-            >
-              <MessageSquare size={14} className="mr-1" />
-              {commentBookmarks.length} Comments
-            </Badge>
-            <Badge
-              variant="outline"
-              className="border-cyber-accent/30 text-cyber-accent"
-            >
-              <BookmarkIcon size={14} className="mr-1" />
-              {bookmarks.length} Total
-            </Badge>
-          </div>
-        )}
+          {/* Stats */}
+          {bookmarks.length > 0 && (
+            <div className="flex gap-4 mb-6">
+              <Badge
+                variant="outline"
+                className="border-cyber-accent/30 text-cyber-accent"
+              >
+                <FileText size={14} className="mr-1" />
+                {postBookmarks.length} Posts
+              </Badge>
+              <Badge
+                variant="outline"
+                className="border-cyber-accent/30 text-cyber-accent"
+              >
+                <MessageSquare size={14} className="mr-1" />
+                {commentBookmarks.length} Comments
+              </Badge>
+              <Badge
+                variant="outline"
+                className="border-cyber-accent/30 text-cyber-accent"
+              >
+                <BookmarkIcon size={14} className="mr-1" />
+                {bookmarks.length} Total
+              </Badge>
+            </div>
+          )}
 
-        {/* Tabs */}
-        <Tabs
-          value={activeTab}
-          onValueChange={value =>
-            setActiveTab(value as 'all' | 'posts' | 'comments')
-          }
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="all" className="flex items-center gap-2">
-              <BookmarkIcon size={16} />
-              All ({bookmarks.length})
-            </TabsTrigger>
-            <TabsTrigger value="posts" className="flex items-center gap-2">
-              <FileText size={16} />
-              Posts ({postBookmarks.length})
-            </TabsTrigger>
-            <TabsTrigger value="comments" className="flex items-center gap-2">
-              <MessageSquare size={16} />
-              Comments ({commentBookmarks.length})
-            </TabsTrigger>
-          </TabsList>
+          {/* Tabs */}
+          <Tabs
+            value={activeTab}
+            onValueChange={value =>
+              setActiveTab(value as 'all' | 'posts' | 'comments')
+            }
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="all" className="flex items-center gap-2">
+                <BookmarkIcon size={16} />
+                All ({bookmarks.length})
+              </TabsTrigger>
+              <TabsTrigger value="posts" className="flex items-center gap-2">
+                <FileText size={16} />
+                Posts ({postBookmarks.length})
+              </TabsTrigger>
+              <TabsTrigger value="comments" className="flex items-center gap-2">
+                <MessageSquare size={16} />
+                Comments ({commentBookmarks.length})
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="all">
-            <BookmarkList
-              bookmarks={getFilteredBookmarks()}
-              onRemove={removeBookmark}
-              onNavigate={handleNavigate}
-              emptyMessage="No bookmarks yet"
-            />
-          </TabsContent>
+            <TabsContent value="all">
+              <BookmarkList
+                bookmarks={getFilteredBookmarks()}
+                onRemove={removeBookmark}
+                onNavigate={handleNavigate}
+                emptyMessage="No bookmarks yet"
+              />
+            </TabsContent>
 
-          <TabsContent value="posts">
-            <BookmarkList
-              bookmarks={getFilteredBookmarks()}
-              onRemove={removeBookmark}
-              onNavigate={handleNavigate}
-              emptyMessage="No bookmarked posts yet"
-            />
-          </TabsContent>
+            <TabsContent value="posts">
+              <BookmarkList
+                bookmarks={getFilteredBookmarks()}
+                onRemove={removeBookmark}
+                onNavigate={handleNavigate}
+                emptyMessage="No bookmarked posts yet"
+              />
+            </TabsContent>
 
-          <TabsContent value="comments">
-            <BookmarkList
-              bookmarks={getFilteredBookmarks()}
-              onRemove={removeBookmark}
-              onNavigate={handleNavigate}
-              emptyMessage="No bookmarked comments yet"
-            />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="comments">
+              <BookmarkList
+                bookmarks={getFilteredBookmarks()}
+                onRemove={removeBookmark}
+                onNavigate={handleNavigate}
+                emptyMessage="No bookmarked comments yet"
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
 

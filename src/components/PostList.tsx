@@ -267,10 +267,7 @@ const PostList = () => {
           </div>
         ) : (
           visiblePosts.map(post => (
-            <div
-              key={post.id}
-              className="thread-card"
-            >
+            <div key={post.id} className="thread-card">
               <div className="flex gap-4">
                 <div className="flex flex-col items-center">
                   <button

@@ -29,7 +29,9 @@ import { Cell } from '@/types/forum';
 import { usePending } from '@/hooks/usePending';
 
 // Empty State Component
-const EmptyState: React.FC<{ canCreateCell: boolean }> = ({ canCreateCell }) => {
+const EmptyState: React.FC<{ canCreateCell: boolean }> = ({
+  canCreateCell,
+}) => {
   return (
     <div className="col-span-2 flex flex-col items-center justify-center py-16 px-4">
       {/* Visual Element */}
@@ -76,10 +78,7 @@ const CellItem: React.FC<{ cell: Cell }> = ({ cell }) => {
   const pending = usePending(cell.id);
 
   return (
-    <Link
-      to={`/cell/${cell.id}`}
-      className="group block board-card"
-    >
+    <Link to={`/cell/${cell.id}`} className="group block board-card">
       <div className="flex items-start gap-4">
         <CypherImage
           src={cell.icon}
@@ -162,64 +161,72 @@ const CellList = () => {
       <div className="page-header">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="page-title">
-              Decentralized Cells
-            </h1>
+            <h1 className="page-title">Decentralized Cells</h1>
             <p className="page-subtitle">
               Discover communities built on Bitcoin Ordinals
             </p>
           </div>
 
-        {/* Only show controls when cells exist */}
-        {hasCells && (
-          <div className="flex items-center gap-4">
-            <ModerationToggle />
+          {/* Only show controls when cells exist */}
+          {hasCells && (
+            <div className="flex items-center gap-4">
+              <ModerationToggle />
 
-            <Select
-              value={sortOption}
-              onValueChange={(value: SortOption) => setSortOption(value)}
-            >
-              <SelectTrigger className="w-40 bg-cyber-muted/50 border-cyber-muted text-cyber-light">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-cyber-dark border-cyber-muted/30">
-                <SelectItem value="relevance" className="text-cyber-light hover:bg-cyber-muted/30">
-                  <TrendingUp className="w-4 h-4 mr-2 inline" />
-                  Relevance
-                </SelectItem>
-                <SelectItem value="activity" className="text-cyber-light hover:bg-cyber-muted/30">
-                  <MessageSquare className="w-4 h-4 mr-2 inline" />
-                  Activity
-                </SelectItem>
-                <SelectItem value="newest" className="text-cyber-light hover:bg-cyber-muted/30">
-                  <Clock className="w-4 h-4 mr-2 inline" />
-                  Newest
-                </SelectItem>
-                <SelectItem value="alphabetical" className="text-cyber-light hover:bg-cyber-muted/30">
-                  <Layout className="w-4 h-4 mr-2 inline" />
-                  A-Z
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              <Select
+                value={sortOption}
+                onValueChange={(value: SortOption) => setSortOption(value)}
+              >
+                <SelectTrigger className="w-40 bg-cyber-muted/50 border-cyber-muted text-cyber-light">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-cyber-dark border-cyber-muted/30">
+                  <SelectItem
+                    value="relevance"
+                    className="text-cyber-light hover:bg-cyber-muted/30"
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2 inline" />
+                    Relevance
+                  </SelectItem>
+                  <SelectItem
+                    value="activity"
+                    className="text-cyber-light hover:bg-cyber-muted/30"
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2 inline" />
+                    Activity
+                  </SelectItem>
+                  <SelectItem
+                    value="newest"
+                    className="text-cyber-light hover:bg-cyber-muted/30"
+                  >
+                    <Clock className="w-4 h-4 mr-2 inline" />
+                    Newest
+                  </SelectItem>
+                  <SelectItem
+                    value="alphabetical"
+                    className="text-cyber-light hover:bg-cyber-muted/30"
+                  >
+                    <Layout className="w-4 h-4 mr-2 inline" />
+                    A-Z
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={refreshData}
-              disabled={isInitialLoading}
-              title="Refresh data"
-              className="px-3 border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${isInitialLoading ? 'animate-spin' : ''}`}
-              />
-            </Button>
-            
-            {canCreateCell && (
-              <CreateCellDialog />
-            )}
-          </div>
-        )}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={refreshData}
+                disabled={isInitialLoading}
+                title="Refresh data"
+                className="px-3 border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isInitialLoading ? 'animate-spin' : ''}`}
+                />
+              </Button>
+
+              {canCreateCell && <CreateCellDialog />}
+            </div>
+          )}
         </div>
       </div>
 

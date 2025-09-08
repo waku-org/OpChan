@@ -122,7 +122,6 @@ const Header = () => {
     });
   };
 
-
   const getStatusIcon = () => {
     if (!isConnected) return <CircleSlash className="w-4 h-4" />;
 
@@ -191,24 +190,29 @@ const Header = () => {
               {isConnected ? (
                 <div className="flex items-center space-x-2">
                   {/* Status Badge */}
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className={`font-mono text-xs border-0 ${
-                      verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED && delegationInfo?.isValid
+                      verificationStatus ===
+                        EVerificationStatus.ENS_ORDINAL_VERIFIED &&
+                      delegationInfo?.isValid
                         ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                        : verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
-                        ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                        : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                        : verificationStatus ===
+                            EVerificationStatus.ENS_ORDINAL_VERIFIED
+                          ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                          : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                     }`}
                   >
                     {getStatusIcon()}
                     <span className="ml-1">
-                      {verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED && delegationInfo?.isValid
+                      {verificationStatus ===
+                        EVerificationStatus.ENS_ORDINAL_VERIFIED &&
+                      delegationInfo?.isValid
                         ? 'READY'
-                        : verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
-                        ? 'EXPIRED'
-                        : 'VERIFY'
-                      }
+                        : verificationStatus ===
+                            EVerificationStatus.ENS_ORDINAL_VERIFIED
+                          ? 'EXPIRED'
+                          : 'VERIFY'}
                     </span>
                   </Badge>
 
@@ -224,37 +228,53 @@ const Header = () => {
                         <Settings className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 bg-black/95 border-cyber-muted/30">
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-56 bg-black/95 border-cyber-muted/30"
+                    >
                       <div className="px-3 py-2 border-b border-cyber-muted/30">
-                        <div className="text-sm font-medium text-white">{displayName}</div>
-                        <div className="text-xs text-cyber-neutral">{address?.slice(0, 8)}...{address?.slice(-4)}</div>
+                        <div className="text-sm font-medium text-white">
+                          {displayName}
+                        </div>
+                        <div className="text-xs text-cyber-neutral">
+                          {address?.slice(0, 8)}...{address?.slice(-4)}
+                        </div>
                       </div>
-                      
+
                       <DropdownMenuItem asChild>
-                        <Link to="/profile" className="flex items-center space-x-2">
+                        <Link
+                          to="/profile"
+                          className="flex items-center space-x-2"
+                        >
                           <User className="w-4 h-4" />
                           <span>Profile</span>
                         </Link>
                       </DropdownMenuItem>
-                      
+
                       <DropdownMenuItem asChild>
-                        <Link to="/bookmarks" className="flex items-center space-x-2">
+                        <Link
+                          to="/bookmarks"
+                          className="flex items-center space-x-2"
+                        >
                           <Bookmark className="w-4 h-4" />
                           <span>Bookmarks</span>
                         </Link>
                       </DropdownMenuItem>
-                      
+
                       <DropdownMenuSeparator className="bg-cyber-muted/30" />
-                      
-                      <DropdownMenuItem onClick={handleOpenWizard} className="flex items-center space-x-2">
+
+                      <DropdownMenuItem
+                        onClick={handleOpenWizard}
+                        className="flex items-center space-x-2"
+                      >
                         <Settings className="w-4 h-4" />
                         <span>Setup Wizard</span>
                       </DropdownMenuItem>
-                      
+
                       <DropdownMenuSeparator className="bg-cyber-muted/30" />
-                      
-                      <DropdownMenuItem 
-                        onClick={handleDisconnect} 
+
+                      <DropdownMenuItem
+                        onClick={handleDisconnect}
                         className="flex items-center space-x-2 text-red-400 focus:text-red-400"
                       >
                         <LogOut className="w-4 h-4" />
@@ -279,7 +299,11 @@ const Header = () => {
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="md:hidden text-white hover:bg-cyber-muted/30"
               >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {mobileMenuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
               </Button>
             </div>
           </div>
@@ -395,7 +419,7 @@ const Header = () => {
                   </>
                 )}
               </nav>
-              
+
               {/* Mobile Network Status */}
               <div className="px-4 py-3 border-t border-cyber-muted/20">
                 <div className="flex items-center space-x-2 text-xs text-cyber-neutral">

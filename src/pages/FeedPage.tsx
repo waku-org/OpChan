@@ -105,49 +105,47 @@ const FeedPage: React.FC = () => {
               <h1 className="page-title text-glow text-cyber-accent">
                 Popular Posts
               </h1>
-              <p className="page-subtitle">
-                Latest posts from all cells
-              </p>
+              <p className="page-subtitle">Latest posts from all cells</p>
             </div>
-          <div className="flex items-center space-x-2">
-            <ModerationToggle />
+            <div className="flex items-center space-x-2">
+              <ModerationToggle />
 
-            <Select
-              value={sortOption}
-              onValueChange={(value: SortOption) => setSortOption(value)}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    <span>Relevance</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="time">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>Newest</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              <Select
+                value={sortOption}
+                onValueChange={(value: SortOption) => setSortOption(value)}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      <span>Relevance</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="time">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      <span>Newest</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refreshData}
-              disabled={isRefreshing}
-              className="flex items-center space-x-2"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
-              />
-              <span>Refresh</span>
-            </Button>
-          </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshData}
+                disabled={isRefreshing}
+                className="flex items-center space-x-2"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                />
+                <span>Refresh</span>
+              </Button>
+            </div>
           </div>
         </div>
 

@@ -66,10 +66,9 @@ export function WalletWizard({
     }
   };
 
-
   const renderStepIcon = (step: WizardStep) => {
     const status = getStepStatus(step);
-    
+
     // Check if step is actually completed based on auth state
     const isActuallyComplete = (step: WizardStep): boolean => {
       switch (step) {
@@ -126,10 +125,12 @@ export function WalletWizard({
                   className={`text-sm ${
                     getStepStatus(step as WizardStep) === 'current'
                       ? 'text-blue-500 font-medium'
-                      : (getStepStatus(step as WizardStep) === 'complete' || 
-                         (step === 1 && isAuthenticated) ||
-                         (step === 2 && verificationStatus !== EVerificationStatus.WALLET_UNCONNECTED) ||
-                         (step === 3 && delegationStatus.isValid))
+                      : getStepStatus(step as WizardStep) === 'complete' ||
+                          (step === 1 && isAuthenticated) ||
+                          (step === 2 &&
+                            verificationStatus !==
+                              EVerificationStatus.WALLET_UNCONNECTED) ||
+                          (step === 3 && delegationStatus.isValid)
                         ? 'text-green-500'
                         : 'text-gray-400'
                   }`}
@@ -142,7 +143,9 @@ export function WalletWizard({
                   className={`w-8 h-px mx-2 ${
                     getStepStatus(step as WizardStep) === 'complete' ||
                     (step === 1 && isAuthenticated) ||
-                    (step === 2 && verificationStatus !== EVerificationStatus.WALLET_UNCONNECTED)
+                    (step === 2 &&
+                      verificationStatus !==
+                        EVerificationStatus.WALLET_UNCONNECTED)
                       ? 'bg-green-500'
                       : 'bg-gray-600'
                   }`}

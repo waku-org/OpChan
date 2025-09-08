@@ -58,21 +58,21 @@ export default function ProfilePage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [callSign, setCallSign] = useState(currentUser?.callSign || '');
-  const [displayPreference, setDisplayPreference] = useState(
-    currentUser?.displayPreference || EDisplayPreference.WALLET_ADDRESS
-  );
+  const [callSign, setCallSign] = useState('');
+  const [displayPreference, setDisplayPreference] = useState(EDisplayPreference.WALLET_ADDRESS);
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
 
-  // Update local state when user data changes
+  // Initialize and update local state when user data changes
   useEffect(() => {
     if (currentUser) {
-      setCallSign(currentUser.callSign || '');
-      setDisplayPreference(
-        currentUser.displayPreference || EDisplayPreference.WALLET_ADDRESS
-      );
+      // Use the same data source as the display (userInfo) for consistency
+      const currentCallSign = userInfo.callSign || currentUser.callSign || '';
+      const currentDisplayPreference = userInfo.displayPreference || currentUser.displayPreference || EDisplayPreference.WALLET_ADDRESS;
+      
+      setCallSign(currentCallSign);
+      setDisplayPreference(currentDisplayPreference);
     }
-  }, [currentUser]);
+  }, [currentUser, userInfo.callSign, userInfo.displayPreference]);
 
   // Copy to clipboard function
   const copyToClipboard = async (text: string, label: string) => {
@@ -100,8 +100,12 @@ export default function ProfilePage() {
             <CardContent className="pt-6">
               <div className="text-center text-cyber-neutral">
                 <User className="w-12 h-12 mx-auto mb-4 text-cyber-accent" />
-                <h2 className="text-xl font-mono font-bold mb-2">Connect Required</h2>
-                <p className="text-sm">Please connect your wallet to view your profile.</p>
+                <h2 className="text-xl font-mono font-bold mb-2">
+                  Connect Required
+                </h2>
+                <p className="text-sm">
+                  Please connect your wallet to view your profile.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -168,8 +172,12 @@ export default function ProfilePage() {
   };
 
   const handleCancel = () => {
-    setCallSign(currentUser.callSign || '');
-    setDisplayPreference(currentUser.displayPreference);
+    // Reset to the same data source as display for consistency
+    const currentCallSign = userInfo.callSign || currentUser.callSign || '';
+    const currentDisplayPreference = userInfo.displayPreference || currentUser.displayPreference || EDisplayPreference.WALLET_ADDRESS;
+    
+    setCallSign(currentCallSign);
+    setDisplayPreference(currentDisplayPreference);
     setIsEditing(false);
   };
 
@@ -220,7 +228,9 @@ export default function ProfilePage() {
           {/* Page Header */}
           <div className="page-header">
             <h1 className="page-title">Profile</h1>
-            <p className="page-subtitle">Manage your account settings and preferences</p>
+            <p className="page-subtitle">
+              Manage your account settings and preferences
+            </p>
           </div>
 
           {/* Two-Card Layout: User Profile + Security Status */}
@@ -283,12 +293,15 @@ export default function ProfilePage() {
                         </Label>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 font-mono text-sm bg-cyber-dark/50 border border-cyber-muted/30 px-3 py-2 rounded-md text-cyber-light">
-                            {currentUser.address.slice(0, 8)}...{currentUser.address.slice(-6)}
+                            {currentUser.address.slice(0, 8)}...
+                            {currentUser.address.slice(-6)}
                           </div>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => copyToClipboard(currentUser.address, 'Address')}
+                            onClick={() =>
+                              copyToClipboard(currentUser.address, 'Address')
+                            }
                             className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
                           >
                             <Copy className="w-4 h-4" />
@@ -301,7 +314,10 @@ export default function ProfilePage() {
                         </Label>
                         <div className="flex items-center gap-2">
                           <Globe className="w-4 h-4 text-cyber-neutral" />
-                          <Badge variant="outline" className="capitalize bg-cyber-accent/20 text-cyber-accent border-cyber-accent/30">
+                          <Badge
+                            variant="outline"
+                            className="capitalize bg-cyber-accent/20 text-cyber-accent border-cyber-accent/30"
+                          >
                             {currentUser.walletType}
                           </Badge>
                         </div>
@@ -316,7 +332,10 @@ export default function ProfilePage() {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="callSign" className="text-sm font-medium text-cyber-neutral">
+                        <Label
+                          htmlFor="callSign"
+                          className="text-sm font-medium text-cyber-neutral"
+                        >
                           Call Sign
                         </Label>
                         {isEditing ? (
@@ -330,16 +349,22 @@ export default function ProfilePage() {
                           />
                         ) : (
                           <div className="text-sm bg-cyber-dark/50 border border-cyber-muted/30 px-3 py-2 rounded-md text-cyber-light">
-                            {userInfo.callSign || currentUser.callSign || 'Not set'}
+                            {userInfo.callSign ||
+                              currentUser.callSign ||
+                              'Not set'}
                           </div>
                         )}
                         <p className="text-xs text-cyber-neutral">
-                          3-20 characters, letters, numbers, underscores, and hyphens only
+                          3-20 characters, letters, numbers, underscores, and
+                          hyphens only
                         </p>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="displayPreference" className="text-sm font-medium text-cyber-neutral">
+                        <Label
+                          htmlFor="displayPreference"
+                          className="text-sm font-medium text-cyber-neutral"
+                        >
                           Display Preference
                         </Label>
                         {isEditing ? (
@@ -354,17 +379,24 @@ export default function ProfilePage() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-cyber-dark border-cyber-muted/30">
-                              <SelectItem value={EDisplayPreference.CALL_SIGN} className="text-cyber-light hover:bg-cyber-muted/30">
+                              <SelectItem
+                                value={EDisplayPreference.CALL_SIGN}
+                                className="text-cyber-light hover:bg-cyber-muted/30"
+                              >
                                 Call Sign (when available)
                               </SelectItem>
-                              <SelectItem value={EDisplayPreference.WALLET_ADDRESS} className="text-cyber-light hover:bg-cyber-muted/30">
+                              <SelectItem
+                                value={EDisplayPreference.WALLET_ADDRESS}
+                                className="text-cyber-light hover:bg-cyber-muted/30"
+                              >
                                 Wallet Address
                               </SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
                           <div className="text-sm bg-cyber-dark/50 border border-cyber-muted/30 px-3 py-2 rounded-md text-cyber-light">
-                            {(userInfo.displayPreference || displayPreference) ===
+                            {(userInfo.displayPreference ||
+                              displayPreference) ===
                             EDisplayPreference.CALL_SIGN
                               ? 'Call Sign (when available)'
                               : 'Wallet Address'}
@@ -386,8 +418,8 @@ export default function ProfilePage() {
                         <X className="w-4 h-4 mr-2" />
                         Cancel
                       </Button>
-                      <Button 
-                        onClick={handleSave} 
+                      <Button
+                        onClick={handleSave}
                         disabled={isSubmitting}
                         className="bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono"
                       >
@@ -413,7 +445,8 @@ export default function ProfilePage() {
                       <Shield className="h-5 w-5 text-cyber-accent" />
                       Security
                     </div>
-                    {(delegationStatus.hasDelegation || delegationInfo?.hasDelegation) && (
+                    {(delegationStatus.hasDelegation ||
+                      delegationInfo?.hasDelegation) && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -421,7 +454,9 @@ export default function ProfilePage() {
                         className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
                       >
                         <Settings className="w-4 h-4 mr-2" />
-                        {(delegationStatus.isValid || delegationInfo?.isValid) ? 'Renew' : 'Setup'}
+                        {delegationStatus.isValid || delegationInfo?.isValid
+                          ? 'Renew'
+                          : 'Setup'}
                       </Button>
                     )}
                   </CardTitle>
@@ -430,41 +465,61 @@ export default function ProfilePage() {
                   {/* Delegation Status */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-cyber-neutral">Delegation</span>
+                      <span className="text-sm font-medium text-cyber-neutral">
+                        Delegation
+                      </span>
                       <Badge
-                        variant={(delegationStatus.isValid || delegationInfo?.isValid) ? 'default' : 'secondary'}
+                        variant={
+                          delegationStatus.isValid || delegationInfo?.isValid
+                            ? 'default'
+                            : 'secondary'
+                        }
                         className={
-                          (delegationStatus.isValid || delegationInfo?.isValid)
+                          delegationStatus.isValid || delegationInfo?.isValid
                             ? 'bg-green-500/20 text-green-400 border-green-500/30'
                             : 'bg-red-500/20 text-red-400 border-red-500/30'
                         }
                       >
-                        {(delegationStatus.isValid || delegationInfo?.isValid) ? 'Active' : 'Inactive'}
+                        {delegationStatus.isValid || delegationInfo?.isValid
+                          ? 'Active'
+                          : 'Inactive'}
                       </Badge>
                     </div>
 
                     {/* Expiry Date */}
-                    {(delegationStatus.expiresAt || currentUser.delegationExpiry) && (
+                    {(delegationStatus.expiresAt ||
+                      currentUser.delegationExpiry) && (
                       <div className="space-y-1">
-                        <span className="text-xs text-cyber-neutral">Valid until</span>
+                        <span className="text-xs text-cyber-neutral">
+                          Valid until
+                        </span>
                         <div className="text-sm font-mono text-cyber-light">
-                          {(delegationStatus.expiresAt || new Date(currentUser.delegationExpiry!)).toLocaleDateString()}
+                          {(
+                            delegationStatus.expiresAt ||
+                            new Date(currentUser.delegationExpiry!)
+                          ).toLocaleDateString()}
                         </div>
                       </div>
                     )}
 
                     {/* Signature Status */}
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-cyber-neutral">Signature</span>
+                      <span className="text-sm font-medium text-cyber-neutral">
+                        Signature
+                      </span>
                       <Badge
                         variant="outline"
                         className={
-                          (delegationStatus.isValid || currentUser.delegationSignature === 'valid')
+                          delegationStatus.isValid ||
+                          currentUser.delegationSignature === 'valid'
                             ? 'text-green-400 border-green-500/30 bg-green-500/10'
                             : 'text-red-400 border-red-500/30 bg-red-500/10'
                         }
                       >
-                        {(delegationStatus.isValid || currentUser.delegationSignature === 'valid') ? 'Valid' : 'Not signed'}
+                        {delegationStatus.isValid ||
+                        currentUser.delegationSignature === 'valid'
+                          ? 'Valid'
+                          : 'Not signed'}
                       </Badge>
                     </div>
                   </div>
@@ -476,15 +531,22 @@ export default function ProfilePage() {
                     </Label>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 font-mono text-xs bg-cyber-dark/50 border border-cyber-muted/30 px-2 py-1 rounded text-cyber-light">
-                        {(delegationStatus.publicKey || currentUser.browserPubKey)
+                        {delegationStatus.publicKey || currentUser.browserPubKey
                           ? `${(delegationStatus.publicKey || currentUser.browserPubKey!).slice(0, 12)}...${(delegationStatus.publicKey || currentUser.browserPubKey!).slice(-8)}`
                           : 'Not delegated'}
                       </div>
-                      {(delegationStatus.publicKey || currentUser.browserPubKey) && (
+                      {(delegationStatus.publicKey ||
+                        currentUser.browserPubKey) && (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => copyToClipboard(delegationStatus.publicKey || currentUser.browserPubKey!, 'Public Key')}
+                          onClick={() =>
+                            copyToClipboard(
+                              delegationStatus.publicKey ||
+                                currentUser.browserPubKey!,
+                              'Public Key'
+                            )
+                          }
                           className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
                         >
                           <Copy className="w-3 h-3" />
@@ -494,21 +556,24 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Warning for expired delegation */}
-                  {(!delegationStatus.isValid && delegationStatus.hasDelegation) || (!delegationInfo?.isValid && delegationInfo?.hasDelegation) && (
-                    <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
-                      <div className="flex items-center gap-2 text-orange-400">
-                        <AlertTriangle className="w-4 h-4" />
-                        <span className="text-xs font-medium">
-                          Delegation expired. Renew to continue using your browser key.
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  {(!delegationStatus.isValid &&
+                    delegationStatus.hasDelegation) ||
+                    (!delegationInfo?.isValid &&
+                      delegationInfo?.hasDelegation && (
+                        <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
+                          <div className="flex items-center gap-2 text-orange-400">
+                            <AlertTriangle className="w-4 h-4" />
+                            <span className="text-xs font-medium">
+                              Delegation expired. Renew to continue using your
+                              browser key.
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                 </CardContent>
               </Card>
             </div>
           </div>
-
         </div>
       </main>
 
