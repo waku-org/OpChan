@@ -251,18 +251,6 @@ const Header = () => {
                         </Link>
                       </DropdownMenuItem>
 
-                      <DropdownMenuItem asChild>
-                        <Link
-                          to="/bookmarks"
-                          className="flex items-center space-x-2"
-                        >
-                          <Bookmark className="w-4 h-4" />
-                          <span>Bookmarks</span>
-                        </Link>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuSeparator className="bg-cyber-muted/30" />
-
                       <DropdownMenuItem
                         onClick={handleOpenWizard}
                         className="flex items-center space-x-2"
@@ -345,17 +333,6 @@ const Header = () => {
                   >
                     <Bookmark className="w-4 h-4" />
                     <span>BOOKMARKS</span>
-                  </Link>
-                  <Link
-                    to="/profile"
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
-                      location.pathname === '/profile'
-                        ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
-                        : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
-                    }`}
-                  >
-                    <User className="w-4 h-4" />
-                    <span>PROFILE</span>
                   </Link>
                 </>
               )}
