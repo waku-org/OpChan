@@ -22,8 +22,8 @@ export function BookmarkButton({
   showText = false,
 }: BookmarkButtonProps) {
   const sizeClasses = {
-    sm: 'h-8 w-8',
-    lg: 'h-10 w-10',
+    sm: 'h-8 w-10',
+    lg: 'h-10 whitespace-nowrap px-4',
   };
 
   const iconSize = {
@@ -41,8 +41,8 @@ export function BookmarkButton({
         sizeClasses[size],
         'transition-colors duration-200',
         isBookmarked
-          ? 'text-cyber-accent hover:text-cyber-accent/80'
-          : 'text-cyber-neutral hover:text-cyber-accent',
+          ? 'text-cyber-accent hover:text-cyber-light'
+          : 'text-cyber-neutral hover:text-cyber-light',
         className
       )}
       title={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
