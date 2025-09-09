@@ -7,6 +7,8 @@ import { DelegationFullStatus } from '@/lib/delegation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { verifyAge } from '@/lib/zkPassport';
+import { QRCodeCanvas } from 'qrcode.react';
 import {
   Select,
   SelectContent,
@@ -63,6 +65,9 @@ export default function ProfilePage() {
     EDisplayPreference.WALLET_ADDRESS
   );
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
+  const [url, setUrl] = useState<string>('');
+  const [progress, setProgress] = useState<string>('');
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
 
   // Initialize and update local state when user data changes
   useEffect(() => {
@@ -586,6 +591,61 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
+
+      {/* Age Verification Section */}
+      <div className="max-w-md mx-auto mt-8 p-6 bg-cyber-muted/20 border border-cyber-muted/30 rounded-lg">
+        <h2 className="text-xl font-bold text-white mb-4">Age Verification</h2>
+        <p className="text-cyber-neutral mb-4">
+          Verify your age to access restricted content.
+        </p>
+        <Button
+          onClick={async () => {
+            setIsVerifying(true);
+            try {
+              const result = await verifyAge(setProgress, setUrl);
+              console.log('Age verification result:', result);
+            } catch (error) {
+              console.error('Age verification failed:', error);
+            } finally {
+              setIsVerifying(false);
+            }
+          }}
+          disabled={isVerifying}
+          className="w-full bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono"
+        >
+          {isVerifying ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Verifying...
+            </>
+          ) : (
+            'Verify Age'
+          )}
+        </Button>
+        {progress && (
+          <p className="mt-4 text-sm text-cyber-neutral">{progress}</p>
+        )}
+        {url && (
+          <div className="mt-4 space-y-4">
+            <div className="text-center">
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-cyber-accent hover:underline font-medium"
+              >
+                Open verification in new tab
+              </a>
+            </div>
+            <div className="flex justify-center p-4 bg-white rounded-lg shadow-lg inline-block">
+              <QRCodeCanvas value={url} size={200} level="H" includeMargin={true} />
+            </div>
+            <p className="text-xs text-cyber-neutral text-center">
+              Scan this QR code to open the verification page on your mobile device
+            </p>
+          </div>
+        )}
+      </div>
 
       <footer className="page-footer">
         <p>OpChan - A decentralized forum built on Waku & Bitcoin Ordinals</p>
