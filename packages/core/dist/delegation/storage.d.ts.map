@@ -1,0 +1,1 @@
+{"version":3,"file":"storage.d.ts","sourceRoot":"","sources":["../../src/delegation/storage.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,cAAc,EAAE,MAAM,SAAS,CAAC;AAEzC,qBAAa,iBAAiB;IAC5B;;OAEG;WACU,KAAK,CAAC,UAAU,EAAE,cAAc,GAAG,OAAO,CAAC,IAAI,CAAC;IAa7D;;OAEG;WACU,QAAQ,IAAI,OAAO,CAAC,cAAc,GAAG,IAAI,CAAC;IAavD;;OAEG;WACU,KAAK,IAAI,OAAO,CAAC,IAAI,CAAC;CAOpC"}
