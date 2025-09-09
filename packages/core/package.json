@@ -2,8 +2,16 @@
   "name": "@opchan/core",
   "version": "1.0.0",
   "description": "Core package for opchan",
+  "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -11,13 +19,34 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
-    "lint": "echo 'No linting configured'"
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "check": "tsc --noEmit && eslint src --ext .ts,.tsx && prettier --check src",
+    "fix": "prettier --write src && eslint src --ext .ts,.tsx --fix"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
+  },
+  "peerDependencies": {
+    "@waku/sdk": "^0.0.35-67a7287.0",
+    "typescript": ">=5.0.4"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "browser": {
+    "fs": false,
+    "path": false,
+    "os": false
+  },
+  "dependencies": {
+    "@reown/appkit": "^1.8.3",
+    "@reown/appkit-adapter-bitcoin": "^1.8.3",
+    "@reown/appkit-adapter-wagmi": "^1.8.3",
+    "wagmi": "^2.16.9"
   }
 }

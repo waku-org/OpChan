@@ -11,11 +11,24 @@
     "dev": "npm run dev --workspaces",
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces",
+    "check": "npm run check --workspaces",
+    "fix": "npm run fix --workspaces",
     "clean": "npm run clean --workspaces"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^3.0.0",
+    "@waku/sdk": "^0.0.35-67a7287.0",
+    "bitcoinjs-message": "^2.2.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.5.3"
   },
   "engines": {
     "node": ">=18.0.0"

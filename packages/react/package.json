@@ -11,7 +11,10 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
-    "lint": "echo 'No linting configured'"
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "check": "tsc --noEmit && eslint src --ext .ts,.tsx && prettier --check src",
+    "fix": "prettier --write src && eslint src --ext .ts,.tsx --fix"
   },
   "dependencies": {
     "@opchan/core": "*",
@@ -20,10 +23,16 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/react": "^18.0.0",
-    "typescript": "^5.0.0"
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-react": "^7.0.0",
+    "eslint-plugin-react-hooks": "^4.0.0",
+    "prettier": "^3.0.0"
   },
   "peerDependencies": {
-    "react": "^18.0.0"
+    "react": "^18.0.0",
+    "typescript": ">=5.0.4"
   },
   "engines": {
     "node": ">=18.0.0"
