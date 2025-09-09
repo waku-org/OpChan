@@ -47,6 +47,11 @@ interface ForumContextType {
   // Network status
   isNetworkConnected: boolean;
   error: string | null;
+  // Missing message tracking
+  missingMessageCount: number;
+  recoveredMessageCount: number;
+  totalMissingMessages: number;
+  totalRecoveredMessages: number;
   getCellById: (id: string) => Cell | undefined;
   getPostsByCell: (cellId: string) => Post[];
   getCommentsByPost: (postId: string) => Comment[];
@@ -104,6 +109,10 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isNetworkConnected, setIsNetworkConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [missingMessageCount, setMissingMessageCount] = useState(0);
+  const [recoveredMessageCount, setRecoveredMessageCount] = useState(0);
+  const [totalMissingMessages, setTotalMissingMessages] = useState(0);
+  const [totalRecoveredMessages, setTotalRecoveredMessages] = useState(0);
   const [userVerificationStatus, setUserVerificationStatus] =
     useState<UserVerificationStatus>({});
 
@@ -327,6 +336,85 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     });
     return unsubscribe;
   }, [updateStateFromCache]);
+
+  // Subscribe to missing message events for tracking
+  useEffect(() => {
+    // Defensive check: only setup if the method exists
+    if (!messageManager.onMissingMessage || typeof messageManager.onMissingMessage !== 'function') {
+      console.warn('Missing message tracking not available - messageManager.onMissingMessage not found');
+      return;
+    }
+
+    const unsubscribe = messageManager.onMissingMessage(async (event) => {
+      const newMissingCount = event.missingMessages.length;
+      console.log(`Missing messages detected: ${newMissingCount}`);
+      
+      // Update local state
+      setMissingMessageCount(prev => prev + newMissingCount);
+      
+      // Update database stats
+      await localDatabase.recordMissingMessages(newMissingCount);
+      
+      // Update total from database
+      const stats = localDatabase.getMissingMessageStats();
+      setTotalMissingMessages(stats.totalMissing);
+      setTotalRecoveredMessages(stats.totalRecovered);
+      
+      // Show toast notification for significant missing message counts
+      if (newMissingCount > 5) {
+        toast({
+          title: 'Messages Missing',
+          description: `${newMissingCount} messages detected as missing. The system will attempt to recover them automatically.`,
+          variant: 'default',
+        });
+      }
+    });
+    
+    return unsubscribe;
+  }, [toast]);
+
+  // Initialize missing message stats from database
+  useEffect(() => {
+    const loadStats = async () => {
+      const stats = localDatabase.getMissingMessageStats();
+      setTotalMissingMessages(stats.totalMissing);
+      setTotalRecoveredMessages(stats.totalRecovered);
+      
+      // Get current real-time counts from messageManager
+      if (messageManager.isReady && messageManager.getMissingMessageCount) {
+        setMissingMessageCount(messageManager.getMissingMessageCount());
+        setRecoveredMessageCount(messageManager.getRecoveredMessageCount());
+      }
+    };
+    
+    loadStats();
+  }, []);
+
+  // Track message recovery in real-time
+  useEffect(() => {
+    if (!isNetworkConnected || !messageManager.isReady || !messageManager.getRecoveredMessageCount) return;
+
+    const interval = setInterval(() => {
+      const currentRecovered = messageManager.getRecoveredMessageCount();
+      const previousRecovered = recoveredMessageCount;
+      
+      if (currentRecovered > previousRecovered) {
+        const newRecoveredCount = currentRecovered - previousRecovered;
+        setRecoveredMessageCount(currentRecovered);
+        
+        // Update database with new recovered messages
+        localDatabase.recordRecoveredMessages(newRecoveredCount);
+        
+        // Update totals
+        const stats = localDatabase.getMissingMessageStats();
+        setTotalRecoveredMessages(stats.totalRecovered);
+        
+        console.log(`Messages recovered: ${newRecoveredCount}`);
+      }
+    }, 2000); // Check every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [isNetworkConnected, recoveredMessageCount]);
 
   // Simple reactive updates: check for new data periodically when connected
   useEffect(() => {
@@ -642,6 +730,10 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         isRefreshing,
         isNetworkConnected,
         error,
+        missingMessageCount,
+        recoveredMessageCount,
+        totalMissingMessages,
+        totalRecoveredMessages,
         getCellById,
         getPostsByCell,
         getCommentsByPost,

@@ -4,10 +4,13 @@ import { WakuNodeManager, HealthChangeCallback } from './core/WakuNodeManager';
 import {
   MessageService,
   MessageStatusCallback,
+  MissingMessageCallback,
+  MissingMessageEvent,
+  MissingMessageInfo,
 } from './services/MessageService';
 import { ReliableMessaging } from './core/ReliableMessaging';
 
-export type { HealthChangeCallback, MessageStatusCallback };
+export type { HealthChangeCallback, MessageStatusCallback, MissingMessageCallback, MissingMessageEvent, MissingMessageInfo };
 
 class MessageManager {
   private nodeManager: WakuNodeManager | null = null;
@@ -112,6 +115,41 @@ class MessageManager {
       throw new Error('MessageManager not fully initialized');
     }
     return this.messageService.onMessageReceived(callback);
+  }
+
+  public onMissingMessage(callback: MissingMessageCallback): () => void {
+    if (!this.messageService) {
+      throw new Error('MessageManager not fully initialized');
+    }
+    return this.messageService.onMissingMessage(callback);
+  }
+
+  public getMissingMessages(): MissingMessageInfo[] {
+    if (!this.messageService) {
+      return [];
+    }
+    return this.messageService.getMissingMessages();
+  }
+
+  public getRecoveredMessages(): string[] {
+    if (!this.messageService) {
+      return [];
+    }
+    return this.messageService.getRecoveredMessages();
+  }
+
+  public getMissingMessageCount(): number {
+    if (!this.messageService) {
+      return 0;
+    }
+    return this.messageService.getMissingMessageCount();
+  }
+
+  public getRecoveredMessageCount(): number {
+    if (!this.messageService) {
+      return 0;
+    }
+    return this.messageService.getRecoveredMessageCount();
   }
 
   public get messageCache() {

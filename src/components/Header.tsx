@@ -259,6 +259,16 @@ const Header = () => {
                         <span>Setup Wizard</span>
                       </DropdownMenuItem>
 
+                      <DropdownMenuItem asChild>
+                        <Link
+                          to="/debug"
+                          className="flex items-center space-x-2"
+                        >
+                          <Terminal className="w-4 h-4" />
+                          <span>Debug Console</span>
+                        </Link>
+                      </DropdownMenuItem>
+
                       <DropdownMenuSeparator className="bg-cyber-muted/30" />
 
                       <DropdownMenuItem

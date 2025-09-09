@@ -19,6 +19,13 @@ import { DelegationInfo } from '@/lib/delegation/types';
 import { openLocalDB, STORE, StoreName } from '@/lib/database/schema';
 import { Bookmark, BookmarkCache } from '@/types/forum';
 
+export interface MissingMessageStats {
+  totalMissing: number;
+  totalRecovered: number;
+  lastDetected: number | null;
+  lastRecovered: number | null;
+}
+
 export interface LocalDatabaseCache {
   cells: CellCache;
   posts: PostCache;
@@ -27,6 +34,7 @@ export interface LocalDatabaseCache {
   moderations: { [targetId: string]: ModerateMessage };
   userIdentities: UserIdentityCache;
   bookmarks: BookmarkCache;
+  missingMessageStats: MissingMessageStats;
 }
 
 /**
@@ -50,6 +58,12 @@ export class LocalDatabase {
     moderations: {},
     userIdentities: {},
     bookmarks: {},
+    missingMessageStats: {
+      totalMissing: 0,
+      totalRecovered: 0,
+      lastDetected: null,
+      lastRecovered: null,
+    },
   };
 
   constructor() {
@@ -255,15 +269,21 @@ export class LocalDatabase {
     const meta = await this.getAllFromStore<{ key: string; value: unknown }>(
       STORE.META
     );
-    meta
-      .filter(
-        entry =>
-          typeof entry.key === 'string' && entry.key.startsWith('pending:')
-      )
-      .forEach(entry => {
-        const id = (entry.key as string).substring('pending:'.length);
-        this.pendingIds.add(id);
-      });
+    
+    meta.forEach(entry => {
+      if (typeof entry.key === 'string') {
+        if (entry.key.startsWith('pending:')) {
+          const id = entry.key.substring('pending:'.length);
+          this.pendingIds.add(id);
+        } else if (entry.key === 'missingMessageStats') {
+          // Load missing message stats from persistence
+          const stats = entry.value as MissingMessageStats;
+          if (stats) {
+            this.cache.missingMessageStats = { ...stats };
+          }
+        }
+      }
+    });
   }
 
   private getAllFromStore<T>(storeName: StoreName): Promise<T[]> {
@@ -583,6 +603,59 @@ export class LocalDatabase {
    */
   public getAllBookmarks(): Bookmark[] {
     return Object.values(this.cache.bookmarks);
+  }
+
+  /**
+   * Track missing messages detected
+   */
+  public async recordMissingMessages(count: number): Promise<void> {
+    this.cache.missingMessageStats.totalMissing += count;
+    this.cache.missingMessageStats.lastDetected = Date.now();
+    
+    // Persist to IndexedDB
+    await this.put(STORE.META, {
+      key: 'missingMessageStats',
+      value: this.cache.missingMessageStats,
+    });
+  }
+
+  /**
+   * Track messages recovered
+   */
+  public async recordRecoveredMessages(count: number): Promise<void> {
+    this.cache.missingMessageStats.totalRecovered += count;
+    this.cache.missingMessageStats.lastRecovered = Date.now();
+    
+    // Persist to IndexedDB
+    await this.put(STORE.META, {
+      key: 'missingMessageStats',
+      value: this.cache.missingMessageStats,
+    });
+  }
+
+  /**
+   * Get missing message statistics
+   */
+  public getMissingMessageStats(): MissingMessageStats {
+    return { ...this.cache.missingMessageStats };
+  }
+
+  /**
+   * Reset missing message statistics
+   */
+  public async resetMissingMessageStats(): Promise<void> {
+    this.cache.missingMessageStats = {
+      totalMissing: 0,
+      totalRecovered: 0,
+      lastDetected: null,
+      lastRecovered: null,
+    };
+    
+    // Persist to IndexedDB
+    await this.put(STORE.META, {
+      key: 'missingMessageStats',
+      value: this.cache.missingMessageStats,
+    });
   }
 }
 

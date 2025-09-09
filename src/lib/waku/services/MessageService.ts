@@ -2,15 +2,19 @@ import { OpchanMessage } from '@/types/forum';
 import {
   ReliableMessaging,
   MessageStatusCallback,
+  MissingMessageEvent,
+  MissingMessageInfo,
 } from '../core/ReliableMessaging';
 import { WakuNodeManager } from '../core/WakuNodeManager';
 import { localDatabase } from '@/lib/database/LocalDatabase';
 
 export type MessageReceivedCallback = (message: OpchanMessage) => void;
-export type { MessageStatusCallback };
+export type MissingMessageCallback = (event: MissingMessageEvent) => void;
+export type { MessageStatusCallback, MissingMessageEvent, MissingMessageInfo };
 
 export class MessageService {
   private messageReceivedCallbacks: Set<MessageReceivedCallback> = new Set();
+  private missingMessageCallbacks: Set<MissingMessageCallback> = new Set();
 
   constructor(
     private reliableMessaging: ReliableMessaging | null,
@@ -28,6 +32,12 @@ export class MessageService {
         localDatabase.clearPending(message.id);
         localDatabase.setSyncing(false);
         if (isNew) this.messageReceivedCallbacks.forEach(cb => cb(message));
+      });
+
+      // Setup missing message handling
+      this.reliableMessaging.onMissingMessage(event => {
+        console.log(`Missing messages detected: ${event.missingMessages.length}`);
+        this.missingMessageCallbacks.forEach(cb => cb(event));
       });
     }
   }
@@ -86,6 +96,27 @@ export class MessageService {
     return () => this.messageReceivedCallbacks.delete(callback);
   }
 
+  public onMissingMessage(callback: MissingMessageCallback): () => void {
+    this.missingMessageCallbacks.add(callback);
+    return () => this.missingMessageCallbacks.delete(callback);
+  }
+
+  public getMissingMessages(): MissingMessageInfo[] {
+    return this.reliableMessaging?.getMissingMessages() || [];
+  }
+
+  public getRecoveredMessages(): string[] {
+    return this.reliableMessaging?.getRecoveredMessages() || [];
+  }
+
+  public getMissingMessageCount(): number {
+    return this.reliableMessaging?.getMissingMessageCount() || 0;
+  }
+
+  public getRecoveredMessageCount(): number {
+    return this.reliableMessaging?.getRecoveredMessageCount() || 0;
+  }
+
   public updateReliableMessaging(
     reliableMessaging: ReliableMessaging | null
   ): void {
@@ -99,6 +130,7 @@ export class MessageService {
 
   public cleanup(): void {
     this.messageReceivedCallbacks.clear();
+    this.missingMessageCallbacks.clear();
     this.reliableMessaging?.cleanup();
   }
 }
