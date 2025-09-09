@@ -1,7 +1,7 @@
 {
-  "name": "@opchan/core",
+  "name": "opchan-core",
   "version": "1.0.0",
-  "description": "Core package for opchan",
+  "description": "Core package for OpChan - A decentralized forum built on Waku protocol",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -13,8 +13,32 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
+  "keywords": [
+    "opchan",
+    "waku",
+    "bitcoin",
+    "ordinals",
+    "ethereum",
+    "decentralized",
+    "forum",
+    "p2p",
+    "blockchain",
+    "cryptocurrency"
+  ],
+  "author": "OpChan Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/waku-org/OpChan.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/waku-org/OpChan/issues"
+  },
+  "homepage": "https://github.com/waku-org/OpChan#readme",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -22,7 +46,9 @@
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "check": "tsc --noEmit && eslint src --ext .ts,.tsx && prettier --check src",
-    "fix": "prettier --write src && eslint src --ext .ts,.tsx --fix"
+    "fix": "prettier --write src && eslint src --ext .ts,.tsx --fix",
+    "prepublishOnly": "npm run build",
+    "prepack": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
