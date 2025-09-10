@@ -13,6 +13,7 @@ import {
 import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
 import { AuthorDisplay } from '@/components/ui/author-display';
 import { BookmarkButton } from '@/components/ui/bookmark-button';
+import { LinkRenderer } from '@/components/ui/link-renderer';
 import { usePending, usePendingVote } from '@/hooks/usePending';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -187,7 +188,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
 
             {/* Post content preview */}
             <p className="text-cyber-neutral text-sm leading-relaxed mb-3">
-              {contentPreview}
+              <LinkRenderer text={contentPreview} />
             </p>
 
             {/* Post actions */}

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { LinkRenderer } from '@/components/ui/link-renderer';
 import {
   ArrowLeft,
   MessageSquare,
@@ -300,7 +301,9 @@ const PostList = () => {
                     <h2 className="text-lg font-bold hover:text-cyber-accent">
                       {post.title}
                     </h2>
-                    <p className="line-clamp-2 text-sm mb-3">{post.content}</p>
+                    <p className="line-clamp-2 text-sm mb-3">
+                      <LinkRenderer text={post.content} />
+                    </p>
                     <div className="flex items-center gap-4 text-xs text-cyber-neutral">
                       <span>
                         {formatDistanceToNow(post.timestamp, {

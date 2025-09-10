@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageSquareText, Newspaper } from 'lucide-react';
 import { AuthorDisplay } from './ui/author-display';
+import { LinkRenderer } from './ui/link-renderer';
 
 interface FeedItemBase {
   id: string;
@@ -135,7 +136,7 @@ const ActivityFeed: React.FC = () => {
               ) : (
                 <div>
                   <div className="text-sm line-clamp-3 mb-1">
-                    {item.content}
+                    <LinkRenderer text={item.content} />
                   </div>
                   <div className="text-xs text-muted-foreground">
                     ↑ {item.voteCount} • Reply to post

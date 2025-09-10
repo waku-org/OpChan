@@ -24,6 +24,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { RelevanceIndicator } from './ui/relevance-indicator';
 import { AuthorDisplay } from './ui/author-display';
 import { BookmarkButton } from './ui/bookmark-button';
+import { LinkRenderer } from './ui/link-renderer';
 import CommentCard from './CommentCard';
 import { usePending, usePendingVote } from '@/hooks/usePending';
 
@@ -236,7 +237,7 @@ const PostDetail = () => {
                 />
               </div>
               <p className="text-sm whitespace-pre-wrap break-words">
-                {post.content}
+                <LinkRenderer text={post.content} />
               </p>
             </div>
           </div>
