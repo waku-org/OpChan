@@ -182,16 +182,18 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
             </div>
 
             {/* Post title and content - clickable to navigate to post */}
-            <Link to={`/post/${post.id}`} className="block">
-              <h2 className="text-lg font-semibold text-glow mb-2 hover:text-cyber-accent transition-colors">
-                {post.title}
-              </h2>
+            <div className="block">
+              <Link to={`/post/${post.id}`} className="block">
+                <h2 className="text-lg font-semibold text-glow mb-2 hover:text-cyber-accent transition-colors">
+                  {post.title}
+                </h2>
+              </Link>
 
               {/* Post content preview */}
               <p className="text-cyber-neutral text-sm leading-relaxed mb-3">
                 <LinkRenderer text={contentPreview} />
               </p>
-            </Link>
+            </div>
 
             {/* Post actions */}
             <div className="flex items-center justify-between text-xs text-cyber-neutral">
