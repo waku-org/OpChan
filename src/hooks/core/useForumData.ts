@@ -303,10 +303,17 @@ export function useForumData(): ForumData {
   }, [postsWithVoteStatus, showModerated]);
 
   const filteredComments = useMemo(() => {
-    return showModerated
-      ? commentsWithVoteStatus
-      : commentsWithVoteStatus.filter(comment => !comment.moderated);
-  }, [commentsWithVoteStatus, showModerated]);
+    if (showModerated) return commentsWithVoteStatus;
+
+    // Hide moderated comments AND comments whose parent post is moderated
+    const moderatedPostIds = new Set(
+      postsWithVoteStatus.filter(p => p.moderated).map(p => p.id)
+    );
+
+    return commentsWithVoteStatus.filter(
+      comment => !comment.moderated && !moderatedPostIds.has(comment.postId)
+    );
+  }, [commentsWithVoteStatus, postsWithVoteStatus, showModerated]);
 
   // Filtered cells with stats based on filtered posts
   const filteredCellsWithStats = useMemo((): CellWithStats[] => {
