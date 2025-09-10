@@ -15,7 +15,6 @@ import {
 import { localDatabase } from '@/lib/database/LocalDatabase';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 
-
 interface AuthContextType {
   currentUser: User | null;
   isAuthenticating: boolean;

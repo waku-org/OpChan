@@ -14,6 +14,14 @@ export enum MessageType {
 }
 
 /**
+ * Moderation action types
+ */
+export enum EModerationAction {
+  MODERATE = 'moderate',
+  UNMODERATE = 'unmoderate',
+}
+
+/**
  * Base interface for unsigned messages (before signing)
  */
 export interface UnsignedBaseMessage {
@@ -67,6 +75,7 @@ export interface UnsignedModerateMessage extends UnsignedBaseMessage {
   targetType: 'post' | 'comment' | 'user';
   targetId: string; // postId, commentId, or user address (for user moderation)
   reason?: string;
+  action: EModerationAction;
 }
 
 export interface UnsignedUserProfileUpdateMessage extends UnsignedBaseMessage {
@@ -110,6 +119,7 @@ export interface ModerateMessage extends BaseMessage {
   targetType: 'post' | 'comment' | 'user';
   targetId: string; // postId, commentId, or user address (for user moderation)
   reason?: string;
+  action: EModerationAction;
 }
 
 export interface UserProfileUpdateMessage extends BaseMessage {

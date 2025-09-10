@@ -39,6 +39,7 @@ const PostDetail = () => {
     createComment,
     votePost,
     moderateComment,
+    unmoderateComment,
     moderateUser,
     isCreatingComment,
     isVoting,
@@ -124,6 +125,13 @@ const PostDetail = () => {
     if (!cell) return;
     // ✅ All validation handled in hook
     await moderateComment(cell.id, commentId, reason);
+  };
+
+  const handleUnmoderateComment = async (commentId: string) => {
+    const reason =
+      window.prompt('Optional note for unmoderation?') || undefined;
+    if (!cell) return;
+    await unmoderateComment(cell.id, commentId, reason);
   };
 
   const handleModerateUser = async (userAddress: string) => {
@@ -319,6 +327,7 @@ const PostDetail = () => {
               cellId={cell?.id}
               canModerate={canModerate(cell?.id || '')}
               onModerateComment={handleModerateComment}
+              onUnmoderateComment={handleUnmoderateComment}
               onModerateUser={handleModerateUser}
             />
           ))

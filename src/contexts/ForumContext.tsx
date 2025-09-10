@@ -70,13 +70,31 @@ interface ForumContextType {
     reason: string | undefined,
     cellOwner: string
   ) => Promise<boolean>;
+  unmoderatePost: (
+    cellId: string,
+    postId: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => Promise<boolean>;
   moderateComment: (
     cellId: string,
     commentId: string,
     reason: string | undefined,
     cellOwner: string
   ) => Promise<boolean>;
+  unmoderateComment: (
+    cellId: string,
+    commentId: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => Promise<boolean>;
   moderateUser: (
+    cellId: string,
+    userAddress: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => Promise<boolean>;
+  unmoderateUser: (
     cellId: string,
     userAddress: string,
     reason: string | undefined,
@@ -563,6 +581,39 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleUnmoderatePost = async (
+    cellId: string,
+    postId: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => {
+    toast({
+      title: 'Unmoderating Post',
+      description: 'Sending unmoderation message to the network...',
+    });
+
+    const result = await forumActions.unmoderatePost(
+      { cellId, postId, reason, currentUser, isAuthenticated, cellOwner },
+      updateStateFromCache
+    );
+
+    if (result.success) {
+      toast({
+        title: 'Post Unmoderated',
+        description: 'The post is now visible again.',
+      });
+      return result.data || false;
+    } else {
+      toast({
+        title: 'Unmoderation Failed',
+        description:
+          result.error || 'Failed to unmoderate post. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   const handleModerateComment = async (
     cellId: string,
     commentId: string,
@@ -590,6 +641,39 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         title: 'Moderation Failed',
         description:
           result.error || 'Failed to moderate comment. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const handleUnmoderateComment = async (
+    cellId: string,
+    commentId: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => {
+    toast({
+      title: 'Unmoderating Comment',
+      description: 'Sending unmoderation message to the network...',
+    });
+
+    const result = await forumActions.unmoderateComment(
+      { cellId, commentId, reason, currentUser, isAuthenticated, cellOwner },
+      updateStateFromCache
+    );
+
+    if (result.success) {
+      toast({
+        title: 'Comment Unmoderated',
+        description: 'The comment is now visible again.',
+      });
+      return result.data || false;
+    } else {
+      toast({
+        title: 'Unmoderation Failed',
+        description:
+          result.error || 'Failed to unmoderate comment. Please try again.',
         variant: 'destructive',
       });
       return false;
@@ -624,6 +708,34 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleUnmoderateUser = async (
+    cellId: string,
+    userAddress: string,
+    reason: string | undefined,
+    cellOwner: string
+  ) => {
+    const result = await forumActions.unmoderateUser(
+      { cellId, userAddress, reason, currentUser, isAuthenticated, cellOwner },
+      updateStateFromCache
+    );
+
+    if (result.success) {
+      toast({
+        title: 'User Unmoderated',
+        description: `User ${userAddress} has been unmoderated in this cell.`,
+      });
+      return result.data || false;
+    } else {
+      toast({
+        title: 'Unmoderation Failed',
+        description:
+          result.error || 'Failed to unmoderate user. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   return (
     <ForumContext.Provider
       value={{
@@ -652,8 +764,11 @@ export function ForumProvider({ children }: { children: React.ReactNode }) {
         createCell: handleCreateCell,
         refreshData: handleRefreshData,
         moderatePost: handleModeratePost,
+        unmoderatePost: handleUnmoderatePost,
         moderateComment: handleModerateComment,
+        unmoderateComment: handleUnmoderateComment,
         moderateUser: handleModerateUser,
+        unmoderateUser: handleUnmoderateUser,
       }}
     >
       {children}

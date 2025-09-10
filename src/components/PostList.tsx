@@ -45,6 +45,7 @@ const PostList = () => {
     createPost,
     votePost,
     moderatePost,
+    unmoderatePost,
     moderateUser,
     refreshData,
     isCreatingPost,
@@ -141,6 +142,13 @@ const PostList = () => {
     if (!cell) return;
     // ✅ All validation handled in hook
     await moderatePost(cell.id, postId, reason);
+  };
+
+  const handleUnmoderate = async (postId: string) => {
+    const reason =
+      window.prompt('Optional note for unmoderation?') || undefined;
+    if (!cell) return;
+    await unmoderatePost(cell.id, postId, reason);
   };
 
   const handleModerateUser = async (userAddress: string) => {
@@ -352,10 +360,22 @@ const PostList = () => {
                       </TooltipContent>
                     </Tooltip>
                   )}
-                  {post.moderated && (
-                    <span className="ml-2 text-xs text-red-500">
-                      [Moderated]
-                    </span>
+                  {canModerate(cell.id) && post.moderated && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-cyber-neutral hover:text-green-500"
+                          onClick={() => handleUnmoderate(post.id)}
+                        >
+                          Unmoderate
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Unmoderate post</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               </div>

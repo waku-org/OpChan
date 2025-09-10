@@ -9,6 +9,7 @@ import {
   CellMessage,
   CommentMessage,
   PostMessage,
+  EModerationAction,
 } from '@/types/waku';
 import { Cell, Comment, Post } from '@/types/forum';
 import { EVerificationStatus, User } from '@/types/identity';
@@ -380,6 +381,7 @@ export class ForumActions {
         targetType: 'post',
         targetId: postId,
         reason,
+        action: EModerationAction.MODERATE,
         timestamp: Date.now(),
         author: currentUser!.address,
       };
@@ -453,6 +455,7 @@ export class ForumActions {
         targetType: 'comment',
         targetId: commentId,
         reason,
+        action: EModerationAction.MODERATE,
         timestamp: Date.now(),
         author: currentUser!.address,
       };
@@ -526,6 +529,7 @@ export class ForumActions {
         targetType: 'user',
         targetId: userAddress,
         reason,
+        action: EModerationAction.MODERATE,
         author: currentUser!.address,
         timestamp: Date.now(),
       };
@@ -560,6 +564,222 @@ export class ForumActions {
       return {
         success: false,
         error: 'Failed to moderate user. Please try again.',
+      };
+    }
+  }
+
+  async unmoderatePost(
+    params: PostModerationParams,
+    updateStateFromCache: () => void
+  ): Promise<ActionResult<boolean>> {
+    const { cellId, postId, reason, currentUser, isAuthenticated, cellOwner } =
+      params;
+
+    if (!isAuthenticated || !currentUser) {
+      return {
+        success: false,
+        error:
+          'Authentication required. You need to verify Ordinal ownership to unmoderate posts.',
+      };
+    }
+    if (currentUser.address !== cellOwner) {
+      return {
+        success: false,
+        error: 'Not authorized. Only the cell admin can unmoderate posts.',
+      };
+    }
+
+    try {
+      const unsignedMod: UnsignedModerateMessage = {
+        type: MessageType.MODERATE,
+        id: uuidv4(),
+        cellId,
+        targetType: 'post',
+        targetId: postId,
+        reason,
+        action: EModerationAction.UNMODERATE,
+        timestamp: Date.now(),
+        author: currentUser!.address,
+      };
+
+      const signed = await this.delegationManager.signMessage(unsignedMod);
+      if (!signed) {
+        const status = await this.delegationManager.getStatus(
+          currentUser!.address,
+          currentUser!.walletType
+        );
+        return {
+          success: false,
+          error: status.isValid
+            ? 'Key delegation required. Please delegate a signing key from your profile menu.'
+            : 'Key delegation expired. Please re-delegate your key through the profile menu.',
+        };
+      }
+
+      await localDatabase.updateCache(signed);
+      localDatabase.markPending(signed.id);
+      localDatabase.setSyncing(true);
+      updateStateFromCache();
+
+      messageManager
+        .sendMessage(signed)
+        .catch(err => console.error('Background send failed:', err))
+        .finally(() => localDatabase.setSyncing(false));
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('Error unmoderating post:', error);
+      return {
+        success: false,
+        error: 'Failed to unmoderate post. Please try again.',
+      };
+    }
+  }
+
+  async unmoderateComment(
+    params: CommentModerationParams,
+    updateStateFromCache: () => void
+  ): Promise<ActionResult<boolean>> {
+    const {
+      cellId,
+      commentId,
+      reason,
+      currentUser,
+      isAuthenticated,
+      cellOwner,
+    } = params;
+
+    if (!isAuthenticated || !currentUser) {
+      return {
+        success: false,
+        error:
+          'Authentication required. You need to verify Ordinal ownership to unmoderate comments.',
+      };
+    }
+    if (currentUser.address !== cellOwner) {
+      return {
+        success: false,
+        error: 'Not authorized. Only the cell admin can unmoderate comments.',
+      };
+    }
+
+    try {
+      const unsignedMod: UnsignedModerateMessage = {
+        type: MessageType.MODERATE,
+        id: uuidv4(),
+        cellId,
+        targetType: 'comment',
+        targetId: commentId,
+        reason,
+        action: EModerationAction.UNMODERATE,
+        timestamp: Date.now(),
+        author: currentUser!.address,
+      };
+
+      const signed = await this.delegationManager.signMessage(unsignedMod);
+      if (!signed) {
+        const status = await this.delegationManager.getStatus(
+          currentUser!.address,
+          currentUser!.walletType
+        );
+        return {
+          success: false,
+          error: status.isValid
+            ? 'Key delegation required. Please delegate a signing key from your profile menu.'
+            : 'Key delegation expired. Please re-delegate your key through the profile menu.',
+        };
+      }
+
+      await localDatabase.updateCache(signed);
+      localDatabase.markPending(signed.id);
+      localDatabase.setSyncing(true);
+      updateStateFromCache();
+
+      messageManager
+        .sendMessage(signed)
+        .catch(err => console.error('Background send failed:', err))
+        .finally(() => localDatabase.setSyncing(false));
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('Error unmoderating comment:', error);
+      return {
+        success: false,
+        error: 'Failed to unmoderate comment. Please try again.',
+      };
+    }
+  }
+
+  async unmoderateUser(
+    params: UserModerationParams,
+    updateStateFromCache: () => void
+  ): Promise<ActionResult<boolean>> {
+    const {
+      cellId,
+      userAddress,
+      reason,
+      currentUser,
+      isAuthenticated,
+      cellOwner,
+    } = params;
+
+    if (!isAuthenticated || !currentUser) {
+      return {
+        success: false,
+        error:
+          'Authentication required. You need to verify Ordinal ownership to unmoderate users.',
+      };
+    }
+    if (currentUser.address !== cellOwner) {
+      return {
+        success: false,
+        error: 'Not authorized. Only the cell admin can unmoderate users.',
+      };
+    }
+
+    try {
+      const unsignedMod: UnsignedModerateMessage = {
+        type: MessageType.MODERATE,
+        id: uuidv4(),
+        cellId,
+        targetType: 'user',
+        targetId: userAddress,
+        reason,
+        action: EModerationAction.UNMODERATE,
+        author: currentUser!.address,
+        timestamp: Date.now(),
+      };
+
+      const signed = await this.delegationManager.signMessage(unsignedMod);
+      if (!signed) {
+        const status = await this.delegationManager.getStatus(
+          currentUser!.address,
+          currentUser!.walletType
+        );
+        return {
+          success: false,
+          error: status.isValid
+            ? 'Key delegation required. Please delegate a signing key from your profile menu.'
+            : 'Key delegation expired. Please re-delegate your key through the profile menu.',
+        };
+      }
+
+      await localDatabase.updateCache(signed);
+      localDatabase.markPending(signed.id);
+      localDatabase.setSyncing(true);
+      updateStateFromCache();
+
+      messageManager
+        .sendMessage(signed)
+        .catch(err => console.error('Background send failed:', err))
+        .finally(() => localDatabase.setSyncing(false));
+
+      return { success: true, data: true };
+    } catch (error) {
+      console.error('Error unmoderating user:', error);
+      return {
+        success: false,
+        error: 'Failed to unmoderate user. Please try again.',
       };
     }
   }

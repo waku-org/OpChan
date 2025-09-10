@@ -33,6 +33,11 @@ export interface ForumActions extends ForumActionStates {
     postId: string,
     reason?: string
   ) => Promise<boolean>;
+  unmoderatePost: (
+    cellId: string,
+    postId: string,
+    reason?: string
+  ) => Promise<boolean>;
 
   // Comment actions
   createComment: (postId: string, content: string) => Promise<Comment | null>;
@@ -42,9 +47,19 @@ export interface ForumActions extends ForumActionStates {
     commentId: string,
     reason?: string
   ) => Promise<boolean>;
+  unmoderateComment: (
+    cellId: string,
+    commentId: string,
+    reason?: string
+  ) => Promise<boolean>;
 
   // User moderation
   moderateUser: (
+    cellId: string,
+    userAddress: string,
+    reason?: string
+  ) => Promise<boolean>;
+  unmoderateUser: (
     cellId: string,
     userAddress: string,
     reason?: string
@@ -65,8 +80,11 @@ export function useForumActions(): ForumActions {
     votePost: baseVotePost,
     voteComment: baseVoteComment,
     moderatePost: baseModeratePost,
+    unmoderatePost: baseUnmoderatePost,
     moderateComment: baseModerateComment,
+    unmoderateComment: baseUnmoderateComment,
     moderateUser: baseModerateUser,
+    unmoderateUser: baseUnmoderateUser,
     refreshData: baseRefreshData,
     isPostingCell,
     isPostingPost,
@@ -328,6 +346,54 @@ export function useForumActions(): ForumActions {
     [permissions, currentUser, getCellById, baseModeratePost, toast]
   );
 
+  // Post unmoderation
+  const unmoderatePost = useCallback(
+    async (
+      cellId: string,
+      postId: string,
+      reason?: string
+    ): Promise<boolean> => {
+      const cell = getCellById(cellId);
+      const canModerate =
+        permissions.canModerate(cellId) &&
+        cell &&
+        currentUser?.address === cell.author;
+
+      if (!canModerate) {
+        toast({
+          title: 'Permission Denied',
+          description: 'You must be the cell owner to unmoderate content.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      try {
+        const result = await baseUnmoderatePost(
+          cellId,
+          postId,
+          reason,
+          cell.author
+        );
+        if (result) {
+          toast({
+            title: 'Post Unmoderated',
+            description: 'The post is now visible again.',
+          });
+        }
+        return result;
+      } catch {
+        toast({
+          title: 'Unmoderation Failed',
+          description: 'Failed to unmoderate post. Please try again.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+    },
+    [permissions, currentUser, getCellById, baseUnmoderatePost, toast]
+  );
+
   // Comment moderation
   const moderateComment = useCallback(
     async (
@@ -374,6 +440,54 @@ export function useForumActions(): ForumActions {
       }
     },
     [permissions, currentUser, getCellById, baseModerateComment, toast]
+  );
+
+  // Comment unmoderation
+  const unmoderateComment = useCallback(
+    async (
+      cellId: string,
+      commentId: string,
+      reason?: string
+    ): Promise<boolean> => {
+      const cell = getCellById(cellId);
+      const canModerate =
+        permissions.canModerate(cellId) &&
+        cell &&
+        currentUser?.address === cell.author;
+
+      if (!canModerate) {
+        toast({
+          title: 'Permission Denied',
+          description: 'You must be the cell owner to unmoderate content.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      try {
+        const result = await baseUnmoderateComment(
+          cellId,
+          commentId,
+          reason,
+          cell.author
+        );
+        if (result) {
+          toast({
+            title: 'Comment Unmoderated',
+            description: 'The comment is now visible again.',
+          });
+        }
+        return result;
+      } catch {
+        toast({
+          title: 'Unmoderation Failed',
+          description: 'Failed to unmoderate comment. Please try again.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+    },
+    [permissions, currentUser, getCellById, baseUnmoderateComment, toast]
   );
 
   // User moderation
@@ -433,6 +547,63 @@ export function useForumActions(): ForumActions {
     [permissions, currentUser, getCellById, baseModerateUser, toast]
   );
 
+  // User unmoderation
+  const unmoderateUser = useCallback(
+    async (
+      cellId: string,
+      userAddress: string,
+      reason?: string
+    ): Promise<boolean> => {
+      const cell = getCellById(cellId);
+      const canModerate =
+        permissions.canModerate(cellId) &&
+        cell &&
+        currentUser?.address === cell.author;
+
+      if (!canModerate) {
+        toast({
+          title: 'Permission Denied',
+          description: 'You must be the cell owner to unmoderate users.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      if (userAddress === currentUser?.address) {
+        toast({
+          title: 'Invalid Action',
+          description: 'You cannot unmoderate yourself.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      try {
+        const result = await baseUnmoderateUser(
+          cellId,
+          userAddress,
+          reason,
+          cell.author
+        );
+        if (result) {
+          toast({
+            title: 'User Unmoderated',
+            description: 'The user is now unmoderated in this cell.',
+          });
+        }
+        return result;
+      } catch {
+        toast({
+          title: 'Unmoderation Failed',
+          description: 'Failed to unmoderate user. Please try again.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+    },
+    [permissions, currentUser, getCellById, baseUnmoderateUser, toast]
+  );
+
   // Data refresh
   const refreshData = useCallback(async (): Promise<void> => {
     try {
@@ -465,8 +636,11 @@ export function useForumActions(): ForumActions {
     votePost,
     voteComment,
     moderatePost,
+    unmoderatePost,
     moderateComment,
+    unmoderateComment,
     moderateUser,
+    unmoderateUser,
     refreshData,
   };
 }

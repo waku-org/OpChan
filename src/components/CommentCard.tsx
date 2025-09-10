@@ -25,6 +25,7 @@ interface CommentCardProps {
   cellId?: string;
   canModerate: boolean;
   onModerateComment: (commentId: string) => void;
+  onUnmoderateComment?: (commentId: string) => void;
   onModerateUser: (userAddress: string) => void;
 }
 
@@ -48,6 +49,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
   cellId,
   canModerate,
   onModerateComment,
+  onUnmoderateComment,
   onModerateUser,
 }) => {
   const { voteComment, isVoting } = useForumActions();
@@ -152,6 +154,23 @@ const CommentCard: React.FC<CommentCardProps> = ({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Moderate comment</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {canModerate && comment.moderated && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-cyber-neutral hover:text-green-500"
+                    onClick={() => onUnmoderateComment?.(comment.id)}
+                  >
+                    Unmoderate
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Unmoderate comment</p>
                 </TooltipContent>
               </Tooltip>
             )}

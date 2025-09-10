@@ -4,6 +4,7 @@ import {
   CommentMessage,
   PostMessage,
   VoteMessage,
+  EModerationAction,
 } from '@/types/waku';
 import messageManager from '@/lib/waku';
 import { RelevanceCalculator } from './RelevanceCalculator';
@@ -79,7 +80,10 @@ export const transformPost = async (
   );
 
   const modMsg = messageManager.messageCache.moderations[postMessage.id];
-  const isPostModerated = !!modMsg && modMsg.targetType === 'post';
+  const isPostModerated =
+    !!modMsg &&
+    modMsg.targetType === 'post' &&
+    modMsg.action === EModerationAction.MODERATE;
   const userModMsg = Object.values(
     messageManager.messageCache.moderations
   ).find(
@@ -88,7 +92,8 @@ export const transformPost = async (
       m.cellId === postMessage.cellId &&
       m.targetId === postMessage.author
   );
-  const isUserModerated = !!userModMsg;
+  const isUserModerated =
+    !!userModMsg && userModMsg.action === EModerationAction.MODERATE;
 
   const transformedPost: Post = {
     id: postMessage.id,
@@ -194,7 +199,10 @@ export const transformComment = async (
   );
 
   const modMsg = messageManager.messageCache.moderations[commentMessage.id];
-  const isCommentModerated = !!modMsg && modMsg.targetType === 'comment';
+  const isCommentModerated =
+    !!modMsg &&
+    modMsg.targetType === 'comment' &&
+    modMsg.action === EModerationAction.MODERATE;
   // Find the post to get the correct cell ID
   const parentPost = Object.values(messageManager.messageCache.posts).find(
     post => post.id === commentMessage.postId
@@ -207,7 +215,8 @@ export const transformComment = async (
       m.cellId === parentPost?.cellId &&
       m.targetId === commentMessage.author
   );
-  const isUserModerated = !!userModMsg;
+  const isUserModerated =
+    !!userModMsg && userModMsg.action === EModerationAction.MODERATE;
 
   const transformedComment: Comment = {
     id: commentMessage.id,
