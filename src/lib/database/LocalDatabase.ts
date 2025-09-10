@@ -115,6 +115,44 @@ export class LocalDatabase {
     this.cache.bookmarks = {};
   }
 
+  /**
+   * Clear all data from both in-memory cache and IndexedDB
+   */
+  public async clearAll(): Promise<void> {
+    // Clear in-memory cache
+    this.clear();
+    
+    // Clear all IndexedDB stores
+    if (!this.db) return;
+
+    const storeNames = [
+      STORE.CELLS,
+      STORE.POSTS,
+      STORE.COMMENTS,
+      STORE.VOTES,
+      STORE.MODERATIONS,
+      STORE.USER_IDENTITIES,
+      STORE.USER_AUTH,
+      STORE.DELEGATION,
+      STORE.UI_STATE,
+      STORE.META,
+      STORE.BOOKMARKS,
+    ];
+
+    const tx = this.db.transaction(storeNames, 'readwrite');
+    
+    await Promise.all(
+      storeNames.map(storeName => {
+        return new Promise<void>((resolve, reject) => {
+          const store = tx.objectStore(storeName);
+          const request = store.clear();
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => resolve();
+        });
+      })
+    );
+  }
+
   private storeMessage(message: OpchanMessage): void {
     switch (message.type) {
       case MessageType.CELL:

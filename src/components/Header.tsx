@@ -24,6 +24,7 @@ import {
   Menu,
   X,
   Clock,
+  Trash2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -32,6 +33,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
@@ -120,6 +132,23 @@ const Header = () => {
       title: 'Wallet Disconnected',
       description: 'Your wallet has been disconnected successfully.',
     });
+  };
+
+  const handleClearDatabase = async () => {
+    try {
+      await localDatabase.clearAll();
+      toast({
+        title: 'Database Cleared',
+        description: 'All local data has been cleared successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to clear database:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to clear local database. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getStatusIcon = () => {
@@ -260,6 +289,46 @@ const Header = () => {
                       </DropdownMenuItem>
 
                       <DropdownMenuSeparator className="bg-cyber-muted/30" />
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem
+                            onSelect={(e) => e.preventDefault()}
+                            className="flex items-center space-x-2 text-orange-400 focus:text-orange-400"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>Clear Database</span>
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-black/95 border-cyber-muted/30">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-white">
+                              Clear Local Database
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-cyber-neutral">
+                              This will permanently delete all locally stored data including:
+                              <br />• Posts and comments
+                              <br />• User identities and preferences
+                              <br />• Bookmarks and votes
+                              <br />• UI state and settings
+                              <br />
+                              <br />
+                              <strong>This action cannot be undone.</strong>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="bg-cyber-muted/20 border-cyber-muted/30 text-white hover:bg-cyber-muted/30">
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleClearDatabase}
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                              Clear Database
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
 
                       <DropdownMenuItem
                         onClick={handleDisconnect}
