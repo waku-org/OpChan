@@ -6,25 +6,25 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
-import { Cell, Post, Comment } from '@/types/forum';
+import { Cell, Post, Comment } from 'opchan-core/types/forum';
 import {
   User,
   EVerificationStatus,
   EDisplayPreference,
-} from '@/types/identity';
+} from 'opchan-core/types/identity';
 import { useToast } from '@/components/ui/use-toast';
 
-import { ForumActions } from '@/lib/forum/ForumActions';
-import { monitorNetworkHealth, initializeNetwork } from '@/lib/waku/network';
-import messageManager from '@/lib/waku';
-import { getDataFromCache } from '@/lib/forum/transformers';
-import { RelevanceCalculator } from '@/lib/forum/RelevanceCalculator';
-import { UserVerificationStatus } from '@/types/forum';
-import { DelegationManager } from '@/lib/delegation';
-import { UserIdentityService } from '@/lib/services/UserIdentityService';
-import { MessageService } from '@/lib/services/MessageService';
+import { ForumActions } from 'opchan-core/forum/ForumActions';
+import { monitorNetworkHealth, initializeNetwork } from 'opchan-core/waku/network';
+import messageManager from 'opchan-core/waku';
+import { getDataFromCache } from 'opchan-core/forum/transformers';
+import { RelevanceCalculator } from 'opchan-core/forum/RelevanceCalculator';
+import { UserVerificationStatus } from 'opchan-core/types/forum';
+import { DelegationManager } from 'opchan-core/delegation';
+import { UserIdentityService } from 'opchan-core/services/UserIdentityService';
+import { MessageService } from 'opchan-core/services/MessageService';
 import { useAuth } from '@/contexts/useAuth';
-import { localDatabase } from '@/lib/database/LocalDatabase';
+import { localDatabase } from 'opchan-core/database/LocalDatabase';
 
 interface ForumContextType {
   cells: Cell[];

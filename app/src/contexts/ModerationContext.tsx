@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { localDatabase } from '@/lib/database/LocalDatabase';
+import { localDatabase } from 'opchan-core/database/LocalDatabase';
 
 interface ModerationContextType {
   showModerated: boolean;

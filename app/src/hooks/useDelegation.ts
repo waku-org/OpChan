@@ -1,6 +1,6 @@
 import { useCallback, useContext, useState, useEffect } from 'react';
 import { AuthContext } from '@/contexts/AuthContext';
-import { DelegationDuration } from '@/lib/delegation';
+import { DelegationDuration } from 'opchan-core/delegation';
 
 export const useDelegation = () => {
   const context = useContext(AuthContext);

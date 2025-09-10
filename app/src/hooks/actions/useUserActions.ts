@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/hooks/core/useAuth';
 import { usePermissions } from '@/hooks/core/usePermissions';
-import { EDisplayPreference } from '@/types/identity';
+import { EDisplayPreference } from 'opchan-core/types/identity';
 import { useToast } from '@/components/ui/use-toast';
 
 export interface UserActionStates {

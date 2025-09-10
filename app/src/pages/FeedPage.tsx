@@ -13,8 +13,8 @@ import PostCard from '@/components/PostCard';
 import FeedSidebar from '@/components/FeedSidebar';
 import { ModerationToggle } from '@/components/ui/moderation-toggle';
 import { useForumData, useAuth, useForumActions } from '@/hooks';
-import { EVerificationStatus } from '@/types/identity';
-import { sortPosts, SortOption } from '@/lib/utils/sorting';
+import { EVerificationStatus } from 'opchan-core/types/identity';
+import { sortPosts, SortOption } from 'opchan-core/utils/sorting';
 
 const FeedPage: React.FC = () => {
   const forumData = useForumData();

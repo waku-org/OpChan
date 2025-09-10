@@ -9,7 +9,7 @@ import {
   useAuth,
   usePostComments,
 } from '@/hooks';
-import { EVerificationStatus } from '@/types/identity';
+import { EVerificationStatus } from 'opchan-core/types/identity';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

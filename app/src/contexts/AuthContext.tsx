@@ -1,18 +1,18 @@
 import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { OpchanMessage } from '@/types/forum';
+import { OpchanMessage } from 'opchan-core/types/forum';
 import {
   User,
   EVerificationStatus,
   EDisplayPreference,
-} from '@/types/identity';
-import { WalletManager } from '@/lib/wallet';
+} from 'opchan-core/types/identity';
+import { WalletManager } from 'opchan-core/wallet';
 import {
   DelegationManager,
   DelegationDuration,
   DelegationFullStatus,
-} from '@/lib/delegation';
-import { localDatabase } from '@/lib/database/LocalDatabase';
+} from 'opchan-core/delegation';
+import { localDatabase } from 'opchan-core/database/LocalDatabase';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 
 interface AuthContextType {

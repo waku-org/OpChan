@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react';
 import { useAuth } from '@/hooks/core/useAuth';
-import { DelegationDuration } from '@/lib/delegation';
+import { DelegationDuration } from 'opchan-core/delegation';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
-import { EVerificationStatus } from '@/types/identity';
+import { EVerificationStatus } from 'opchan-core/types/identity';
 
 export interface AuthActionStates {
   isConnecting: boolean;

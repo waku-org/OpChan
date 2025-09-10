@@ -17,7 +17,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useBookmarks } from '@/hooks';
-import { Bookmark, BookmarkType } from '@/types/forum';
+import { Bookmark, BookmarkType } from 'opchan-core/types/forum';
 import {
   Trash2,
   Bookmark as BookmarkIcon,

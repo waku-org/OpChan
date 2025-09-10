@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/contexts/useAuth';
 import { useModeration } from '@/contexts/ModerationContext';
-import { Cell, Post, Comment, UserVerificationStatus } from '@/types/forum';
-import { EVerificationStatus } from '@/types/identity';
+import { Cell, Post, Comment, UserVerificationStatus } from 'opchan-core/types/forum';
+import { EVerificationStatus } from 'opchan-core/types/identity';
 
 export interface CellWithStats extends Cell {
   postCount: number;

@@ -9,9 +9,9 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useAuth, useAuthActions } from '@/hooks';
-import { EVerificationStatus } from '@/types/identity';
+import { EVerificationStatus } from 'opchan-core/types/identity';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { OrdinalDetails, EnsDetails } from '@/types/identity';
+import { OrdinalDetails, EnsDetails } from 'opchan-core/types/identity';
 
 interface VerificationStepProps {
   onComplete: () => void;

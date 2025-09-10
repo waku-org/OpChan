@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/hooks/core/useAuth';
 import { usePermissions } from '@/hooks/core/usePermissions';
-import { Cell, Post, Comment } from '@/types/forum';
+import { Cell, Post, Comment } from 'opchan-core/types/forum';
 import { useToast } from '@/components/ui/use-toast';
 
 export interface ForumActionStates {

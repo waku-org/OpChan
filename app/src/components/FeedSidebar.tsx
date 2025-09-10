@@ -5,7 +5,7 @@ import { TrendingUp, Users, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useForumData, useAuth } from '@/hooks';
-import { EVerificationStatus } from '@/types/identity';
+import { EVerificationStatus } from 'opchan-core/types/identity';
 import { CypherImage } from '@/components/ui/CypherImage';
 import { useUserDisplay } from '@/hooks';
 

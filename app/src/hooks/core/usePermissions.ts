@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAuth } from './useAuth';
 import { useForumData } from './useForumData';
-import { EVerificationStatus } from '@/types/identity';
+import { EVerificationStatus } from 'opchan-core/types/identity';
 
 export interface Permission {
   canPost: boolean;

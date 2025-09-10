@@ -1,5 +1,3 @@
-//TODO: research into having signatures somehow?
-//TODO research: **each message sent should not be able to be spoofed**
 /**
  * Reference:
  * https://www.notion.so/Logos-Forum-PoC-Waku-Powered-Opchan-1968f96fb65c8078b343c43429d66d0a#1968f96fb65c8025a929c2c9255a57c4
@@ -26,9 +24,8 @@ import Dashboard from './pages/Dashboard';
 import Index from './pages/Index';
 import ProfilePage from './pages/ProfilePage';
 import BookmarksPage from './pages/BookmarksPage';
-import { appkitConfig } from './lib/wallet/config';
+import { appkitConfig, config } from 'opchan-core/wallet/config';
 import { WagmiProvider } from 'wagmi';
-import { config } from './lib/wallet/config';
 import { AppKitProvider } from '@reown/appkit/react';
 
 // Create a client
