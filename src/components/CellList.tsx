@@ -27,6 +27,7 @@ import { ModerationToggle } from './ui/moderation-toggle';
 import { sortCells, SortOption } from '@/lib/utils/sorting';
 import { Cell } from '@/types/forum';
 import { usePending } from '@/hooks/usePending';
+import { ShareButton } from './ui/ShareButton';
 
 // Empty State Component
 const EmptyState: React.FC<{ canCreateCell: boolean }> = ({
@@ -125,6 +126,11 @@ const CellItem: React.FC<{ cell: Cell }> = ({ cell }) => {
                 {cell.activeMemberCount || 0} members
               </span>
             </div>
+            <ShareButton
+              size='sm'
+              url={`${window.location.origin}/cell/${cell.id}`}
+              title={cell.name}
+            />
           </div>
         </div>
       </div>

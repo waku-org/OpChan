@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LinkRenderer } from '@/components/ui/link-renderer';
+import { ShareButton } from '@/components/ui/ShareButton';
 import {
   ArrowLeft,
   MessageSquare,
@@ -323,6 +324,15 @@ const PostList = () => {
                         address={post.author}
                         className="text-xs"
                         showBadge={false}
+                      />
+                      <ShareButton
+                        url={`${window.location.origin}/post/${post.id}`}
+                        title={post.title}
+                        description={post.content}
+                        size="sm"
+                        variant="ghost"
+                        className="text-cyber-neutral"
+                        showText={false}
                       />
                     </div>
                   </Link>

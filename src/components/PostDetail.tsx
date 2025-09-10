@@ -27,6 +27,7 @@ import { BookmarkButton } from './ui/bookmark-button';
 import { LinkRenderer } from './ui/link-renderer';
 import CommentCard from './CommentCard';
 import { usePending, usePendingVote } from '@/hooks/usePending';
+import { ShareButton } from './ui/ShareButton';
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -242,6 +243,11 @@ const PostDetail = () => {
                   size="lg"
                   variant="ghost"
                   showText={true}
+                />
+                <ShareButton
+                  size='lg'
+                  url={`${window.location.origin}/post/${post.id}`}
+                  title={post.title}
                 />
               </div>
               <p className="text-sm whitespace-pre-wrap break-words">

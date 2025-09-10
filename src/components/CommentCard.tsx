@@ -18,6 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ShareButton } from '@/components/ui/ShareButton';
 
 interface CommentCardProps {
   comment: Comment;
@@ -126,13 +127,20 @@ const CommentCard: React.FC<CommentCardProps> = ({
               </span>
               <PendingBadge id={comment.id} />
             </div>
-            <BookmarkButton
-              isBookmarked={isBookmarked}
-              loading={bookmarkLoading}
-              onClick={handleBookmark}
-              size="sm"
-              variant="ghost"
-            />
+            <div className="flex items-center gap-2">
+              <ShareButton
+                size='sm'
+                url={`${window.location.origin}/post/${postId}#comment-${comment.id}`}
+                title={comment.content.substring(0, 50) + (comment.content.length > 50 ? '...' : '')}
+              />
+              <BookmarkButton
+                isBookmarked={isBookmarked}
+                loading={bookmarkLoading}
+                onClick={handleBookmark}
+                size="sm"
+                variant="ghost"
+              />
+            </div>
           </div>
 
           <p className="text-sm break-words mb-2">
