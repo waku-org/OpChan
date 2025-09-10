@@ -2,7 +2,7 @@
   "name": "opchan",
   "private": true,
   "version": "0.1.0",
-  "description": "A decentralized forum built on Bitcoin Ordinals and Waku protocol",
+  "description": "A decentralized forum built on Waku.",
   "type": "module",
   "scripts": {
     "dev": "vite",
