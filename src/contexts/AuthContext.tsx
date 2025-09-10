@@ -15,7 +15,6 @@ import {
 import { localDatabase } from '@/lib/database/LocalDatabase';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 
-// Removed VerificationStatus type - using EVerificationStatus enum directly
 
 interface AuthContextType {
   currentUser: User | null;

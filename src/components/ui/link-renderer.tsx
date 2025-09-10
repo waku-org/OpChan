@@ -9,13 +9,16 @@ interface LinkRendererProps {
  * Component that renders text with clickable links
  * Detects URLs and converts them to clickable <a> tags
  */
-export const LinkRenderer: React.FC<LinkRendererProps> = ({ text, className }) => {
+export const LinkRenderer: React.FC<LinkRendererProps> = ({
+  text,
+  className,
+}) => {
   // URL regex pattern that matches http/https URLs
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  
+
   // Split text by URLs and create array of text segments and URLs
   const parts = text.split(urlRegex);
-  
+
   return (
     <span className={className}>
       {parts.map((part, index) => {

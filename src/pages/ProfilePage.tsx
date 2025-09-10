@@ -59,7 +59,9 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [callSign, setCallSign] = useState('');
-  const [displayPreference, setDisplayPreference] = useState(EDisplayPreference.WALLET_ADDRESS);
+  const [displayPreference, setDisplayPreference] = useState(
+    EDisplayPreference.WALLET_ADDRESS
+  );
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
 
   // Initialize and update local state when user data changes
@@ -67,8 +69,11 @@ export default function ProfilePage() {
     if (currentUser) {
       // Use the same data source as the display (userInfo) for consistency
       const currentCallSign = userInfo.callSign || currentUser.callSign || '';
-      const currentDisplayPreference = userInfo.displayPreference || currentUser.displayPreference || EDisplayPreference.WALLET_ADDRESS;
-      
+      const currentDisplayPreference =
+        userInfo.displayPreference ||
+        currentUser.displayPreference ||
+        EDisplayPreference.WALLET_ADDRESS;
+
       setCallSign(currentCallSign);
       setDisplayPreference(currentDisplayPreference);
     }
@@ -174,8 +179,11 @@ export default function ProfilePage() {
   const handleCancel = () => {
     // Reset to the same data source as display for consistency
     const currentCallSign = userInfo.callSign || currentUser.callSign || '';
-    const currentDisplayPreference = userInfo.displayPreference || currentUser.displayPreference || EDisplayPreference.WALLET_ADDRESS;
-    
+    const currentDisplayPreference =
+      userInfo.displayPreference ||
+      currentUser.displayPreference ||
+      EDisplayPreference.WALLET_ADDRESS;
+
     setCallSign(currentCallSign);
     setDisplayPreference(currentDisplayPreference);
     setIsEditing(false);

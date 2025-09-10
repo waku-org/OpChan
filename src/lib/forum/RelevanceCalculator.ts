@@ -284,18 +284,12 @@ export class RelevanceCalculator {
       return { bonus: 0, isVerified: false };
     }
 
-    // Apply different bonuses based on verification level
+    // Apply different bonuses based on verification signals from UserVerificationStatus
+    // Full bonus if author owns ENS or Ordinal. Otherwise, if merely verified (wallet connected), apply basic bonus
     let bonus = 0;
-    if (
-      authorStatus?.verificationStatus ===
-      EVerificationStatus.ENS_ORDINAL_VERIFIED
-    ) {
-      // Full bonus for ENS/Ordinal owners
+    if (authorStatus?.hasENS || authorStatus?.hasOrdinal) {
       bonus = score * (RelevanceCalculator.VERIFICATION_BONUS - 1);
-    } else if (
-      authorStatus?.verificationStatus === EVerificationStatus.WALLET_CONNECTED
-    ) {
-      // Lower bonus for basic verified users
+    } else if (authorStatus?.isVerified) {
       bonus = score * (RelevanceCalculator.BASIC_VERIFICATION_BONUS - 1);
     }
 
