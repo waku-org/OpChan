@@ -148,7 +148,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
 
         {/* Content column */}
         <div className="flex-1 p-3">
-          <Link to={`/post/${post.id}`} className="block hover:opacity-80">
+          <div className="block hover:opacity-80">
             {/* Post metadata */}
             <div className="flex items-center text-xs text-cyber-neutral mb-2 space-x-2">
               <span className="font-medium text-cyber-accent">
@@ -181,15 +181,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
               )}
             </div>
 
-            {/* Post title */}
-            <h2 className="text-lg font-semibold text-glow mb-2 hover:text-cyber-accent transition-colors">
-              {post.title}
-            </h2>
+            {/* Post title and content - clickable to navigate to post */}
+            <Link to={`/post/${post.id}`} className="block">
+              <h2 className="text-lg font-semibold text-glow mb-2 hover:text-cyber-accent transition-colors">
+                {post.title}
+              </h2>
 
-            {/* Post content preview */}
-            <p className="text-cyber-neutral text-sm leading-relaxed mb-3">
-              <LinkRenderer text={contentPreview} />
-            </p>
+              {/* Post content preview */}
+              <p className="text-cyber-neutral text-sm leading-relaxed mb-3">
+                <LinkRenderer text={contentPreview} />
+              </p>
+            </Link>
 
             {/* Post actions */}
             <div className="flex items-center justify-between text-xs text-cyber-neutral">
@@ -220,7 +222,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
                 variant="ghost"
               />
             </div>
-          </Link>
+          </div>
         </div>
       </div>
     </div>
