@@ -7,6 +7,7 @@ import {
   usePermissions,
   useUserVotes,
   useAuth,
+  usePostComments,
 } from '@/hooks';
 import { EVerificationStatus } from '@/types/identity';
 import { Button } from '@/components/ui/button';
@@ -325,6 +326,11 @@ const PostList = () => {
                         className="text-xs"
                         showBadge={false}
                       />
+                      <span>•</span>
+                      <span>
+                        <MessageSquare className="inline w-3 h-3 mr-1" />
+                        {usePostComments(post.id).totalCount} comments
+                      </span>
                       <ShareButton
                         url={`${window.location.origin}/post/${post.id}`}
                         title={post.title}
