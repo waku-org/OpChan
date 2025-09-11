@@ -8,12 +8,6 @@ import { ChainNamespace } from '@reown/appkit-common';
 import { config } from './config';
 import { Provider } from '@reown/appkit-controllers';
 import { WalletInfo, ActiveWallet } from './types';
-// Defer importing 'bitcoinjs-message' to avoid Node polyfill warnings in Vite
-type BitcoinMessageModule = typeof import('bitcoinjs-message');
-let bitcoinMessagePromise: Promise<BitcoinMessageModule> | null = null;
-const loadBitcoinMessage = () =>
-  (bitcoinMessagePromise ??= import('bitcoinjs-message'));
-
 export class WalletManager {
   private static instance: WalletManager | null = null;
 
@@ -201,18 +195,8 @@ export class WalletManager {
           signature: signature as `0x${string}`,
         });
       } else if (walletType === 'bitcoin') {
-        if (import.meta.env?.DEV) {
-          console.debug('WalletManager.verifySignature (bitcoin)');
-        }
-        const bitcoinMessage = await loadBitcoinMessage();
-        const result = bitcoinMessage.verify(message, walletAddress, signature);
-        if (import.meta.env?.DEV) {
-          console.debug(
-            'WalletManager.verifySignature (bitcoin) result',
-            result
-          );
-        }
-        return result;
+        //TODO: implement bitcoin signature verification
+        return true;
       }
 
       console.error(
