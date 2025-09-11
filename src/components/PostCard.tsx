@@ -15,7 +15,7 @@ import { AuthorDisplay } from '@/components/ui/author-display';
 import { BookmarkButton } from '@/components/ui/bookmark-button';
 import { LinkRenderer } from '@/components/ui/link-renderer';
 import { usePending, usePendingVote } from '@/hooks/usePending';
-import { useToast } from '@/components/ui/use-toast';
+import { ShareButton } from '@/components/ui/ShareButton';
 
 interface PostCardProps {
   post: Post;
@@ -32,7 +32,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
     loading: bookmarkLoading,
     toggleBookmark,
   } = usePostBookmark(post, post.cellId);
-  const { toast } = useToast();
 
   // ✅ Get pre-computed cell data
   const cell = cellsWithStats.find(c => c.id === post.cellId);
@@ -71,33 +70,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
     await toggleBookmark();
   };
 
-  const handleShare = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const postUrl = `${window.location.origin}/post/${post.id}`;
-
-    try {
-      await navigator.clipboard.writeText(postUrl);
-      toast({
-        title: 'Link copied!',
-        description: 'Post link has been copied to your clipboard.',
-      });
-    } catch {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = postUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-
-      toast({
-        title: 'Link copied!',
-        description: 'Post link has been copied to your clipboard.',
-      });
-    }
-  };
 
   return (
     <div className="thread-card mb-2">
@@ -207,14 +179,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
                     syncing…
                   </span>
                 )}
-                <button
-                  onClick={handleShare}
-                  className="hover:text-cyber-accent transition-colors flex items-center gap-1"
-                  title="Copy link"
-                >
-                  <Clipboard size={14} />
-                  Share
-                </button>
+                <ShareButton
+                  size='sm'
+                  url={`${window.location.origin}/post/${post.id}`}
+                  title={post.title}
+                />
               </div>
               <BookmarkButton
                 isBookmarked={isBookmarked}

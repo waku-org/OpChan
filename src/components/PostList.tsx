@@ -7,6 +7,7 @@ import {
   usePermissions,
   useUserVotes,
   useAuth,
+  usePostComments,
 } from '@/hooks';
 import { EVerificationStatus } from '@/types/identity';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LinkRenderer } from '@/components/ui/link-renderer';
+import { ShareButton } from '@/components/ui/ShareButton';
 import {
   ArrowLeft,
   MessageSquare,
@@ -333,6 +335,20 @@ const PostList = () => {
                         address={post.author}
                         className="text-xs"
                         showBadge={false}
+                      />
+                      <span>•</span>
+                      <span>
+                        <MessageSquare className="inline w-3 h-3 mr-1" />
+                        {usePostComments(post.id).totalCount} comments
+                      </span>
+                      <ShareButton
+                        url={`${window.location.origin}/post/${post.id}`}
+                        title={post.title}
+                        description={post.content}
+                        size="sm"
+                        variant="ghost"
+                        className="text-cyber-neutral"
+                        showText={false}
                       />
                     </div>
                   </Link>
