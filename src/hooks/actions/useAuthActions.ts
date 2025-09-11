@@ -145,7 +145,7 @@ export function useAuthActions(): AuthActions {
       return false;
     }
 
-    if (verificationStatus !== EVerificationStatus.WALLET_UNCONNECTED) {
+    if (verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
       toast({
         title: 'Already Verified',
         description: 'Your wallet is already verified.',

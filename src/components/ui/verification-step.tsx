@@ -54,10 +54,13 @@ export function VerificationStep({
       verificationResult.message.includes('Checking ownership')
     ) {
       // Check if actual ownership was verified
+      // Treat centralized verification status as source of truth
+      const isOwnerVerified =
+        verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
       const hasOwnership =
         walletType === 'bitcoin'
-          ? !!currentUser?.ordinalDetails
-          : !!currentUser?.ensDetails;
+          ? isOwnerVerified && !!currentUser?.ordinalDetails
+          : isOwnerVerified && !!currentUser?.ensDetails;
 
       if (hasOwnership) {
         setVerificationResult({
@@ -81,7 +84,7 @@ export function VerificationStep({
         });
       }
     }
-  }, [currentUser, verificationResult, walletType]);
+  }, [currentUser, verificationResult, walletType, verificationStatus]);
 
   const handleVerify = async () => {
     if (!currentUser) return;

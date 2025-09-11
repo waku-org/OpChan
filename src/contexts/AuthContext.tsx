@@ -212,10 +212,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                       EVerificationStatus.ENS_ORDINAL_VERIFIED
                     );
                     await saveUser(updatedUser);
+                    await localDatabase.upsertUserIdentity(updatedUser.address, {
+                      ensName: walletInfo.ensName,
+                      verificationStatus:
+                        EVerificationStatus.ENS_ORDINAL_VERIFIED,
+                      lastUpdated: Date.now(),
+                    });
                   } else {
                     setCurrentUser(newUser);
                     setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
                     await saveUser(newUser);
+                    await localDatabase.upsertUserIdentity(newUser.address, {
+                      verificationStatus: EVerificationStatus.WALLET_CONNECTED,
+                      lastUpdated: Date.now(),
+                    });
                   }
                 })
                 .catch(async () => {
@@ -223,17 +233,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   setCurrentUser(newUser);
                   setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
                   await saveUser(newUser);
+                  await localDatabase.upsertUserIdentity(newUser.address, {
+                    verificationStatus: EVerificationStatus.WALLET_CONNECTED,
+                    lastUpdated: Date.now(),
+                  });
                 });
             } catch {
               // WalletManager not ready, fallback to basic verification
               setCurrentUser(newUser);
               setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
               await saveUser(newUser);
+              await localDatabase.upsertUserIdentity(newUser.address, {
+                verificationStatus: EVerificationStatus.WALLET_CONNECTED,
+                lastUpdated: Date.now(),
+              });
             }
           } else {
             setCurrentUser(newUser);
             setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);
             await saveUser(newUser);
+            await localDatabase.upsertUserIdentity(newUser.address, {
+              verificationStatus: EVerificationStatus.WALLET_CONNECTED,
+              lastUpdated: Date.now(),
+            });
           }
 
           const chainName = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
@@ -318,6 +340,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedUser = await verifyUserOwnership(currentUser);
       setCurrentUser(updatedUser);
       await saveUser(updatedUser);
+
+      // Persist centralized identity (ENS/verification) for display everywhere
+      await localDatabase.upsertUserIdentity(updatedUser.address, {
+        ensName: updatedUser.ensDetails?.ensName,
+        ordinalDetails: updatedUser.ordinalDetails,
+        verificationStatus: updatedUser.verificationStatus,
+        lastUpdated: Date.now(),
+      });
 
       // Update verification status
       setVerificationStatus(getVerificationStatus(updatedUser));

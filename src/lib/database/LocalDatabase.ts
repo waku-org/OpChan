@@ -622,6 +622,39 @@ export class LocalDatabase {
   public getAllBookmarks(): Bookmark[] {
     return Object.values(this.cache.bookmarks);
   }
+
+  /**
+   * Upsert a user identity record into the centralized cache and IndexedDB.
+   * Use this to keep ENS/verification status in one place.
+   */
+  public async upsertUserIdentity(
+    address: string,
+    record: Partial<UserIdentityCache[string]> & { lastUpdated?: number }
+  ): Promise<void> {
+    const existing: UserIdentityCache[string] =
+      this.cache.userIdentities[address] || {
+        ensName: undefined,
+        ordinalDetails: undefined,
+        callSign: undefined,
+        displayPreference: EVerificationStatus.WALLET_UNCONNECTED
+          ? (undefined as never)
+          : (undefined as never),
+        // We'll set displayPreference when we receive a profile update; leave as
+        // WALLET_ADDRESS by default for correctness.
+        // Casting below ensures the object satisfies the interface at compile time.
+        lastUpdated: 0,
+        verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
+      } as unknown as UserIdentityCache[string];
+
+    const merged: UserIdentityCache[string] = {
+      ...existing,
+      ...record,
+      lastUpdated: Math.max(existing.lastUpdated ?? 0, record.lastUpdated ?? Date.now()),
+    } as UserIdentityCache[string];
+
+    this.cache.userIdentities[address] = merged;
+    this.put(STORE.USER_IDENTITIES, { address, ...merged });
+  }
 }
 
 export const localDatabase = new LocalDatabase();
