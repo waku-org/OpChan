@@ -124,6 +124,16 @@ const PostList = () => {
     }
   };
 
+  // Handle keyboard shortcuts
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      if (!isCreatingPost && newPostContent.trim() && newPostTitle.trim()) {
+        handleCreatePost(e as React.FormEvent);
+      }
+    }
+  };
+
   const handleVotePost = async (postId: string, isUpvote: boolean) => {
     // ✅ Permission checking handled in hook
     await votePost(postId, isUpvote);
@@ -198,7 +208,7 @@ const PostList = () => {
 
       {canPost && (
         <div className="section-spacing">
-          <form onSubmit={handleCreatePost}>
+          <form onSubmit={handleCreatePost} onKeyDown={handleKeyDown}>
             <h2 className="text-sm font-bold mb-2 flex items-center gap-1">
               <MessageSquare className="w-4 h-4" />
               New Thread

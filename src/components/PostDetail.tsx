@@ -101,6 +101,16 @@ const PostDetail = () => {
     }
   };
 
+  // Handle keyboard shortcuts
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      if (!isCreatingComment && newComment.trim()) {
+        handleCreateComment(e as React.FormEvent);
+      }
+    }
+  };
+
   const handleVotePost = async (isUpvote: boolean) => {
     // ✅ Permission checking handled in hook
     await votePost(post.id, isUpvote);
@@ -255,7 +265,7 @@ const PostDetail = () => {
       {/* Comment Form */}
       {canComment && (
         <div className="mb-8">
-          <form onSubmit={handleCreateComment}>
+          <form onSubmit={handleCreateComment} onKeyDown={handleKeyDown}>
             <h2 className="text-sm font-bold mb-2 flex items-center gap-1">
               <MessageCircle className="w-4 h-4" />
               Add a comment
