@@ -129,9 +129,12 @@ const CommentCard: React.FC<CommentCardProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <ShareButton
-                size='sm'
+                size="sm"
                 url={`${window.location.origin}/post/${postId}#comment-${comment.id}`}
-                title={comment.content.substring(0, 50) + (comment.content.length > 50 ? '...' : '')}
+                title={
+                  comment.content.substring(0, 50) +
+                  (comment.content.length > 50 ? '...' : '')
+                }
               />
               <BookmarkButton
                 isBookmarked={isBookmarked}

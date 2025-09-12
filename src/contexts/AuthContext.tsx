@@ -118,13 +118,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return {
         ...user,
-        ensDetails: identity.ensName ? { ensName: identity.ensName } : undefined,
+        ensDetails: identity.ensName
+          ? { ensName: identity.ensName }
+          : undefined,
         ordinalDetails: identity.ordinalDetails,
         verificationStatus: identity.verificationStatus,
         lastChecked: Date.now(),
       };
     } catch (error) {
-      console.error('Error verifying ownership via UserIdentityService:', error);
+      console.error(
+        'Error verifying ownership via UserIdentityService:',
+        error
+      );
       return {
         ...user,
         ensDetails: undefined,
@@ -210,12 +215,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                       EVerificationStatus.ENS_ORDINAL_VERIFIED
                     );
                     await saveUser(updatedUser);
-                    await localDatabase.upsertUserIdentity(updatedUser.address, {
-                      ensName: walletInfo.ensName,
-                      verificationStatus:
-                        EVerificationStatus.ENS_ORDINAL_VERIFIED,
-                      lastUpdated: Date.now(),
-                    });
+                    await localDatabase.upsertUserIdentity(
+                      updatedUser.address,
+                      {
+                        ensName: walletInfo.ensName,
+                        verificationStatus:
+                          EVerificationStatus.ENS_ORDINAL_VERIFIED,
+                        lastUpdated: Date.now(),
+                      }
+                    );
                   } else {
                     setCurrentUser(newUser);
                     setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);

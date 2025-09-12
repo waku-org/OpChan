@@ -100,7 +100,9 @@ export class WalletManager {
   /**
    * Resolve Ordinal details for a Bitcoin address
    */
-  static async resolveOperatorOrdinals(address: string): Promise<Inscription[] | null> {
+  static async resolveOperatorOrdinals(
+    address: string
+  ): Promise<Inscription[] | null> {
     try {
       return await ordinals.getOrdinalDetails(address);
     } catch (error) {

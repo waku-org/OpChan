@@ -7,7 +7,7 @@ import {
   usePermissions,
   useUserVotes,
   useAuth,
-  usePostComments,
+  useForumData,
 } from '@/hooks';
 import { EVerificationStatus } from '@/types/identity';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,7 @@ const PostList = () => {
   const { canPost, canVote, canModerate } = usePermissions();
   const userVotes = useUserVotes();
   const { currentUser, verificationStatus } = useAuth();
+  const { commentsByPost } = useForumData();
 
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
@@ -339,7 +340,7 @@ const PostList = () => {
                       <span>•</span>
                       <span>
                         <MessageSquare className="inline w-3 h-3 mr-1" />
-                        {usePostComments(post.id).totalCount} comments
+                        {commentsByPost[post.id]?.length || 0} comments
                       </span>
                       <ShareButton
                         url={`${window.location.origin}/post/${post.id}`}

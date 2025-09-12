@@ -15,8 +15,6 @@ interface ShareButtonProps {
 
 export function ShareButton({
   url,
-  title,
-  description = 'Check out this post',
   size = 'sm',
   variant = 'ghost',
   className,
@@ -73,9 +71,7 @@ export function ShareButton({
       title="Copy link"
     >
       <Share2 size={iconSize[size]} />
-      {showText && (
-        <span className="ml-2 text-xs">Share</span>
-      )}
+      {showText && <span className="ml-2 text-xs">Share</span>}
     </Button>
   );
 }

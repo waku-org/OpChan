@@ -55,21 +55,9 @@ export function WalletWizard({
     onOpenChange(false);
   };
 
-  // Business logic: determine step status based on current wizard step
+  // Consolidated step status logic
   const getStepStatus = (step: WizardStep) => {
-    if (step < currentStep) {
-      return 'complete';
-    } else if (step === currentStep) {
-      return 'current';
-    } else {
-      return 'disabled';
-    }
-  };
-
-  const renderStepIcon = (step: WizardStep) => {
-    const status = getStepStatus(step);
-
-    // Check if step is actually completed based on auth state
+    // Check actual completion status first
     const isActuallyComplete = (step: WizardStep): boolean => {
       switch (step) {
         case 1:
@@ -83,7 +71,19 @@ export function WalletWizard({
       }
     };
 
-    if (status === 'complete' || isActuallyComplete(step)) {
+    if (isActuallyComplete(step)) {
+      return 'complete';
+    } else if (step === currentStep) {
+      return 'current';
+    } else {
+      return 'disabled';
+    }
+  };
+
+  const renderStepIcon = (step: WizardStep) => {
+    const status = getStepStatus(step);
+
+    if (status === 'complete') {
       return <CheckCircle className="h-5 w-5 text-green-500" />;
     } else if (status === 'current') {
       return <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />;
@@ -107,7 +107,7 @@ export function WalletWizard({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md border-neutral-800 bg-black text-white">
+      <DialogContent className="sm:max-w-lg border-neutral-800 bg-black text-white">
         <DialogHeader>
           <DialogTitle className="text-xl">Setup Your Account</DialogTitle>
           <DialogDescription className="text-neutral-400">
@@ -116,21 +116,16 @@ export function WalletWizard({
         </DialogHeader>
 
         {/* Progress Indicator */}
-        <div className="flex items-center justify-between mb-6">
-          {[1, 2, 3].map(step => (
+        <div className="flex items-center justify-center mb-8">
+          {[1, 2, 3].map((step, index) => (
             <div key={step} className="flex items-center">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col items-center gap-2">
                 {renderStepIcon(step as WizardStep)}
                 <span
-                  className={`text-sm ${
+                  className={`text-sm font-medium ${
                     getStepStatus(step as WizardStep) === 'current'
-                      ? 'text-blue-500 font-medium'
-                      : getStepStatus(step as WizardStep) === 'complete' ||
-                          (step === 1 && isAuthenticated) ||
-                          (step === 2 &&
-                            verificationStatus !==
-                              EVerificationStatus.WALLET_UNCONNECTED) ||
-                          (step === 3 && delegationStatus.isValid)
+                      ? 'text-blue-500'
+                      : getStepStatus(step as WizardStep) === 'complete'
                         ? 'text-green-500'
                         : 'text-gray-400'
                   }`}
@@ -138,14 +133,10 @@ export function WalletWizard({
                   {getStepTitle(step as WizardStep)}
                 </span>
               </div>
-              {step < 3 && (
+              {index < 2 && (
                 <div
-                  className={`w-8 h-px mx-2 ${
-                    getStepStatus(step as WizardStep) === 'complete' ||
-                    (step === 1 && isAuthenticated) ||
-                    (step === 2 &&
-                      verificationStatus !==
-                        EVerificationStatus.WALLET_UNCONNECTED)
+                  className={`w-16 h-px mx-4 ${
+                    getStepStatus(step as WizardStep) === 'complete'
                       ? 'bg-green-500'
                       : 'bg-gray-600'
                   }`}
@@ -155,8 +146,8 @@ export function WalletWizard({
           ))}
         </div>
 
-        {/* Step Content - Fixed height container */}
-        <div className="h-[400px] flex flex-col">
+        {/* Step Content - Flexible height container */}
+        <div className="min-h-[400px] flex flex-col">
           {currentStep === 1 && (
             <WalletConnectionStep
               onComplete={() => handleStepComplete(1)}
@@ -185,7 +176,7 @@ export function WalletWizard({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center pt-4 border-t border-neutral-700">
+        <div className="flex justify-between items-center pt-6 mt-4 border-t border-neutral-700">
           <p className="text-xs text-neutral-500">Step {currentStep} of 3</p>
           {currentStep > 1 && (
             <Button
@@ -193,7 +184,7 @@ export function WalletWizard({
               size="sm"
               onClick={() => setCurrentStep((currentStep - 1) as WizardStep)}
               disabled={isLoading}
-              className="text-neutral-400 hover:text-white"
+              className="text-neutral-400 hover:text-white hover:bg-neutral-800"
             >
               Back
             </Button>

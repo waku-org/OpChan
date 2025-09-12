@@ -118,7 +118,11 @@ export function CreateCellDialog({
           <DialogTitle className="text-glow">Create New Cell</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleKeyDown} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            onKeyDown={handleKeyDown}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="title"

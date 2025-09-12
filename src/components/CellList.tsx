@@ -127,7 +127,7 @@ const CellItem: React.FC<{ cell: Cell }> = ({ cell }) => {
               </span>
             </div>
             <ShareButton
-              size='sm'
+              size="sm"
               url={`${window.location.origin}/cell/${cell.id}`}
               title={cell.name}
             />
