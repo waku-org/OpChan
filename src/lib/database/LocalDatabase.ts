@@ -121,7 +121,7 @@ export class LocalDatabase {
   public async clearAll(): Promise<void> {
     // Clear in-memory cache
     this.clear();
-    
+
     // Clear all IndexedDB stores
     if (!this.db) return;
 
@@ -140,7 +140,7 @@ export class LocalDatabase {
     ];
 
     const tx = this.db.transaction(storeNames, 'readwrite');
-    
+
     await Promise.all(
       storeNames.map(storeName => {
         return new Promise<void>((resolve, reject) => {
@@ -632,7 +632,8 @@ export class LocalDatabase {
     record: Partial<UserIdentityCache[string]> & { lastUpdated?: number }
   ): Promise<void> {
     const existing: UserIdentityCache[string] =
-      this.cache.userIdentities[address] || {
+      this.cache.userIdentities[address] ||
+      ({
         ensName: undefined,
         ordinalDetails: undefined,
         callSign: undefined,
@@ -644,12 +645,15 @@ export class LocalDatabase {
         // Casting below ensures the object satisfies the interface at compile time.
         lastUpdated: 0,
         verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
-      } as unknown as UserIdentityCache[string];
+      } as unknown as UserIdentityCache[string]);
 
     const merged: UserIdentityCache[string] = {
       ...existing,
       ...record,
-      lastUpdated: Math.max(existing.lastUpdated ?? 0, record.lastUpdated ?? Date.now()),
+      lastUpdated: Math.max(
+        existing.lastUpdated ?? 0,
+        record.lastUpdated ?? Date.now()
+      ),
     } as UserIdentityCache[string];
 
     this.cache.userIdentities[address] = merged;

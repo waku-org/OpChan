@@ -255,7 +255,7 @@ const PostDetail = () => {
                   showText={true}
                 />
                 <ShareButton
-                  size='lg'
+                  size="lg"
                   url={`${window.location.origin}/post/${post.id}`}
                   title={post.title}
                 />

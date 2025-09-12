@@ -293,7 +293,7 @@ const Header = () => {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <DropdownMenuItem
-                            onSelect={(e) => e.preventDefault()}
+                            onSelect={e => e.preventDefault()}
                             className="flex items-center space-x-2 text-orange-400 focus:text-orange-400"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -306,7 +306,8 @@ const Header = () => {
                               Clear Local Database
                             </AlertDialogTitle>
                             <AlertDialogDescription className="text-cyber-neutral">
-                              This will permanently delete all locally stored data including:
+                              This will permanently delete all locally stored
+                              data including:
                               <br />• Posts and comments
                               <br />• User identities and preferences
                               <br />• Bookmarks and votes

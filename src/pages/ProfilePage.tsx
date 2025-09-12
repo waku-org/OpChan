@@ -277,7 +277,9 @@ export default function ProfilePage() {
                           {userInfo.displayName}
                         </div>
                         <div className="text-sm text-cyber-neutral">
-                          {currentUser.ensDetails?.ensName || 'No ENS name'}
+                          {userInfo.ordinalDetails || currentUser.ordinalDetails?.ordinalDetails
+                            ? `Ordinal: ${userInfo.ordinalDetails || currentUser.ordinalDetails?.ordinalDetails}`
+                            : currentUser.ensDetails?.ensName || 'No ENS name'}
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           {getVerificationIcon()}

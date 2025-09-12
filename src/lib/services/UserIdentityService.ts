@@ -8,6 +8,7 @@ import {
 import { MessageService } from './MessageService';
 import messageManager from '@/lib/waku';
 import { localDatabase } from '@/lib/database/LocalDatabase';
+import { WalletManager } from '@/lib/wallet';
 
 export interface UserIdentity {
   address: string;
@@ -152,6 +153,29 @@ export class UserIdentityService {
       };
     }
 
+    return identity;
+  }
+
+  /**
+   * Force a fresh identity resolution bypassing caches and LocalDatabase.
+   * Useful for explicit verification flows where we must hit upstream resolvers.
+   */
+  async getUserIdentityFresh(address: string): Promise<UserIdentity | null> {
+    if (import.meta.env?.DEV) {
+      console.debug('UserIdentityService: fresh resolve requested');
+    }
+    const identity = await this.resolveUserIdentity(address);
+    if (identity) {
+      // Update in-memory cache to reflect the fresh result
+      this.userIdentityCache[address] = {
+        ensName: identity.ensName,
+        ordinalDetails: identity.ordinalDetails,
+        callSign: identity.callSign,
+        displayPreference: identity.displayPreference,
+        lastUpdated: identity.lastUpdated,
+        verificationStatus: identity.verificationStatus,
+      };
+    }
     return identity;
   }
 
@@ -329,8 +353,19 @@ export class UserIdentityService {
     address: string
   ): Promise<{ ordinalId: string; ordinalDetails: string } | null> {
     try {
-      //TODO: add Ordinal API call
-      console.log('resolveOrdinalDetails', address);
+      if (address.startsWith('0x')) {
+        return null;
+      }
+
+      const inscriptions = await WalletManager.resolveOperatorOrdinals(address);
+      if (Array.isArray(inscriptions) && inscriptions.length > 0) {
+        const first = inscriptions[0]!;
+        return {
+          ordinalId: first.inscription_id,
+          ordinalDetails:
+            first.parent_inscription_id || 'Operator badge present',
+        };
+      }
       return null;
     } catch (error) {
       console.error('Failed to resolve Ordinal details:', error);
@@ -375,12 +410,22 @@ export class UserIdentityService {
    */
   private mapVerificationStatus(status: string): EVerificationStatus {
     switch (status) {
+      // Legacy message-cache statuses
       case 'verified-basic':
         return EVerificationStatus.WALLET_CONNECTED;
       case 'verified-owner':
         return EVerificationStatus.ENS_ORDINAL_VERIFIED;
       case 'verifying':
         return EVerificationStatus.WALLET_CONNECTED; // Temporary state during verification
+
+      // Enum string values persisted in LocalDatabase
+      case EVerificationStatus.WALLET_UNCONNECTED:
+        return EVerificationStatus.WALLET_UNCONNECTED;
+      case EVerificationStatus.WALLET_CONNECTED:
+        return EVerificationStatus.WALLET_CONNECTED;
+      case EVerificationStatus.ENS_ORDINAL_VERIFIED:
+        return EVerificationStatus.ENS_ORDINAL_VERIFIED;
+
       default:
         return EVerificationStatus.WALLET_UNCONNECTED;
     }

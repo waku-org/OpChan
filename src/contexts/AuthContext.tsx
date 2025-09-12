@@ -14,6 +14,8 @@ import {
 } from '@/lib/delegation';
 import { localDatabase } from '@/lib/database/LocalDatabase';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
+import { MessageService } from '@/lib/services/MessageService';
+import { UserIdentityService } from '@/lib/services/UserIdentityService';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -56,6 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Create manager instances
   const delegationManager = useMemo(() => new DelegationManager(), []);
+  const messageService = useMemo(
+    () => new MessageService(delegationManager),
+    [delegationManager]
+  );
+  const userIdentityService = useMemo(
+    () => new UserIdentityService(messageService),
+    [messageService]
+  );
 
   // Create wallet manager when we have all dependencies
   useEffect(() => {
@@ -89,51 +99,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Helper function for ownership verification
+  // Helper function for ownership verification (via UserIdentityService)
   const verifyUserOwnership = async (user: User): Promise<User> => {
-    if (user.walletType === 'bitcoin') {
-      // TODO: revert when the API is ready
-      // const response = await ordinalApi.getOperatorDetails(user.address);
-      // const hasOperators = response.has_operators;
-      const hasOperators = true;
-
-      return {
-        ...user,
-        ordinalDetails: hasOperators
-          ? { ordinalId: 'mock', ordinalDetails: 'Mock ordinal for testing' }
-          : undefined,
-        verificationStatus: hasOperators
-          ? EVerificationStatus.ENS_ORDINAL_VERIFIED
-          : EVerificationStatus.WALLET_CONNECTED,
-        lastChecked: Date.now(),
-      };
-    } else if (user.walletType === 'ethereum') {
-      try {
-        const walletInfo = WalletManager.hasInstance()
-          ? await WalletManager.getInstance().getWalletInfo()
-          : null;
-        const hasENS = !!walletInfo?.ensName;
-        const ensName = walletInfo?.ensName;
-
-        return {
-          ...user,
-          ensDetails: hasENS && ensName ? { ensName } : undefined,
-          verificationStatus: hasENS
-            ? EVerificationStatus.ENS_ORDINAL_VERIFIED
-            : EVerificationStatus.WALLET_CONNECTED,
-          lastChecked: Date.now(),
-        };
-      } catch (error) {
-        console.error('Error verifying ENS ownership:', error);
+    try {
+      // Force fresh resolution to ensure API call happens during verification
+      const identity = await userIdentityService.getUserIdentityFresh(
+        user.address
+      );
+      if (!identity) {
         return {
           ...user,
           ensDetails: undefined,
+          ordinalDetails: undefined,
           verificationStatus: EVerificationStatus.WALLET_CONNECTED,
           lastChecked: Date.now(),
         };
       }
-    } else {
-      throw new Error('Unknown wallet type');
+
+      return {
+        ...user,
+        ensDetails: identity.ensName
+          ? { ensName: identity.ensName }
+          : undefined,
+        ordinalDetails: identity.ordinalDetails,
+        verificationStatus: identity.verificationStatus,
+        lastChecked: Date.now(),
+      };
+    } catch (error) {
+      console.error(
+        'Error verifying ownership via UserIdentityService:',
+        error
+      );
+      return {
+        ...user,
+        ensDetails: undefined,
+        ordinalDetails: undefined,
+        verificationStatus: EVerificationStatus.WALLET_CONNECTED,
+        lastChecked: Date.now(),
+      };
     }
   };
 
@@ -212,12 +215,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                       EVerificationStatus.ENS_ORDINAL_VERIFIED
                     );
                     await saveUser(updatedUser);
-                    await localDatabase.upsertUserIdentity(updatedUser.address, {
-                      ensName: walletInfo.ensName,
-                      verificationStatus:
-                        EVerificationStatus.ENS_ORDINAL_VERIFIED,
-                      lastUpdated: Date.now(),
-                    });
+                    await localDatabase.upsertUserIdentity(
+                      updatedUser.address,
+                      {
+                        ensName: walletInfo.ensName,
+                        verificationStatus:
+                          EVerificationStatus.ENS_ORDINAL_VERIFIED,
+                        lastUpdated: Date.now(),
+                      }
+                    );
                   } else {
                     setCurrentUser(newUser);
                     setVerificationStatus(EVerificationStatus.WALLET_CONNECTED);

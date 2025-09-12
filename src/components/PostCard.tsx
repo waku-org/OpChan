@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, MessageSquare, Clipboard } from 'lucide-react';
+import { ArrowUp, ArrowDown, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Post } from '@/types/forum';
 import {
@@ -69,7 +69,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
     }
     await toggleBookmark();
   };
-
 
   return (
     <div className="thread-card mb-2">
@@ -180,7 +179,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
                   </span>
                 )}
                 <ShareButton
-                  size='sm'
+                  size="sm"
                   url={`${window.location.origin}/post/${post.id}`}
                   title={post.title}
                 />

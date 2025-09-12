@@ -15,7 +15,9 @@ export default function DebugPage() {
   useEffect(() => {
     // Subscribe to inbound messages from reliable channel
     unsubscribeRef.current = messageManager.onMessageReceived(msg => {
-      setMessages(prev => [{ receivedAt: Date.now(), message: msg }, ...prev].slice(0, 500));
+      setMessages(prev =>
+        [{ receivedAt: Date.now(), message: msg }, ...prev].slice(0, 500)
+      );
     });
 
     return () => {
@@ -47,7 +49,9 @@ export default function DebugPage() {
         Total received: {messages.length}
       </div>
 
-      <div style={{ marginTop: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <div
+        style={{ marginTop: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}
+      >
         {Object.values(MessageType).map(t => (
           <div
             key={t}
@@ -59,13 +63,22 @@ export default function DebugPage() {
               background: 'rgba(51,65,85,0.2)',
             }}
           >
-            <strong style={{ textTransform: 'capitalize' }}>{t}</strong>: {typeCounts[t] || 0}
+            <strong style={{ textTransform: 'capitalize' }}>{t}</strong>:{' '}
+            {typeCounts[t] || 0}
           </div>
         ))}
       </div>
 
-      <div style={{ marginTop: 16, borderTop: '1px solid #334155', paddingTop: 12 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Recent messages</div>
+      <div
+        style={{
+          marginTop: 16,
+          borderTop: '1px solid #334155',
+          paddingTop: 12,
+        }}
+      >
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
+          Recent messages
+        </div>
         <div
           style={{
             display: 'grid',
@@ -79,9 +92,11 @@ export default function DebugPage() {
           <div style={{ fontWeight: 700, color: '#cbd5e1' }}>ID / Author</div>
           <div style={{ fontWeight: 700, color: '#cbd5e1' }}>Msg Timestamp</div>
           {messages.map(m => (
-            <Fragment key={`${m.message.id}:${m.receivedAt}`}> 
+            <Fragment key={`${m.message.id}:${m.receivedAt}`}>
               <div style={{ color: '#e5e7eb' }}>{formatTs(m.receivedAt)}</div>
-              <div style={{ textTransform: 'capitalize', color: '#e5e7eb' }}>{m.message.type}</div>
+              <div style={{ textTransform: 'capitalize', color: '#e5e7eb' }}>
+                {m.message.type}
+              </div>
               <div
                 style={{
                   overflow: 'hidden',
@@ -91,9 +106,12 @@ export default function DebugPage() {
                 }}
                 title={`${m.message.id} — ${m.message.author}`}
               >
-                {m.message.id} — <span style={{ color: '#94a3b8' }}>{m.message.author}</span>
+                {m.message.id} —{' '}
+                <span style={{ color: '#94a3b8' }}>{m.message.author}</span>
               </div>
-              <div style={{ color: '#e5e7eb' }}>{formatTs(m.message.timestamp)}</div>
+              <div style={{ color: '#e5e7eb' }}>
+                {formatTs(m.message.timestamp)}
+              </div>
             </Fragment>
           ))}
         </div>
