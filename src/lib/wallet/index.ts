@@ -1,5 +1,6 @@
 import { UseAppKitAccountReturn } from '@reown/appkit/react';
 import { AppKit } from '@reown/appkit';
+import { ordinals } from '@/lib/services/Ordinals';
 import {
   getEnsName,
   verifyMessage as verifyEthereumMessage,
@@ -8,6 +9,7 @@ import { ChainNamespace } from '@reown/appkit-common';
 import { config } from './config';
 import { Provider } from '@reown/appkit-controllers';
 import { WalletInfo, ActiveWallet } from './types';
+import { Inscription } from 'ordiscan';
 export class WalletManager {
   private static instance: WalletManager | null = null;
 
@@ -91,6 +93,18 @@ export class WalletManager {
       return ensName || null;
     } catch (error) {
       console.warn('Failed to resolve ENS name:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Resolve Ordinal details for a Bitcoin address
+   */
+  static async resolveOperatorOrdinals(address: string): Promise<Inscription[] | null> {
+    try {
+      return await ordinals.getOrdinalDetails(address);
+    } catch (error) {
+      console.warn('Failed to resolve Ordinal details:', error);
       return null;
     }
   }
