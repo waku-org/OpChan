@@ -9,7 +9,6 @@ import {
   useAuth,
   useForumData,
 } from '@/hooks';
-import { EVerificationStatus } from '@/types/identity';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,13 +22,11 @@ import {
   ArrowUp,
   ArrowDown,
   RefreshCw,
-  Eye,
   Shield,
   UserX,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { CypherImage } from './ui/CypherImage';
-import { Badge } from '@/components/ui/badge';
 import { AuthorDisplay } from './ui/author-display';
 import {
   Tooltip,
@@ -55,7 +52,7 @@ const PostList = () => {
   } = useForumActions();
   const { canPost, canVote, canModerate } = usePermissions();
   const userVotes = useUserVotes();
-  const { currentUser, verificationStatus } = useAuth();
+  const { currentUser } = useAuth();
   const { commentsByPost } = useForumData();
 
   const [newPostTitle, setNewPostTitle] = useState('');
@@ -248,22 +245,6 @@ const PostList = () => {
         </div>
       )}
 
-      {!canPost &&
-        verificationStatus === EVerificationStatus.WALLET_CONNECTED && (
-          <div className="section-spacing content-card-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Eye className="w-4 h-4 text-cyber-neutral" />
-              <h3 className="font-medium">Read-Only Mode</h3>
-            </div>
-            <p className="text-sm text-cyber-neutral mb-2">
-              Your wallet does not contain any Ordinal Operators. You can browse
-              threads but cannot post or interact.
-            </p>
-            <Badge variant="outline" className="text-xs">
-              No Ordinals Found
-            </Badge>
-          </div>
-        )}
 
       {!canPost && !currentUser && (
         <div className="section-spacing content-card-sm text-center">

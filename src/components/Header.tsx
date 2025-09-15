@@ -234,14 +234,13 @@ const Header = () => {
                   >
                     {getStatusIcon()}
                     <span className="ml-1">
-                      {verificationStatus ===
-                        EVerificationStatus.ENS_ORDINAL_VERIFIED &&
-                      delegationInfo?.isValid
-                        ? 'READY'
-                        : verificationStatus ===
-                            EVerificationStatus.ENS_ORDINAL_VERIFIED
-                          ? 'EXPIRED'
-                          : 'VERIFY'}
+                      {verificationStatus === EVerificationStatus.WALLET_UNCONNECTED
+                        ? 'CONNECT'
+                        : delegationInfo?.isValid
+                          ? 'READY'
+                          : verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
+                            ? 'EXPIRED'
+                            : 'DELEGATE'}
                     </span>
                   </Badge>
 

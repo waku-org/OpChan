@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Users, Eye } from 'lucide-react';
+import { TrendingUp, Users, Eye, CheckCircle } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -92,11 +92,10 @@ const FeedSidebar: React.FC = () => {
               </div>
             )}
 
-            {verificationStatus === EVerificationStatus.WALLET_CONNECTED &&
-              !ordinalDetails && (
+            {verificationStatus === EVerificationStatus.WALLET_CONNECTED && (
                 <div className="text-xs text-muted-foreground">
-                  <Eye className="w-3 h-3 inline mr-1" />
-                  Read-only mode. Acquire Ordinals to post.
+                  <CheckCircle className="w-3 h-3 inline mr-1" />
+                  Connected. You can post, comment, and vote.
                 </div>
               )}
           </CardContent>

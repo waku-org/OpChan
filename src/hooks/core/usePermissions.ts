@@ -77,13 +77,13 @@ export function usePermissions(): Permission &
     return {
       voteReason: permissions.canVote
         ? 'You can vote'
-        : 'Verify ENS or Logos ordinal to vote',
+        : 'Connect your wallet to vote',
       postReason: permissions.canPost
         ? 'You can post'
-        : 'Verify ENS or Logos ordinal to post',
+        : 'Connect your wallet to post',
       commentReason: permissions.canComment
         ? 'You can comment'
-        : 'Verify ENS or Logos ordinal to comment',
+        : 'Connect your wallet to comment',
       createCellReason: permissions.canCreateCell
         ? 'You can create cells'
         : 'Verify ENS or Logos ordinal to create cells',
