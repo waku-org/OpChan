@@ -126,7 +126,9 @@ const PostList = () => {
 
   // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    // Enter inserts newline by default. Send on Ctrl+Enter or Shift+Enter.
+    const isSendCombo = (e.ctrlKey || e.metaKey || e.shiftKey) && e.key === 'Enter';
+    if (isSendCombo) {
       e.preventDefault();
       if (!isCreatingPost && newPostContent.trim() && newPostTitle.trim()) {
         handleCreatePost(e as React.FormEvent);
@@ -228,6 +230,10 @@ const PostList = () => {
                 className="bg-cyber-muted/50 border-cyber-muted resize-none"
                 disabled={isCreatingPost}
               />
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 mb-2">
+              <span>Press Enter for newline • Ctrl+Enter or Shift+Enter to post</span>
+              <span />
             </div>
             <div className="flex justify-end">
               <Button
