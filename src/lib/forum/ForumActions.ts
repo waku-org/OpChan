@@ -55,7 +55,7 @@ export class ForumActions {
       case 'createPost':
       case 'createComment':
       case 'vote':
-        if (verificationStatus === EVerificationStatus.WALLET_UNCONNECTED) {
+        if (!_isAuthenticated || !currentUser) {
           return {
             valid: false,
             error: 'Connect your wallet to perform this action',
