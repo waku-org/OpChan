@@ -83,7 +83,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
             }`}
             onClick={e => handleVote(e, true)}
             disabled={!canVote || isVoting}
-            title={canVote ? 'Upvote' : 'Connect wallet and verify to vote'}
+            title={canVote ? 'Upvote' : 'Connect wallet to vote'}
           >
             <ArrowUp className="w-5 h-5" />
           </button>
@@ -108,7 +108,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
             }`}
             onClick={e => handleVote(e, false)}
             disabled={!canVote || isVoting}
-            title={canVote ? 'Downvote' : 'Connect wallet and verify to vote'}
+            title={canVote ? 'Downvote' : 'Connect wallet to vote'}
           >
             <ArrowDown className="w-5 h-5" />
           </button>

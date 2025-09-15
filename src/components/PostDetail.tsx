@@ -175,9 +175,7 @@ const PostDetail = () => {
                 }`}
                 onClick={() => handleVotePost(true)}
                 disabled={!canVote || isVoting}
-                title={
-                  canVote ? 'Upvote post' : 'Connect wallet and verify to vote'
-                }
+                title={canVote ? 'Upvote post' : 'Connect wallet to vote'}
               >
                 <ArrowUp className="w-4 h-4" />
               </button>
@@ -188,11 +186,7 @@ const PostDetail = () => {
                 }`}
                 onClick={() => handleVotePost(false)}
                 disabled={!canVote || isVoting}
-                title={
-                  canVote
-                    ? 'Downvote post'
-                    : 'Connect wallet and verify to vote'
-                }
+                title={canVote ? 'Downvote post' : 'Connect wallet to vote'}
               >
                 <ArrowDown className="w-4 h-4" />
               </button>

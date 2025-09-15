@@ -154,7 +154,7 @@ export function useForumActions(): ForumActions {
       if (!permissions.canPost) {
         toast({
           title: 'Permission Denied',
-          description: 'You need to verify Ordinal ownership to create posts.',
+          description: permissions.postReason,
           variant: 'destructive',
         });
         return null;

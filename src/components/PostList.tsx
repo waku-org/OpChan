@@ -249,18 +249,18 @@ const PostList = () => {
       )}
 
       {!canPost &&
-        verificationStatus === EVerificationStatus.WALLET_CONNECTED && (
+        verificationStatus === EVerificationStatus.WALLET_UNCONNECTED && (
           <div className="section-spacing content-card-sm">
             <div className="flex items-center gap-2 mb-2">
               <Eye className="w-4 h-4 text-cyber-neutral" />
               <h3 className="font-medium">Read-Only Mode</h3>
             </div>
             <p className="text-sm text-cyber-neutral mb-2">
-              Your wallet does not contain any Ordinal Operators. You can browse
-              threads but cannot post or interact.
+              You are not connected. You can browse threads but cannot post or
+              interact.
             </p>
             <Badge variant="outline" className="text-xs">
-              No Ordinals Found
+              Wallet Not Connected
             </Badge>
           </div>
         )}
@@ -284,7 +284,7 @@ const PostList = () => {
             <p className="empty-state-description">
               {canPost
                 ? 'Be the first to post in this cell!'
-                : 'Connect your wallet and verify Ordinal ownership to start a thread.'}
+                : 'Connect your wallet to start a thread.'}
             </p>
           </div>
         ) : (
@@ -296,9 +296,7 @@ const PostList = () => {
                     className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${getPostVoteType(post.id) === 'upvote' ? 'text-cyber-accent' : ''}`}
                     onClick={() => handleVotePost(post.id, true)}
                     disabled={!canVote || isVoting}
-                    title={
-                      canVote ? 'Upvote' : 'Connect wallet and verify to vote'
-                    }
+                    title={canVote ? 'Upvote' : 'Connect wallet to vote'}
                   >
                     <ArrowUp className="w-4 h-4" />
                   </button>
@@ -309,9 +307,7 @@ const PostList = () => {
                     className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${getPostVoteType(post.id) === 'downvote' ? 'text-cyber-accent' : ''}`}
                     onClick={() => handleVotePost(post.id, false)}
                     disabled={!canVote || isVoting}
-                    title={
-                      canVote ? 'Downvote' : 'Connect wallet and verify to vote'
-                    }
+                    title={canVote ? 'Downvote' : 'Connect wallet to vote'}
                   >
                     <ArrowDown className="w-4 h-4" />
                   </button>
