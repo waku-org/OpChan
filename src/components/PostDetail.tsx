@@ -9,7 +9,8 @@ import {
   usePostBookmark,
 } from '@/hooks';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+//
+import ResizableTextarea from '@/components/ui/resizable-textarea';
 import {
   ArrowLeft,
   ArrowUp,
@@ -276,12 +277,15 @@ const PostDetail = () => {
               <MessageCircle className="w-4 h-4" />
               Add a comment
             </h2>
-            <Textarea
+            <ResizableTextarea
               placeholder="What are your thoughts?"
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
-              className="mb-3 resize-none"
+              className="bg-cyber-muted/50 border-cyber-muted"
               disabled={isCreatingComment}
+              minHeight={100}
+              initialHeight={140}
+              maxHeight={600}
             />
             <div className="flex justify-end">
               <Button
