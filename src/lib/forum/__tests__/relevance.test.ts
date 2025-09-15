@@ -11,9 +11,9 @@ import { expect, describe, beforeEach, it } from 'vitest';
 
 // Mock delegation proof for tests
 const mockDelegationProof: DelegationProof = {
-  authMessage: 'I authorize browser key: test-key until 9999999999',
+  authMessage: 'I, test-address, authorize browser key test-key until 20/11/2286, 11:16:39 pm (nonce: test-nonce)',
   walletSignature: 'mock-signature',
-  expiryTimestamp: 9999999999,
+  expiryTimestamp: 9999999999999,
   walletAddress: 'test-address',
   walletType: 'ethereum',
 };

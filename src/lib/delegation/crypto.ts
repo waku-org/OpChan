@@ -25,7 +25,8 @@ export class DelegationCrypto {
     expiryTimestamp: number,
     nonce: string
   ): string {
-    return `I, ${walletAddress}, authorize browser key ${browserPublicKey} until ${expiryTimestamp} (nonce: ${nonce})`;
+    const expiryDate = new Date(expiryTimestamp).toLocaleString();
+    return `I, ${walletAddress}, authorize browser key ${browserPublicKey} until ${expiryDate} (nonce: ${nonce})`;
   }
 
   /**
