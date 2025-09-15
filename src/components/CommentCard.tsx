@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { BookmarkButton } from '@/components/ui/bookmark-button';
 import { AuthorDisplay } from '@/components/ui/author-display';
-import { LinkRenderer } from '@/components/ui/link-renderer';
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { usePending, usePendingVote } from '@/hooks/usePending';
 import {
   Tooltip,
@@ -146,9 +146,9 @@ const CommentCard: React.FC<CommentCardProps> = ({
             </div>
           </div>
 
-          <p className="text-sm break-words mb-2">
-            <LinkRenderer text={comment.content} />
-          </p>
+          <div className="text-sm break-words mb-2 prose prose-invert max-w-none">
+            <MarkdownRenderer content={comment.content} />
+          </div>
 
           <div className="flex items-center gap-2">
             {canModerate && !comment.moderated && (

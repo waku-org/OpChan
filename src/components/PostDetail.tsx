@@ -10,7 +10,8 @@ import {
 } from '@/hooks';
 import { Button } from '@/components/ui/button';
 //
-import ResizableTextarea from '@/components/ui/resizable-textarea';
+// import ResizableTextarea from '@/components/ui/resizable-textarea';
+import { MarkdownInput } from '@/components/ui/markdown-input';
 import {
   ArrowLeft,
   ArrowUp,
@@ -25,7 +26,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { RelevanceIndicator } from './ui/relevance-indicator';
 import { AuthorDisplay } from './ui/author-display';
 import { BookmarkButton } from './ui/bookmark-button';
-import { LinkRenderer } from './ui/link-renderer';
+import { MarkdownRenderer } from './ui/markdown-renderer';
 import CommentCard from './CommentCard';
 import { usePending, usePendingVote } from '@/hooks/usePending';
 import { ShareButton } from './ui/ShareButton';
@@ -263,9 +264,9 @@ const PostDetail = () => {
                   title={post.title}
                 />
               </div>
-              <p className="text-sm whitespace-pre-wrap break-words">
-                <LinkRenderer text={post.content} />
-              </p>
+              <div className="text-sm break-words prose prose-invert max-w-none">
+                <MarkdownRenderer content={post.content} />
+              </div>
             </div>
           </div>
         </div>
@@ -279,20 +280,15 @@ const PostDetail = () => {
               <MessageCircle className="w-4 h-4" />
               Add a comment
             </h2>
-            <ResizableTextarea
+            <MarkdownInput
               placeholder="What are your thoughts?"
               value={newComment}
-              onChange={e => setNewComment(e.target.value)}
-              className="bg-cyber-muted/50 border-cyber-muted"
+              onChange={setNewComment}
               disabled={isCreatingComment}
               minHeight={100}
               initialHeight={140}
               maxHeight={600}
             />
-            <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 mb-2">
-              <span>Press Enter for newline • Ctrl+Enter or Shift+Enter to send</span>
-              <span />
-            </div>
             <div className="flex justify-end">
               <Button
                 type="submit"
