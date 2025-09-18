@@ -16,6 +16,8 @@ import { localDatabase } from '@/lib/database/LocalDatabase';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
 import { MessageService } from '@/lib/services/MessageService';
 import { UserIdentityService } from '@/lib/services/UserIdentityService';
+import { reconnect } from '@wagmi/core';
+import { config as wagmiConfig } from '@/lib/wallet/config';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -80,6 +82,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       WalletManager.clear();
     }
   }, [bitcoinAccount, ethereumAccount]);
+
+  // Try to auto-reconnect EVM wallets on app mount
+  useEffect(() => {
+    void reconnect(wagmiConfig)
+  }, []);
+
+  // Attempt reconnect when network comes back online
+  useEffect(() => {
+    const handleOnline = () => {
+      void reconnect(wagmiConfig)
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
+  // Attempt reconnect when tab becomes visible again
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        reconnect(wagmiConfig).catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
 
   // Helper functions for user persistence
   const loadStoredUser = async (): Promise<User | null> => {
