@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useUserActions, useForumActions } from '@/hooks';
+import { useForum } from '@opchan/react';
 import { useAuth } from '@opchan/react';
 import { useUserDisplay } from '@/hooks';
-import { useDelegation } from '@opchan/react';
 import { DelegationFullStatus } from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,13 +35,13 @@ import { EDisplayPreference, EVerificationStatus } from '@opchan/core';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
-  const { updateProfile } = useUserActions();
-  const { refreshData } = useForumActions();
+  const forum = useForum();
+  const { updateProfile } = forum.user;
+  const { refresh } = forum.content;
   const { toast } = useToast();
 
   // Get current user from auth context for the address
   const { currentUser, getDelegationStatus } = useAuth();
-  const { delegationStatus } = useDelegation();
   const [delegationInfo, setDelegationInfo] =
     useState<DelegationFullStatus | null>(null);
   const address = currentUser?.address;
@@ -171,7 +170,7 @@ export default function ProfilePage() {
       });
 
       if (success) {
-        await refreshData();
+        await refresh();
         setIsEditing(false);
         toast({
           title: 'Profile Updated',
@@ -494,7 +493,7 @@ export default function ProfilePage() {
                       <Shield className="h-5 w-5 text-cyber-accent" />
                       Security
                     </div>
-                    {(delegationStatus.hasDelegation ||
+                    {(forum.user.delegation.hasDelegation ||
                       delegationInfo?.hasDelegation) && (
                       <Button
                         variant="outline"
@@ -503,7 +502,7 @@ export default function ProfilePage() {
                         className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
                       >
                         <Settings className="w-4 h-4 mr-2" />
-                        {delegationStatus.isValid || delegationInfo?.isValid
+                        {forum.user.delegation.isValid || delegationInfo?.isValid
                           ? 'Renew'
                           : 'Setup'}
                       </Button>
@@ -519,24 +518,24 @@ export default function ProfilePage() {
                       </span>
                       <Badge
                         variant={
-                          delegationStatus.isValid || delegationInfo?.isValid
+                          forum.user.delegation.isValid || delegationInfo?.isValid
                             ? 'default'
                             : 'secondary'
                         }
                         className={
-                          delegationStatus.isValid || delegationInfo?.isValid
+                          forum.user.delegation.isValid || delegationInfo?.isValid
                             ? 'bg-green-500/20 text-green-400 border-green-500/30'
                             : 'bg-red-500/20 text-red-400 border-red-500/30'
                         }
                       >
-                        {delegationStatus.isValid || delegationInfo?.isValid
+                        {forum.user.delegation.isValid || delegationInfo?.isValid
                           ? 'Active'
                           : 'Inactive'}
                       </Badge>
                     </div>
 
                     {/* Expiry Date */}
-                    {(delegationStatus.expiresAt ||
+                    {(forum.user.delegation.expiresAt ||
                       currentUser.delegationExpiry) && (
                       <div className="space-y-1">
                         <span className="text-xs text-cyber-neutral">
@@ -544,7 +543,7 @@ export default function ProfilePage() {
                         </span>
                         <div className="text-sm font-mono text-cyber-light">
                           {(
-                            delegationStatus.expiresAt ||
+                            forum.user.delegation.expiresAt ||
                             new Date(currentUser.delegationExpiry!)
                           ).toLocaleDateString()}
                         </div>
@@ -559,13 +558,13 @@ export default function ProfilePage() {
                       <Badge
                         variant="outline"
                         className={
-                          delegationStatus.isValid ||
+                          forum.user.delegation.isValid ||
                           currentUser.delegationSignature === 'valid'
                             ? 'text-green-400 border-green-500/30 bg-green-500/10'
                             : 'text-red-400 border-red-500/30 bg-red-500/10'
                         }
                       >
-                        {delegationStatus.isValid ||
+                        {forum.user.delegation.isValid ||
                         currentUser.delegationSignature === 'valid'
                           ? 'Valid'
                           : 'Not signed'}
@@ -580,18 +579,18 @@ export default function ProfilePage() {
                     </Label>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 font-mono text-xs bg-cyber-dark/50 border border-cyber-muted/30 px-2 py-1 rounded text-cyber-light">
-                        {delegationStatus.publicKey || currentUser.browserPubKey
-                          ? `${(delegationStatus.publicKey || currentUser.browserPubKey!).slice(0, 12)}...${(delegationStatus.publicKey || currentUser.browserPubKey!).slice(-8)}`
+                        {forum.user.delegation.publicKey || currentUser.browserPubKey
+                          ? `${(forum.user.delegation.publicKey || currentUser.browserPubKey!).slice(0, 12)}...${(forum.user.delegation.publicKey || currentUser.browserPubKey!).slice(-8)}`
                           : 'Not delegated'}
                       </div>
-                      {(delegationStatus.publicKey ||
+                      {(forum.user.delegation.publicKey ||
                         currentUser.browserPubKey) && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() =>
                             copyToClipboard(
-                              delegationStatus.publicKey ||
+                              forum.user.delegation.publicKey ||
                                 currentUser.browserPubKey!,
                               'Public Key'
                             )
@@ -605,8 +604,8 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Warning for expired delegation */}
-                  {(!delegationStatus.isValid &&
-                    delegationStatus.hasDelegation) ||
+                  {(!forum.user.delegation.isValid &&
+                    forum.user.delegation.hasDelegation) ||
                     (!delegationInfo?.isValid &&
                       delegationInfo?.hasDelegation && (
                         <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">

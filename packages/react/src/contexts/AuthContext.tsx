@@ -43,82 +43,42 @@ export const AuthProvider: React.FC<{
 
   // Define verifyOwnership function early so it can be used in useEffect dependencies
   const verifyOwnership = useCallback(async (): Promise<boolean> => {
-    console.log('🔍 verifyOwnership called, currentUser:', currentUser);
     if (!currentUser) {
-      console.log('❌ No currentUser, returning false');
       return false;
     }
-    
+
     try {
-      console.log('🚀 Starting verification for', currentUser.walletType, 'wallet:', currentUser.address);
-      
-      // Actually check for ENS/Ordinal ownership using core services
-      const { WalletManager } = await import('@opchan/core');
-      
-      let hasOwnership = false;
-      let ensName: string | undefined;
-      let ordinalDetails: { ordinalId: string; ordinalDetails: string } | undefined;
+      // Centralize identity resolution in core service
+      const identity = await client.userIdentityService.getUserIdentityFresh(currentUser.address);
 
-      if (currentUser.walletType === 'ethereum') {
-        console.log('🔗 Checking ENS ownership for Ethereum address:', currentUser.address);
-        // Check ENS ownership
-        const resolvedEns = await WalletManager.resolveENS(currentUser.address);
-        console.log('📝 ENS resolution result:', resolvedEns);
-        ensName = resolvedEns || undefined;
-        hasOwnership = !!ensName;
-        console.log('✅ ENS hasOwnership:', hasOwnership);
-      } else if (currentUser.walletType === 'bitcoin') {
-        console.log('🪙 Checking Ordinal ownership for Bitcoin address:', currentUser.address);
-        // Check Ordinal ownership
-        const ordinals = await WalletManager.resolveOperatorOrdinals(currentUser.address);
-        console.log('📝 Ordinals resolution result:', ordinals);
-        hasOwnership = !!ordinals && ordinals.length > 0;
-        if (hasOwnership && ordinals) {
-          const inscription = ordinals[0];
-          const detail = inscription.parent_inscription_id || 'Operator badge present';
-          ordinalDetails = {
-            ordinalId: inscription.inscription_id,
-            ordinalDetails: String(detail),
-          };
-        }
-        console.log('✅ Ordinals hasOwnership:', hasOwnership);
-      }
-
-      const newVerificationStatus = hasOwnership 
-        ? EVerificationStatus.ENS_ORDINAL_VERIFIED 
-        : EVerificationStatus.WALLET_CONNECTED;
-
-      console.log('📊 Setting verification status to:', newVerificationStatus);
+      const newVerificationStatus = identity?.verificationStatus ?? EVerificationStatus.WALLET_CONNECTED;
 
       const updatedUser = {
         ...currentUser,
         verificationStatus: newVerificationStatus,
-        ensDetails: ensName ? { ensName } : undefined,
-        ordinalDetails,
-      };
+        ensDetails: identity?.ensName ? { ensName: identity.ensName } : undefined,
+        ordinalDetails: identity?.ordinalDetails,
+      } as User;
 
       setCurrentUser(updatedUser);
       await localDatabase.storeUser(updatedUser);
-      
-      // Also update the user identities cache so UserIdentityService can access ENS details
+
       await localDatabase.upsertUserIdentity(currentUser.address, {
-        ensName: ensName || undefined,
-        ordinalDetails,
+        ensName: identity?.ensName || undefined,
+        ordinalDetails: identity?.ordinalDetails,
         verificationStatus: newVerificationStatus,
         lastUpdated: Date.now(),
       });
-      
-      console.log('✅ Verification completed successfully, hasOwnership:', hasOwnership);
-      return hasOwnership;
+
+      return newVerificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
     } catch (error) {
       console.error('❌ Verification failed:', error);
-      // Fall back to wallet connected status
-      const updatedUser = { ...currentUser, verificationStatus: EVerificationStatus.WALLET_CONNECTED };
+      const updatedUser = { ...currentUser, verificationStatus: EVerificationStatus.WALLET_CONNECTED } as User;
       setCurrentUser(updatedUser);
       await localDatabase.storeUser(updatedUser);
       return false;
     }
-  }, [currentUser]);
+  }, [client.userIdentityService, currentUser]);
 
   // Hydrate user from LocalDatabase on mount
   useEffect(() => {

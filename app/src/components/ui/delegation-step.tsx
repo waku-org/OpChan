@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './button';
-import { useAuth, useAuthActions } from '@opchan/react';
+import { useAuth } from '@opchan/react';
 import { CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { DelegationDuration, DelegationFullStatus } from '@opchan/core';
 
@@ -20,7 +20,7 @@ export function DelegationStep({
   const { currentUser, isAuthenticating, getDelegationStatus } = useAuth();
   const [delegationInfo, setDelegationInfo] =
     useState<DelegationFullStatus | null>(null);
-  const { delegateKey, clearDelegation } = useAuthActions();
+  const { delegateKey, clearDelegation } = useAuth();
 
   // Load delegation status
   useEffect(() => {

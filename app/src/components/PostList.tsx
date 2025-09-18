@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import {
-  useCell,
-  useCellPosts,
-  useForumActions,
-  usePermissions,
-  useUserVotes,
-  useAuth,
-  useForumData,
-} from '@/hooks';
+import { useCell, useCellPosts, usePermissions, useUserVotes, useAuth, useForumData } from '@/hooks';
+import { useForum } from '@opchan/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,16 +33,10 @@ const PostList = () => {
   // ✅ Use reactive hooks for data and actions
   const cell = useCell(cellId);
   const cellPosts = useCellPosts(cellId, { sortBy: 'relevance' });
-  const {
-    createPost,
-    votePost,
-    moderatePost,
-    unmoderatePost,
-    moderateUser,
-    refreshData,
-    isCreatingPost,
-    isVoting,
-  } = useForumActions();
+  const forum = useForum();
+  const { createPost, vote, moderate, refresh } = forum.content;
+  const isCreatingPost = false;
+  const isVoting = false;
   const { canPost, canVote, canModerate } = usePermissions();
   const userVotes = useUserVotes();
   const { currentUser } = useAuth();
@@ -117,7 +104,7 @@ const PostList = () => {
     if (!newPostContent.trim()) return;
 
     // ✅ All validation handled in hook
-    const post = await createPost(cellId, newPostTitle, newPostContent);
+    const post = await createPost({ cellId, title: newPostTitle, content: newPostContent });
     if (post) {
       setNewPostTitle('');
       setNewPostContent('');
@@ -139,7 +126,7 @@ const PostList = () => {
 
   const handleVotePost = async (postId: string, isUpvote: boolean) => {
     // ✅ Permission checking handled in hook
-    await votePost(postId, isUpvote);
+    await vote({ targetId: postId, isUpvote });
   };
 
   const getPostVoteType = (postId: string) => {
@@ -154,14 +141,14 @@ const PostList = () => {
       window.prompt('Enter a reason for moderation (optional):') || undefined;
     if (!cell) return;
     // ✅ All validation handled in hook
-    await moderatePost(cell.id, postId, reason);
+    await moderate.post(cell.id, postId, reason);
   };
 
   const handleUnmoderate = async (postId: string) => {
     const reason =
       window.prompt('Optional note for unmoderation?') || undefined;
     if (!cell) return;
-    await unmoderatePost(cell.id, postId, reason);
+    await moderate.unpost(cell.id, postId, reason);
   };
 
   const handleModerateUser = async (userAddress: string) => {
@@ -169,7 +156,7 @@ const PostList = () => {
       window.prompt('Reason for moderating this user? (optional)') || undefined;
     if (!cell) return;
     // ✅ All validation handled in hook
-    await moderateUser(cell.id, userAddress, reason);
+    await moderate.user(cell.id, userAddress, reason);
   };
 
   return (
@@ -196,7 +183,7 @@ const PostList = () => {
             <Button
               variant="outline"
               size="icon"
-              onClick={refreshData}
+              onClick={refresh}
               disabled={cellPosts.isLoading}
               title="Refresh data"
             >

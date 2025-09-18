@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useForum } from '../../contexts/ForumContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { EDisplayPreference, EVerificationStatus, UserIdentityService } from '@opchan/core';
+import { EDisplayPreference, EVerificationStatus } from '@opchan/core';
+import { useState, useEffect, useMemo } from 'react';
+import { useForumData } from './useForumData';
+import { useClient } from '../../contexts/ClientContext';
 
 export interface UserDisplayInfo {
   displayName: string;
@@ -14,9 +14,12 @@ export interface UserDisplayInfo {
   error: string | null;
 }
 
+/**
+ * User display hook with caching and reactive updates
+ */
 export function useUserDisplay(address: string): UserDisplayInfo {
-  const { userVerificationStatus } = useForum();
-  const { currentUser } = useAuth();
+  const client = useClient();
+  const { userVerificationStatus } = useForumData();
   const [displayInfo, setDisplayInfo] = useState<UserDisplayInfo>({
     displayName: `${address.slice(0, 6)}...${address.slice(-4)}`,
     callSign: null,
@@ -28,21 +31,9 @@ export function useUserDisplay(address: string): UserDisplayInfo {
     error: null,
   });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const isLoadingRef = useRef(false);
 
-  // Check if this is the current user to get their direct ENS details
-  const isCurrentUser = currentUser && currentUser.address.toLowerCase() === address.toLowerCase();
-
+  // Get verification status from forum context for reactive updates
   const verificationInfo = useMemo(() => {
-    if (isCurrentUser && currentUser) {
-      // Use current user's direct ENS details
-      return {
-        isVerified: currentUser.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED,
-        ensName: currentUser.ensDetails?.ensName || null,
-        verificationStatus: currentUser.verificationStatus,
-      };
-    }
-    
     return (
       userVerificationStatus[address] || {
         isVerified: false,
@@ -50,7 +41,22 @@ export function useUserDisplay(address: string): UserDisplayInfo {
         verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
       }
     );
-  }, [userVerificationStatus, address, isCurrentUser, currentUser]);
+  }, [userVerificationStatus, address]);
+
+  // Set up refresh listener for user identity changes
+  useEffect(() => {
+    if (!client.userIdentityService || !address) return;
+
+    const unsubscribe = client.userIdentityService.addRefreshListener(
+      updatedAddress => {
+        if (updatedAddress === address) {
+          setRefreshTrigger(prev => prev + 1);
+        }
+      }
+    );
+
+    return unsubscribe;
+  }, [client.userIdentityService, address]);
 
   useEffect(() => {
     const getUserDisplayInfo = async () => {
@@ -63,49 +69,63 @@ export function useUserDisplay(address: string): UserDisplayInfo {
         return;
       }
 
-      // Prevent multiple simultaneous calls
-      if (isLoadingRef.current) {
-        return;
-      }
-
-      isLoadingRef.current = true;
-
-      try {
-        // Use UserIdentityService to get proper identity and display name from central store
-        const { UserIdentityService } = await import('@opchan/core');
-        const userIdentityService = new UserIdentityService(null as any); // MessageService not needed for display
-        
-        // For current user, ensure their ENS details are in the database first
-        if (isCurrentUser && currentUser?.ensDetails?.ensName) {
-          const { localDatabase } = await import('@opchan/core');
-          await localDatabase.upsertUserIdentity(address, {
-            ensName: currentUser.ensDetails.ensName,
-            verificationStatus: currentUser.verificationStatus,
-            lastUpdated: Date.now(),
-          });
-        }
-        
-        // Get user identity which includes ENS name, callSign, etc. from central store
-        const identity = await userIdentityService.getUserIdentity(address);
-        
-        // Use the service's getDisplayName method which has the correct priority logic
-        const displayName = userIdentityService.getDisplayName(address);
-
+      if (!client.userIdentityService) {
+        console.log(
+          'useEnhancedUserDisplay: No service available, using fallback',
+          { address }
+        );
         setDisplayInfo({
-          displayName,
-          callSign: identity?.callSign || null,
-          ensName: identity?.ensName || verificationInfo.ensName || null,
-          ordinalDetails: identity?.ordinalDetails ? 
-            `${identity.ordinalDetails.ordinalId}` : null,
-          verificationLevel: identity?.verificationStatus ||
+          displayName: `${address.slice(0, 6)}...${address.slice(-4)}`,
+          callSign: null,
+          ensName: verificationInfo.ensName || null,
+          ordinalDetails: null,
+          verificationLevel:
             verificationInfo.verificationStatus ||
             EVerificationStatus.WALLET_UNCONNECTED,
-          displayPreference: identity?.displayPreference || null,
+          displayPreference: null,
           isLoading: false,
           error: null,
         });
+        return;
+      }
+
+      try {
+        const identity = await client.userIdentityService.getUserIdentity(address);
+
+        if (identity) {
+          const displayName = client.userIdentityService.getDisplayName(address);
+
+          setDisplayInfo({
+            displayName,
+            callSign: identity.callSign || null,
+            ensName: identity.ensName || null,
+            ordinalDetails: identity.ordinalDetails
+              ? identity.ordinalDetails.ordinalDetails
+              : null,
+            verificationLevel: identity.verificationStatus,
+            displayPreference: identity.displayPreference || null,
+            isLoading: false,
+            error: null,
+          });
+        } else {
+          setDisplayInfo({
+            displayName: client.userIdentityService.getDisplayName(address),
+            callSign: null,
+            ensName: verificationInfo.ensName || null,
+            ordinalDetails: null,
+            verificationLevel:
+              verificationInfo.verificationStatus ||
+              EVerificationStatus.WALLET_UNCONNECTED,
+            displayPreference: null,
+            isLoading: false,
+            error: null,
+          });
+        }
       } catch (error) {
-        console.error('useUserDisplay: Failed to get user display info:', error);
+        console.error(
+          'useEnhancedUserDisplay: Failed to get user display info:',
+          error
+        );
         setDisplayInfo({
           displayName: `${address.slice(0, 6)}...${address.slice(-4)}`,
           callSign: null,
@@ -116,18 +136,28 @@ export function useUserDisplay(address: string): UserDisplayInfo {
           isLoading: false,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
-      } finally {
-        isLoadingRef.current = false;
       }
     };
 
     getUserDisplayInfo();
+  }, [address, client.userIdentityService, verificationInfo, refreshTrigger]);
 
-    // Cleanup function to reset loading ref
-    return () => {
-      isLoadingRef.current = false;
-    };
-  }, [address, refreshTrigger, verificationInfo.verificationStatus]);
+  // Update display info when verification status changes reactively
+  useEffect(() => {
+    if (!displayInfo.isLoading && verificationInfo) {
+      setDisplayInfo(prev => ({
+        ...prev,
+        ensName: verificationInfo.ensName || prev.ensName,
+        verificationLevel:
+          verificationInfo.verificationStatus || prev.verificationLevel,
+      }));
+    }
+  }, [
+    verificationInfo.ensName,
+    verificationInfo.verificationStatus,
+    displayInfo.isLoading,
+    verificationInfo,
+  ]);
 
   return displayInfo;
 }

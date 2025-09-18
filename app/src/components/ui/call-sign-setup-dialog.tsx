@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, User, Hash } from 'lucide-react';
-import { useAuth, useUserActions, useForumActions } from '@/hooks';
+import { useAuth } from '@/hooks';
+import { useForum } from '@opchan/react';
 import {
   Form,
   FormControl,
@@ -55,8 +56,9 @@ export function CallSignSetupDialog({
   onOpenChange,
 }: CallSignSetupDialogProps = {}) {
   const { currentUser } = useAuth();
-  const { updateProfile } = useUserActions();
-  const { refreshData } = useForumActions();
+  const forum = useForum();
+  const { updateProfile } = forum.user;
+  const { refresh } = forum.content;
   const { toast } = useToast();
   const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,7 +95,7 @@ export function CallSignSetupDialog({
 
     if (success) {
       // Refresh forum data to update user display
-      await refreshData();
+      await refresh();
       setOpen(false);
       form.reset();
     }

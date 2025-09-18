@@ -8,7 +8,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
-import { useAuth, useAuthActions } from '@/hooks';
+import { useAuth } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { OrdinalDetails, EnsDetails } from '@opchan/core';
@@ -26,8 +26,7 @@ export function VerificationStep({
   isLoading,
   setIsLoading,
 }: VerificationStepProps) {
-  const { currentUser, verificationStatus, isAuthenticating } = useAuth();
-  const { verifyWallet } = useAuthActions();
+  const { currentUser, verificationStatus, isAuthenticating, verifyOwnership } = useAuth();
 
   // Get account info to determine wallet type
   const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
@@ -99,7 +98,7 @@ export function VerificationStep({
 
     try {
       console.log('📞 Calling verifyWallet()...');
-      const success = await verifyWallet();
+      const success = await verifyOwnership();
       console.log('📊 verifyWallet returned:', success);
 
       if (success) {

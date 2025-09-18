@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { OpChanClient } from '@opchan/core';
 import { localDatabase, messageManager } from '@opchan/core';
+import { ClientProvider } from '../contexts/ClientContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ForumProvider } from '../contexts/ForumContext';
 import { ModerationProvider } from '../contexts/ModerationContext';
@@ -49,11 +50,13 @@ export const OpChanProvider: React.FC<OpChanProviderProps> = ({
   const providers = useMemo(() => {
     if (!isReady || !clientRef.current) return null;
     return (
-      <AuthProvider client={clientRef.current}>
-        <ModerationProvider>
-          <ForumProvider client={clientRef.current}>{children}</ForumProvider>
-        </ModerationProvider>
-      </AuthProvider>
+      <ClientProvider client={clientRef.current}>
+        <AuthProvider client={clientRef.current}>
+          <ModerationProvider>
+            <ForumProvider client={clientRef.current}>{children}</ForumProvider>
+          </ModerationProvider>
+        </AuthProvider>
+      </ClientProvider>
     );
   }, [isReady, children]);
 

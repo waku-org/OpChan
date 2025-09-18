@@ -1,33 +1,24 @@
 // Public hooks surface: aggregator and focused derived hooks
-// Aggregator hook
+// Aggregator hook (main API)
 export { useForumApi } from './useForum';
 
-// Core hooks
+// Core hooks (complex logic)
 export { useForumData } from './core/useForumData';
 export { usePermissions } from './core/usePermissions';
 export { useUserDisplay } from './core/useUserDisplay';
-export { useBookmarks, usePostBookmark, useCommentBookmark } from './core/useBookmarks';
 
-// Action hooks
-export { useForumActions } from './actions/useForumActions';
-export { useAuthActions } from './actions/useAuthActions';
-export { useUserActions } from './actions/useUserActions';
-
-// Derived hooks
+// Derived hooks (data slicing utilities)
 export { useCell } from './derived/useCell';
 export { usePost } from './derived/usePost';
 export { useCellPosts } from './derived/useCellPosts';
 export { usePostComments } from './derived/usePostComments';
 export { useUserVotes } from './derived/useUserVotes';
 
-// Utility hooks
-export { useWakuHealth, useWakuReady, useWakuHealthStatus } from './utilities/useWakuHealth';
-export { useDelegation } from './utilities/useDelegation';
-export { useMessageSigning } from './utilities/useMessageSigning';
-export { usePending, usePendingVote } from './utilities/usePending';
+// Utility hooks (remaining complex logic)
 export { useWallet } from './utilities/useWallet';
 export { useNetworkStatus } from './utilities/useNetworkStatus';
 export { useForumSelectors } from './utilities/useForumSelectors';
+export { useBookmarks, usePostBookmark, useCommentBookmark } from './utilities/useBookmarks';
 
 // Export types
 export type {
@@ -45,20 +36,7 @@ export type {
 
 export type { UserDisplayInfo } from './core/useUserDisplay';
 
-export type {
-  ForumActionStates,
-  ForumActions,
-} from './actions/useForumActions';
-
-export type {
-  AuthActionStates,
-  AuthActions,
-} from './actions/useAuthActions';
-
-export type {
-  UserActionStates,
-  UserActions,
-} from './actions/useUserActions';
+// Removed types from deleted action hooks - functionality now in useForumApi
 
 export type { CellData } from './derived/useCell';
 export type { PostData } from './derived/usePost';

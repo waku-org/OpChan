@@ -1,13 +1,11 @@
 import Header from '@/components/Header';
 import CellList from '@/components/CellList';
-import { useForumActions } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Wifi } from 'lucide-react';
 import { useForum } from '@opchan/react';
 
 const Index = () => {
-  const {network} = useForum()
-  const { refreshData } = useForumActions();
+  const { network, content } = useForum();
 
   return (
     <div className="page-container">
@@ -17,7 +15,7 @@ const Index = () => {
         {!network.isConnected && (
           <div className="fixed bottom-4 right-4">
             <Button
-              onClick={refreshData}
+              onClick={content.refresh}
               variant="destructive"
               className="flex items-center gap-2 shadow-lg animate-pulse"
             >

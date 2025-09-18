@@ -1,22 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useForum as useForumContext } from '../contexts/ForumContext';
+import { useClient } from '../contexts/ClientContext';
 import { usePermissions } from './core/usePermissions';
 import { useForumData } from './core/useForumData';
 import { useNetworkStatus } from './utilities/useNetworkStatus';
-import { useBookmarks } from './core/useBookmarks';
-import { useForumActions } from './actions/useForumActions';
-import { useUserActions } from './actions/useUserActions';
-import { useDelegation } from './utilities/useDelegation';
-import { useMessageSigning } from './utilities/useMessageSigning';
 import { useForumSelectors } from './utilities/useForumSelectors';
-import { localDatabase } from '@opchan/core';
 
 import type {
   Cell,
   Comment,
   Post,
   Bookmark,
+  User,
   DelegationDuration,
   EDisplayPreference,
   EVerificationStatus,
@@ -171,6 +167,7 @@ export interface UseForumApi {
 }
 
 export function useForumApi(): UseForumApi {
+  const client = useClient();
   const { currentUser, verificationStatus, connectWallet, disconnectWallet, verifyOwnership } = useAuth();
   const {
     refreshData,
@@ -179,13 +176,125 @@ export function useForumApi(): UseForumApi {
   const forumData: ForumData = useForumData();
   const permissions = usePermissions();
   const network = useNetworkStatus();
-  const { bookmarks, bookmarkPost, bookmarkComment } = useBookmarks();
-  const forumActions = useForumActions();
-  const userActions = useUserActions();
-  const { delegationStatus, createDelegation, clearDelegation } = useDelegation();
-  const { signMessage, verifyMessage } = useMessageSigning();
-
   const selectors = useForumSelectors(forumData);
+
+  // Bookmarks state (moved from useBookmarks)
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+
+  // Delegation functionality (moved from useDelegation)
+  const [delegationStatus, setDelegationStatus] = useState({
+    hasDelegation: false,
+    isValid: false,
+    timeRemaining: 0,
+    expiresAt: undefined as Date | undefined,
+    publicKey: undefined as string | undefined,
+  });
+
+  // Update delegation status
+  useEffect(() => {
+    const updateStatus = async () => {
+      if (currentUser) {
+        const status = await client.delegation.getStatus(currentUser.address, currentUser.walletType);
+        setDelegationStatus({
+          hasDelegation: !!status,
+          isValid: status?.isValid || false,
+          timeRemaining: status?.timeRemaining || 0,
+          expiresAt: status?.proof?.expiryTimestamp ? new Date(status.proof.expiryTimestamp) : undefined,
+          publicKey: status?.publicKey,
+        });
+      }
+    };
+    updateStatus();
+  }, [client.delegation, currentUser]);
+
+  // Load bookmarks for current user
+  useEffect(() => {
+    const load = async () => {
+      if (!currentUser?.address) {
+        setBookmarks([]);
+        return;
+      }
+      try {
+        const list = await client.database.getUserBookmarks(currentUser.address);
+        setBookmarks(list);
+      } catch (e) {
+        console.error('Failed to load bookmarks', e);
+      }
+    };
+    load();
+  }, [client.database, currentUser?.address]);
+
+  const createDelegation = useCallback(async (duration?: DelegationDuration): Promise<boolean> => {
+    if (!currentUser) return false;
+    try {
+      // Use the delegate method from DelegationManager
+      const signFunction = async (message: string) => {
+        // This would need to be implemented based on your wallet signing approach
+        // For now, return empty string - this needs proper wallet integration
+        return '';
+      };
+      
+      const success = await client.delegation.delegate(
+        currentUser.address,
+        currentUser.walletType,
+        duration,
+        signFunction
+      );
+      
+      if (success) {
+        // Update status after successful delegation
+        const status = await client.delegation.getStatus(currentUser.address, currentUser.walletType);
+        setDelegationStatus({
+          hasDelegation: !!status,
+          isValid: status?.isValid || false,
+          timeRemaining: status?.timeRemaining || 0,
+          expiresAt: status?.proof?.expiryTimestamp ? new Date(status.proof.expiryTimestamp) : undefined,
+          publicKey: status?.publicKey,
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Failed to create delegation:', error);
+      return false;
+    }
+  }, [client.delegation, currentUser]);
+
+  const clearDelegation = useCallback(async (): Promise<void> => {
+    // Clear delegation storage using the database directly
+    await client.database.clearDelegation();
+    setDelegationStatus({
+      hasDelegation: false,
+      isValid: false,
+      timeRemaining: 0,
+      expiresAt: undefined,
+      publicKey: undefined,
+    });
+  }, [client.database]);
+
+  // Message signing functionality (moved from useMessageSigning)
+  const signMessage = useCallback(async (message: OpchanMessage): Promise<void> => {
+    if (!currentUser) {
+      console.warn('No current user. Cannot sign message.');
+      return;
+    }
+    const status = await client.delegation.getStatus(currentUser.address, currentUser.walletType);
+    if (!status?.isValid) {
+      console.warn('No valid delegation found. Cannot sign message.');
+      return;
+    }
+    await client.messageManager.sendMessage(message);
+  }, [client.delegation, client.messageManager, currentUser]);
+
+  const verifyMessage = useCallback(async (message: OpchanMessage): Promise<boolean> => {
+    try {
+      // Use message service to verify message
+      return await client.messageService.verifyMessage(message);
+    } catch (error) {
+      console.error('Failed to verify message:', error);
+      return false;
+    }
+  }, [client.messageService]);
 
   type MaybeOrdinal = { ordinalId?: unknown } | null | undefined;
   const toOrdinal = (value: MaybeOrdinal): { ordinalId: string } | null => {
@@ -220,7 +329,36 @@ export function useForumApi(): UseForumApi {
       delegateKey: async (duration?: DelegationDuration) => createDelegation(duration),
       clearDelegation: async () => { await clearDelegation(); },
       updateProfile: async (updates: { callSign?: string; displayPreference?: EDisplayPreference }) => {
-        return userActions.updateProfile(updates);
+        if (!currentUser) {
+          throw new Error('User identity service is not available.');
+        }
+        try {
+          // Update user identity in database
+          await client.database.upsertUserIdentity(currentUser.address, {
+            ...(updates.callSign !== undefined ? { callSign: updates.callSign } : {}),
+            ...(updates.displayPreference !== undefined ? { displayPreference: updates.displayPreference } : {}),
+            lastUpdated: Date.now(),
+          });
+          
+          // Update user lightweight record for displayPreference if present
+          if (updates.displayPreference !== undefined) {
+            const updatedUser: User = {
+              address: currentUser.address,
+              walletType: currentUser.walletType!,
+              verificationStatus: currentUser.verificationStatus,
+              displayPreference: updates.displayPreference,
+              callSign: currentUser.callSign ?? undefined,
+              ensDetails: currentUser.ensDetails ?? undefined,
+              ordinalDetails: (currentUser as unknown as { ordinalDetails?: { ordinalId: string; ordinalDetails: string } | null }).ordinalDetails ?? undefined,
+              lastChecked: Date.now(),
+            };
+            await client.database.storeUser(updatedUser);
+          }
+          return true;
+        } catch (error) {
+          console.error('Failed to update profile:', error);
+          return false;
+        }
       },
       signMessage,
       verifyMessage,
@@ -241,71 +379,198 @@ export function useForumApi(): UseForumApi {
         comments: forumData.filteredComments,
       },
       createCell: async (input: { name: string; description: string; icon?: string }) => {
-        return forumActions.createCell(input.name, input.description, input.icon);
+        if (!permissions.canCreateCell) {
+          throw new Error(permissions.createCellReason);
+        }
+        if (!input.name.trim() || !input.description.trim()) {
+          throw new Error('Please provide both a name and description for the cell.');
+        }
+        try {
+          const result = await client.forumActions.createCell(
+            {
+              name: input.name,
+              description: input.description,
+              icon: input.icon,
+              currentUser,
+              isAuthenticated: !!currentUser,
+            },
+            async () => {} // updateStateFromCache handled by ForumProvider
+          );
+          return result.data || null;
+        } catch {
+          throw new Error('Failed to create cell. Please try again.');
+        }
       },
       createPost: async (input: { cellId: string; title: string; content: string }) => {
-        return forumActions.createPost(input.cellId, input.title, input.content);
+        if (!permissions.canPost) {
+          throw new Error('You need to verify Ordinal ownership to create posts.');
+        }
+        if (!input.title.trim() || !input.content.trim()) {
+          throw new Error('Please provide both a title and content for the post.');
+        }
+        try {
+          const result = await client.forumActions.createPost(
+            {
+              cellId: input.cellId,
+              title: input.title,
+              content: input.content,
+              currentUser,
+              isAuthenticated: !!currentUser,
+            },
+            async () => {}
+          );
+          return result.data || null;
+        } catch {
+          throw new Error('Failed to create post. Please try again.');
+        }
       },
       createComment: async (input: { postId: string; content: string }) => {
-        return forumActions.createComment(input.postId, input.content);
+        if (!permissions.canComment) {
+          throw new Error('You need to connect your wallet to create comments.');
+        }
+        if (!input.content.trim()) {
+          throw new Error('Please provide content for the comment.');
+        }
+        try {
+          const result = await client.forumActions.createComment(
+            {
+              postId: input.postId,
+              content: input.content,
+              currentUser,
+              isAuthenticated: !!currentUser,
+            },
+            async () => {}
+          );
+          return result.data || null;
+        } catch {
+          throw new Error('Failed to create comment. Please try again.');
+        }
       },
       vote: async (input: { targetId: string; isUpvote: boolean }) => {
-        // useForumActions.vote handles both posts and comments by id
+        if (!permissions.canVote) {
+          throw new Error(permissions.voteReason);
+        }
         if (!input.targetId) return false;
-        // Try post vote first, then comment vote if needed
         try {
-          const ok = await forumActions.votePost(input.targetId, input.isUpvote);
-          if (ok) return true;
-        } catch {}
-        try {
-          return await forumActions.voteComment(input.targetId, input.isUpvote);
+          // Use the unified vote method from ForumActions
+          const result = await client.forumActions.vote(
+            {
+              targetId: input.targetId,
+              isUpvote: input.isUpvote,
+              currentUser,
+              isAuthenticated: !!currentUser,
+            },
+            async () => {}
+          );
+          return result.success;
         } catch {
           return false;
         }
       },
       moderate: {
         post: async (cellId: string, postId: string, reason?: string) => {
-          try { return await forumActions.moderatePost(cellId, postId, reason); } catch { return false; }
+          try {
+            const result = await client.forumActions.moderatePost(
+              { cellId, postId, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
+              async () => {}
+            );
+            return result.success;
+          } catch { return false; }
         },
         unpost: async (cellId: string, postId: string, reason?: string) => {
-          try { return await forumActions.unmoderatePost(cellId, postId, reason); } catch { return false; }
+          try {
+            const result = await client.forumActions.unmoderatePost(
+              { cellId, postId, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
+              async () => {}
+            );
+            return result.success;
+          } catch { return false; }
         },
         comment: async (cellId: string, commentId: string, reason?: string) => {
-          try { return await forumActions.moderateComment(cellId, commentId, reason); } catch { return false; }
+          try {
+            const result = await client.forumActions.moderateComment(
+              { cellId, commentId, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
+              async () => {}
+            );
+            return result.success;
+          } catch { return false; }
         },
         uncomment: async (cellId: string, commentId: string, reason?: string) => {
-          try { return await forumActions.unmoderateComment(cellId, commentId, reason); } catch { return false; }
+          try {
+            const result = await client.forumActions.unmoderateComment(
+              { cellId, commentId, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
+              async () => {}
+            );
+            return result.success;
+          } catch { return false; }
         },
         user: async (cellId: string, userAddress: string, reason?: string) => {
-          try { return await forumActions.moderateUser(cellId, userAddress, reason); } catch { return false; }
+          try {
+            const result = await client.forumActions.moderateUser(
+              { cellId, userAddress, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
+              async () => {}
+            );
+            return result.success;
+          } catch { return false; }
         },
         unuser: async (cellId: string, userAddress: string, reason?: string) => {
-          try { return await forumActions.unmoderateUser(cellId, userAddress, reason); } catch { return false; }
+          try {
+            const result = await client.forumActions.unmoderateUser(
+              { cellId, userAddress, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
+              async () => {}
+            );
+            return result.success;
+          } catch { return false; }
         },
       },
-      togglePostBookmark: async (post: Post, cellId?: string) => bookmarkPost(post, cellId),
-      toggleCommentBookmark: async (comment: Comment, postId?: string) => bookmarkComment(comment, postId),
+      togglePostBookmark: async (post: Post, cellId?: string) => {
+        try {
+          if (!currentUser?.address) return false;
+          const { BookmarkService } = await import('@opchan/core');
+          const added = await BookmarkService.togglePostBookmark(post, currentUser.address, cellId);
+          // Update local state snapshot from DB cache for immediate UI feedback
+          const updated = await client.database.getUserBookmarks(currentUser.address);
+          setBookmarks(updated);
+          return added;
+        } catch (e) {
+          console.error('togglePostBookmark failed', e);
+          return false;
+        }
+      },
+      toggleCommentBookmark: async (comment: Comment, postId?: string) => {
+        try {
+          if (!currentUser?.address) return false;
+          const { BookmarkService } = await import('@opchan/core');
+          const added = await BookmarkService.toggleCommentBookmark(comment, currentUser.address, postId);
+          const updated = await client.database.getUserBookmarks(currentUser.address);
+          setBookmarks(updated);
+          return added;
+        } catch (e) {
+          console.error('toggleCommentBookmark failed', e);
+          return false;
+        }
+      },
       refresh: async () => { await refreshData(); },
       pending: {
         isPending: (id?: string) => {
-          return id ? localDatabase.isPending(id) : false;
+          return id ? client.database.isPending(id) : false;
         },
         isVotePending: (targetId?: string) => {
           if (!targetId || !currentUser?.address) return false;
-          return Object.values(localDatabase.cache.votes).some(v => {
+          return Object.values(client.database.cache.votes).some(v => {
             return (
               v.targetId === targetId &&
               v.author === currentUser.address &&
-              localDatabase.isPending(v.id)
+              client.database.isPending(v.id)
             );
           });
         },
         onChange: (cb: () => void) => {
-          return localDatabase.onPendingChange(cb);
+          return client.database.onPendingChange(cb);
         },
       },
     };
-  }, [forumData, bookmarks, forumActions, bookmarkPost, bookmarkComment, refreshData, currentUser?.address]);
+  }, [forumData, bookmarks, refreshData, currentUser, permissions, client]);
 
   const permissionsSlice = useMemo(() => {
     return {
@@ -359,5 +624,6 @@ export function useForumApi(): UseForumApi {
     selectors,
   }), [user, content, permissionsSlice, networkSlice, selectors]);
 }
+
 
 

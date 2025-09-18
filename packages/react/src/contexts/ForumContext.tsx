@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { localDatabase, messageManager, ForumActions, OpChanClient, getDataFromCache } from '@opchan/core';
+import { localDatabase, ForumActions, OpChanClient, getDataFromCache } from '@opchan/core';
 import { transformCell, transformPost, transformComment } from '@opchan/core';
 import { useAuth } from './AuthContext';
 import { Cell, Post, Comment, UserVerificationStatus } from '@opchan/core';
@@ -63,47 +63,58 @@ export const ForumProvider: React.FC<{
     }
   }, [updateFromCache]);
 
+  // 1) Initial cache hydrate only – decoupled from network subscriptions
   useEffect(() => {
-    let unsubHealth: (() => void) | null = null;
-    let unsubMsg: (() => void) | null = null;
-
     const init = async () => {
       try {
-        // Ensure LocalDatabase is opened before hydrating
-        if (!localDatabase.getSyncState) {
-          console.log('📥 Opening LocalDatabase for ForumProvider...');
-          await localDatabase.open();
-        }
-        
         await updateFromCache();
         setIsInitialLoading(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to initialize');
         setIsInitialLoading(false);
       }
-
-      // Check initial health status
-      const initialHealth = messageManager.currentHealth;
-      const initialReady = messageManager.isReady;
-      console.log('🔌 ForumContext initial state:', { initialReady, initialHealth });
-      setIsNetworkConnected(!!initialReady);
-
-      unsubHealth = messageManager.onHealthChange((ready: boolean, health: any) => {
-        console.log('🔌 ForumContext health change:', { ready, health });
-        setIsNetworkConnected(!!ready);
-      });
-
-      unsubMsg = messageManager.onMessageReceived(async () => {
-        await updateFromCache();
-      });
     };
-
     init();
+  }, [updateFromCache]);
+
+  // 2) Network wiring – subscribe once to the client's message manager
+  useEffect(() => {
+    let unsubHealth: (() => void) | null = null;
+    let unsubMsg: (() => void) | null = null;
+
+    // Check initial health status from the provided client to ensure a single core instance
+    const initialHealth = client.messageManager.currentHealth;
+    const initialReady = client.messageManager.isReady;
+    console.log('🔌 ForumContext initial state:', { initialReady, initialHealth });
+    setIsNetworkConnected(!!initialReady);
+
+    unsubHealth = client.messageManager.onHealthChange((ready: boolean, health: any) => {
+      console.log('🔌 ForumContext health change:', { ready, health });
+      setIsNetworkConnected(!!ready);
+    });
+
+    unsubMsg = client.messageManager.onMessageReceived(async () => {
+      await updateFromCache();
+    });
+
     return () => {
       try { unsubHealth && unsubHealth(); } catch {}
       try { unsubMsg && unsubMsg(); } catch {}
     };
-  }, [updateFromCache]);
+  }, [client, updateFromCache]);
+
+  // 3) Visibility change: re-check connection immediately when tab becomes active
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        const ready = client.messageManager.isReady;
+        setIsNetworkConnected(!!ready);
+        console.debug('🔌 ForumContext visibility check, ready:', ready);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [client]);
 
   const ctx: ForumContextValue = useMemo(() => ({
     cells,

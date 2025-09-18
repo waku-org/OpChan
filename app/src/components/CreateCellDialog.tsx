@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
-import { useForumActions, usePermissions } from '@/hooks';
+import { usePermissions } from '@/hooks';
+import { useForum } from '@opchan/react';
 import {
   Form,
   FormControl,
@@ -57,7 +58,9 @@ export function CreateCellDialog({
   open: externalOpen,
   onOpenChange,
 }: CreateCellDialogProps = {}) {
-  const { createCell, isCreatingCell } = useForumActions();
+  const forum = useForum();
+  const {createCell} = forum.content;
+  const isCreatingCell = false;
   const { canCreateCell } = usePermissions();
   const { toast } = useToast();
   const [internalOpen, setInternalOpen] = React.useState(false);
@@ -84,12 +87,11 @@ export function CreateCellDialog({
       return;
     }
 
-    // ✅ All validation handled in hook
-    const cell = await createCell(
-      values.title,
-      values.description,
-      values.icon
-    );
+    const cell = await createCell({
+      name: values.title,
+      description: values.description,
+      icon: values.icon,
+    });
     if (cell) {
       form.reset();
       setOpen(false);

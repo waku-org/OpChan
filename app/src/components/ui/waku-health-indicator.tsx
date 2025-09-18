@@ -1,5 +1,5 @@
 import { Wifi, WifiOff, AlertTriangle, CheckCircle } from 'lucide-react';
-import { useWakuHealthStatus } from '@opchan/react';
+import { useNetworkStatus } from '@opchan/react';
 import { cn } from '@opchan/core';
 
 interface WakuHealthIndicatorProps {
@@ -13,8 +13,12 @@ export function WakuHealthIndicator({
   showText = true,
   size = 'md',
 }: WakuHealthIndicatorProps) {
-  const { connectionStatus, statusColor, statusMessage } =
-    useWakuHealthStatus();
+  const network = useNetworkStatus();
+  const connectionStatus = network.health.isConnected
+    ? 'connected'
+    : 'disconnected';
+  const statusColor = network.getHealthColor();
+  const statusMessage = network.getStatusMessage();
 
   const getIcon = () => {
     switch (connectionStatus) {
@@ -66,7 +70,8 @@ export function WakuHealthIndicator({
  * Useful for compact displays like headers or status bars
  */
 export function WakuHealthDot({ className }: { className?: string }) {
-  const { statusColor } = useWakuHealthStatus();
+  const { getHealthColor } = useNetworkStatus();
+  const statusColor = getHealthColor();
 
   return (
     <div

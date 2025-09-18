@@ -12,14 +12,15 @@ import {
 import PostCard from '@/components/PostCard';
 import FeedSidebar from '@/components/FeedSidebar';
 import { ModerationToggle } from '@/components/ui/moderation-toggle';
-import { useForumData, useAuth, useForumActions } from '@/hooks';
+import { useForumData, useAuth } from '@/hooks';
+import { useForum } from '@opchan/react';
 import { EVerificationStatus } from '@opchan/core';
 import { sortPosts, SortOption } from '@opchan/core';
 
 const FeedPage: React.FC = () => {
   const forumData = useForumData();
   const { verificationStatus } = useAuth();
-  const { refreshData } = useForumActions();
+  const { content } = useForum();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
   const {
@@ -136,7 +137,7 @@ const FeedPage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={refreshData}
+                onClick={content.refresh}
                 disabled={isRefreshing}
                 className="flex items-center space-x-2"
               >

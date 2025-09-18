@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useForumData, useForumActions, usePermissions } from '@/hooks';
+import { useForumData, usePermissions } from '@/hooks';
 import {
   Layout,
   MessageSquare,
@@ -141,7 +141,7 @@ const CellItem: React.FC<{ cell: Cell }> = ({ cell }) => {
 
 const CellList = () => {
   const { cellsWithStats, isInitialLoading } = useForumData();
-  const { refreshData } = useForumActions();
+  const { content } = useForum();
   const { canCreateCell } = usePermissions();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
@@ -221,7 +221,7 @@ const CellList = () => {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={refreshData}
+                onClick={content.refresh}
                 disabled={isInitialLoading}
                 title="Refresh data"
                 className="px-3 border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"

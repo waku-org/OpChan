@@ -1,5 +1,6 @@
 // Providers only (context hooks are internal)
 export * from './provider/OpChanProvider';
+export { ClientProvider, useClient } from './contexts/ClientContext';
 export { AuthProvider, useAuth } from './contexts/AuthContext';
 export { ForumProvider, useForum as useForumContext } from './contexts/ForumContext';
 export { ModerationProvider, useModeration } from './contexts/ModerationContext';

@@ -9,8 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Circle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks';
-import { useDelegation } from '@opchan/react';
-import { EVerificationStatus } from '@opchan/core';
+import { EVerificationStatus, DelegationFullStatus } from '@opchan/core';
 import { WalletConnectionStep } from './wallet-connection-step';
 import { VerificationStep } from './verification-step';
 import { DelegationStep } from './delegation-step';
@@ -30,8 +29,12 @@ export function WalletWizard({
 }: WalletWizardProps) {
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1);
   const [isLoading, setIsLoading] = React.useState(false);
-  const { isAuthenticated, verificationStatus } = useAuth();
-  const { delegationStatus } = useDelegation();
+  const { isAuthenticated, verificationStatus, getDelegationStatus } = useAuth();
+  const [delegationStatus, setDelegationStatus] = React.useState<DelegationFullStatus | null>(null);
+
+  React.useEffect(() => {
+    getDelegationStatus().then(setDelegationStatus).catch(console.error);
+  }, [getDelegationStatus]);
 
   // Reset wizard when opened - always start at step 1 for simplicity
   React.useEffect(() => {
@@ -65,7 +68,7 @@ export function WalletWizard({
         case 2:
           return verificationStatus !== EVerificationStatus.WALLET_UNCONNECTED;
         case 3:
-          return delegationStatus.isValid;
+          return delegationStatus?.isValid ?? false;
         default:
           return false;
       }

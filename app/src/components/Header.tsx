@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useForum } from '@opchan/react';
+import { useAuth, useForumContext, useNetworkStatus } from '@opchan/react';
 import { EVerificationStatus } from '@opchan/core';
 import { localDatabase } from '@opchan/core';
-// Removed unused import
+import { DelegationFullStatus } from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -50,10 +50,16 @@ import { useUserDisplay } from '@/hooks';
 import { WakuHealthDot } from '@/components/ui/waku-health-indicator';
 
 const Header = () => {
-  const forum = useForum();
-  const { user, network } = forum;
+  const { currentUser, getDelegationStatus } = useAuth();
+  const [delegationInfo, setDelegationInfo] =
+    useState<DelegationFullStatus | null>(null);
+  const network = useNetworkStatus();
+  const wakuHealth = {
+    statusMessage: network.getStatusMessage(),
+  };
   const location = useLocation();
   const { toast } = useToast();
+  const forumContext = useForumContext();
 
   // Use AppKit hooks for multi-chain support
   const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
@@ -64,27 +70,26 @@ const Header = () => {
   const isBitcoinConnected = bitcoinAccount.isConnected;
   const isEthereumConnected = ethereumAccount.isConnected;
   const isConnected = isBitcoinConnected || isEthereumConnected;
-
+  
   // Use currentUser address (which has ENS details) instead of raw AppKit address
-  const address =
-    user.address ||
-    (isConnected
-      ? isBitcoinConnected
-        ? bitcoinAccount.address
-        : ethereumAccount.address
-      : undefined);
+  const address = currentUser?.address || (isConnected
+    ? isBitcoinConnected
+      ? bitcoinAccount.address
+      : ethereumAccount.address
+    : undefined);
 
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ✅ Use UserIdentityService via useUserDisplay hook for centralized display logic
-  const { displayName, ensName, verificationLevel } = useUserDisplay(
-    address || ''
-  );
+  const { displayName, verificationLevel } = useUserDisplay(address || '');
+  
+  // ✅ Removed console.log to prevent spam during development
 
-  // ✅ Removed console.log to prevent infinite loop spam
-
-  // Delegation info is available directly from user.delegation
+  // Load delegation status
+  React.useEffect(() => {
+    getDelegationStatus().then(setDelegationInfo).catch(console.error);
+  }, [getDelegationStatus]);
 
   // Use LocalDatabase to persist wizard state across navigation
   const getHasShownWizard = async (): Promise<boolean> => {
@@ -125,7 +130,6 @@ const Header = () => {
   };
 
   const handleDisconnect = async () => {
-    await user.disconnect();
     await disconnect();
     await setHasShownWizard(false); // Reset so wizard can show again on next connection
     toast({
@@ -154,18 +158,16 @@ const Header = () => {
   const getStatusIcon = () => {
     if (!isConnected) return <CircleSlash className="w-4 h-4" />;
 
-    // Use verification status from user slice
+    // Use verification level from UserIdentityService (central database store)
     if (
-      user.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
-      user.delegation.isValid
+      verificationLevel === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
+      delegationInfo?.isValid
     ) {
       return <CheckCircle className="w-4 h-4" />;
-    } else if (
-      user.verificationStatus === EVerificationStatus.WALLET_CONNECTED
-    ) {
+    } else if (verificationLevel === EVerificationStatus.WALLET_CONNECTED) {
       return <AlertTriangle className="w-4 h-4" />;
     } else if (
-      user.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
+      verificationLevel === EVerificationStatus.ENS_ORDINAL_VERIFIED
     ) {
       return <Key className="w-4 h-4" />;
     } else {
@@ -195,13 +197,13 @@ const Header = () => {
               <div className="flex items-center space-x-2 px-3 py-1 bg-cyber-muted/20 rounded-full border border-cyber-muted/30">
                 <WakuHealthDot />
                 <span className="text-xs font-mono text-cyber-neutral">
-                  {network.statusMessage}
+                  {wakuHealth.statusMessage}
                 </span>
-                {network.isConnected && (
+                {forumContext.lastSync && (
                   <div className="flex items-center space-x-1 text-xs text-cyber-neutral/70">
                     <Clock className="w-3 h-3" />
                     <span>
-                      {new Date().toLocaleTimeString([], {
+                      {new Date(forumContext.lastSync).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
@@ -225,11 +227,11 @@ const Header = () => {
                   <Badge
                     variant="outline"
                     className={`font-mono text-xs border-0 ${
-                      user.verificationStatus ===
+                      verificationLevel ===
                         EVerificationStatus.ENS_ORDINAL_VERIFIED &&
-                      user.delegation.isValid
+                      delegationInfo?.isValid
                         ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                        : user.verificationStatus ===
+                        : verificationLevel ===
                             EVerificationStatus.ENS_ORDINAL_VERIFIED
                           ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
                           : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
@@ -237,13 +239,11 @@ const Header = () => {
                   >
                     {getStatusIcon()}
                     <span className="ml-1">
-                      {user.verificationStatus ===
-                      EVerificationStatus.WALLET_UNCONNECTED
+                      {verificationLevel === EVerificationStatus.WALLET_UNCONNECTED
                         ? 'CONNECT'
-                        : user.delegation.isValid
+                        : delegationInfo?.isValid
                           ? 'READY'
-                          : user.verificationStatus ===
-                              EVerificationStatus.ENS_ORDINAL_VERIFIED
+                          : verificationLevel === EVerificationStatus.ENS_ORDINAL_VERIFIED
                             ? 'EXPIRED'
                             : 'DELEGATE'}
                     </span>
@@ -475,10 +475,10 @@ const Header = () => {
               <div className="px-4 py-3 border-t border-cyber-muted/20">
                 <div className="flex items-center space-x-2 text-xs text-cyber-neutral">
                   <WakuHealthDot />
-                  <span>{network.statusMessage}</span>
-                  {network.isConnected && (
+                  <span>{wakuHealth.statusMessage}</span>
+                  {forumContext.lastSync && (
                     <span className="ml-auto">
-                      {new Date().toLocaleTimeString([], {
+                      {new Date(forumContext.lastSync).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
