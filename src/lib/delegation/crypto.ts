@@ -25,8 +25,9 @@ export class DelegationCrypto {
     expiryTimestamp: number,
     nonce: string
   ): string {
-    const expiryDate = new Date(expiryTimestamp).toLocaleString();
-    return `I, ${walletAddress}, authorize browser key ${browserPublicKey} until ${expiryDate} (nonce: ${nonce})`;
+    const isoExpiry = new Date(expiryTimestamp).toISOString();
+    // Include both human-readable ISO and raw numeric timestamp for deterministic verification
+    return `I, ${walletAddress}, authorize browser key ${browserPublicKey} until ${isoExpiry} (ts:${expiryTimestamp}) (nonce: ${nonce})`;
   }
 
   /**

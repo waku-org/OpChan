@@ -499,7 +499,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedUser = {
         ...currentUser,
         delegationExpiry: undefined,
-        browserPublicKey: undefined,
+        browserPubKey: undefined,
+        delegationSignature: undefined,
       };
       setCurrentUser(updatedUser);
       await saveUser(updatedUser);

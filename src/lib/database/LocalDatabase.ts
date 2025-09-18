@@ -77,12 +77,29 @@ export class LocalDatabase {
         signature?: unknown;
         browserPubKey?: unknown;
       };
-      console.warn('LocalDatabase: Rejecting invalid message', {
-        messageId: partialMsg?.id,
-        messageType: partialMsg?.type,
-        hasSignature: !!partialMsg?.signature,
-        hasBrowserPubKey: !!partialMsg?.browserPubKey,
-      });
+      // Get a detailed validation report for clearer diagnostics
+      try {
+        const report = await this.validator.getValidationReport(message);
+        console.warn('LocalDatabase: Rejecting invalid message', {
+          messageId: partialMsg?.id,
+          messageType: partialMsg?.type,
+          hasSignature: !!partialMsg?.signature,
+          hasBrowserPubKey: !!partialMsg?.browserPubKey,
+          hasValidSignature: report.hasValidSignature,
+          missingFields: report.missingFields,
+          invalidFields: report.invalidFields,
+          warnings: report.warnings,
+          errors: report.errors,
+        });
+      } catch (error) {
+        console.warn('LocalDatabase: Rejecting invalid message (no report)', {
+          messageId: partialMsg?.id,
+          messageType: partialMsg?.type,
+          hasSignature: !!partialMsg?.signature,
+          hasBrowserPubKey: !!partialMsg?.browserPubKey,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
       return false;
     }
 

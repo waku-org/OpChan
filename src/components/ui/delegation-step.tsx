@@ -212,7 +212,13 @@ export function DelegationStep({
           {delegationInfo?.isValid && (
             <div className="flex justify-end">
               <Button
-                onClick={clearDelegation}
+                onClick={async () => {
+                  const ok = await clearDelegation();
+                  if (ok) {
+                    // Refresh status so UI immediately reflects cleared state
+                    getDelegationStatus().then(setDelegationInfo).catch(console.error);
+                  }
+                }}
                 variant="outline"
                 size="sm"
                 className="text-red-400 border-red-400 hover:bg-red-400 hover:text-white"

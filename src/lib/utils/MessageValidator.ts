@@ -281,9 +281,22 @@ export class MessageValidator {
     errors: string[];
   }> {
     const structureReport = this.validateStructure(message);
-    const hasValidSignature = structureReport.isValid
-      ? await this.isValidMessage(message)
-      : false;
+    let hasValidSignature = false;
+    let signatureErrors: string[] = [];
+    if (structureReport.isValid) {
+      try {
+        const result = await this.getDelegationManager().verifyWithReason(
+          message as unknown as OpchanMessage
+        );
+        hasValidSignature = result.isValid;
+        signatureErrors = result.reasons;
+      } catch (err) {
+        hasValidSignature = false;
+        signatureErrors = [
+          err instanceof Error ? err.message : 'Unknown signature validation error',
+        ];
+      }
+    }
 
     return {
       ...structureReport,
@@ -291,6 +304,7 @@ export class MessageValidator {
       errors: [
         ...structureReport.missingFields,
         ...structureReport.invalidFields,
+        ...signatureErrors,
       ],
     };
   }

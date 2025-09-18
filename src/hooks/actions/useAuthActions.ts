@@ -39,6 +39,7 @@ export function useAuthActions(): AuthActions {
     verifyOwnership,
     delegateKey: delegateKeyFromContext,
     getDelegationStatus,
+    clearDelegation: clearDelegationFromContext,
   } = useAuthContext();
   const { toast } = useToast();
 
@@ -255,13 +256,8 @@ export function useAuthActions(): AuthActions {
     }
 
     try {
-      // This would clear the delegation
-      // The actual implementation would use the DelegationManager
-
-      toast({
-        title: 'Delegation Cleared',
-        description: 'Your key delegation has been cleared.',
-      });
+      // Use the real clear implementation from AuthContext (includes toast)
+      await clearDelegationFromContext();
       return true;
     } catch (error) {
       console.error('Failed to clear delegation:', error);
@@ -272,7 +268,7 @@ export function useAuthActions(): AuthActions {
       });
       return false;
     }
-  }, [getDelegationStatus, toast]);
+  }, [getDelegationStatus, clearDelegationFromContext, toast]);
 
   // Renew delegation
   const renewDelegation = useCallback(
