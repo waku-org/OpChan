@@ -1,6 +1,5 @@
 import { Ordiscan, Inscription } from 'ordiscan';
 import { environment } from '../utils/environment';
-const API_KEY = environment.ordiscanApiKey;
 
 class Ordinals {
   private static instance: Ordinals | null = null;
@@ -14,10 +13,11 @@ class Ordinals {
 
   static getInstance(): Ordinals {
     if (!Ordinals.instance) {
-      if (!API_KEY) {
+      const apiKey = environment.ordiscanApiKey;
+      if (!apiKey) {
         throw new Error('Ordiscan API key is not configured. Please set up the environment.');
       }
-      Ordinals.instance = new Ordinals(new Ordiscan(API_KEY));
+      Ordinals.instance = new Ordinals(new Ordiscan(apiKey));
     }
     return Ordinals.instance;
   }
@@ -48,4 +48,9 @@ class Ordinals {
   }
 }
 
-export const ordinals = Ordinals.getInstance();
+export const ordinals = {
+  getInstance: () => Ordinals.getInstance(),
+  getOrdinalDetails: async (address: string) => {
+    return Ordinals.getInstance().getOrdinalDetails(address);
+  }
+};

@@ -1,0 +1,42 @@
+{
+  "name": "@opchan/react",
+  "version": "1.0.0",
+  "private": false,
+  "description": "React contexts and hooks for OpChan built on @opchan/core",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run clean && npm run build:esm && npm run build:types",
+    "build:esm": "tsc -p tsconfig.build.json && cp dist/index.js dist/index.esm.js",
+    "build:types": "tsc -p tsconfig.types.json",
+    "clean": "rm -rf dist",
+    "dev": "tsc -w -p tsconfig.build.json",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "@opchan/core": "file:../core"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22"
+  }
+}
+
+

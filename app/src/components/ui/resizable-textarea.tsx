@@ -4,11 +4,12 @@ import { Resizable } from 're-resizable';
 import { cn } from '@opchan/core';
 import { Textarea } from '@/components/ui/textarea';
 
-type ResizableTextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-  initialHeight?: number;
-  minHeight?: number;
-  maxHeight?: number;
-};
+type ResizableTextareaProps =
+  React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+    initialHeight?: number;
+    minHeight?: number;
+    maxHeight?: number;
+  };
 
 export const ResizableTextarea = React.forwardRef<
   HTMLTextAreaElement,
@@ -44,7 +45,9 @@ export const ResizableTextarea = React.forwardRef<
         minHeight={minHeight}
         maxHeight={maxHeight}
         onResizeStop={(_event, _dir, _elementRef, delta) => {
-          setHeight(current => Math.max(minHeight, Math.min(maxHeight, current + delta.height)));
+          setHeight(current =>
+            Math.max(minHeight, Math.min(maxHeight, current + delta.height))
+          );
         }}
         handleComponent={{
           bottom: (
@@ -71,5 +74,3 @@ export const ResizableTextarea = React.forwardRef<
 ResizableTextarea.displayName = 'ResizableTextarea';
 
 export default ResizableTextarea;
-
-

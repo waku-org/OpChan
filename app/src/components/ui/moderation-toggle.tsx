@@ -1,9 +1,8 @@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
-import { useModeration } from '@/contexts/ModerationContext';
-import { usePermissions } from '@/hooks/core/usePermissions';
-import { useForumData } from '@/hooks/core/useForumData';
+import { useModeration } from '@opchan/react';
+import { usePermissions, useForumData } from '@opchan/react';
 
 export function ModerationToggle() {
   const { showModerated, toggleShowModerated } = useModeration();

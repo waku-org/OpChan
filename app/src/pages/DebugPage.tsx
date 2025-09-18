@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import messageManager from '@opchan/core';
-import { MessageType } from '@opchan/core';
+import { messageManager, MessageType } from '@opchan/core';
 import type { OpchanMessage } from '@opchan/core';
 
 interface ReceivedMessage {
@@ -14,11 +13,13 @@ export default function DebugPage() {
 
   useEffect(() => {
     // Subscribe to inbound messages from reliable channel
-    unsubscribeRef.current = messageManager.onMessageReceived(msg => {
-      setMessages(prev =>
-        [{ receivedAt: Date.now(), message: msg }, ...prev].slice(0, 500)
-      );
-    });
+    unsubscribeRef.current = messageManager.onMessageReceived(
+      (msg: OpchanMessage) => {
+        setMessages(prev =>
+          [{ receivedAt: Date.now(), message: msg }, ...prev].slice(0, 500)
+        );
+      }
+    );
 
     return () => {
       unsubscribeRef.current?.();

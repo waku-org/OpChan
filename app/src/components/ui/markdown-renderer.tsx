@@ -11,9 +11,12 @@ interface MarkdownRendererProps {
 /**
  * Renders sanitized Markdown with GFM support.
  */
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className }) => {
+export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
+  content,
+  className,
+}) => {
   // Extend sanitize schema to allow common markdown elements (headings, lists, code, tables, etc.)
-  const schema: any = {
+  const schema: typeof defaultSchema = {
     ...defaultSchema,
     tagNames: [
       ...(defaultSchema.tagNames || []),
@@ -57,15 +60,15 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
         ['alt'],
         ['title'],
       ],
-      code: [
-        ...(defaultSchema.attributes?.code || []),
-        ['className'],
-      ],
+      code: [...(defaultSchema.attributes?.code || []), ['className']],
     },
   };
   return (
     <div className={className}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[[rehypeSanitize, schema]]}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[[rehypeSanitize, schema]]}
+      >
         {content || ''}
       </ReactMarkdown>
     </div>
@@ -73,5 +76,3 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
 };
 
 export default MarkdownRenderer;
-
-

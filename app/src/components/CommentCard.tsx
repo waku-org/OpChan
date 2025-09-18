@@ -2,17 +2,11 @@ import React from 'react';
 import { ArrowUp, ArrowDown, Clock, Shield, UserX } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Comment } from '@opchan/core';
-import {
-  useForumActions,
-  usePermissions,
-  useUserVotes,
-  useCommentBookmark,
-} from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { BookmarkButton } from '@/components/ui/bookmark-button';
 import { AuthorDisplay } from '@/components/ui/author-display';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
-import { usePending, usePendingVote } from '@/hooks/usePending';
+import { useForum } from '@opchan/react';
 import {
   Tooltip,
   TooltipContent,
@@ -32,7 +26,8 @@ interface CommentCardProps {
 
 // Extracted child component to respect Rules of Hooks
 const PendingBadge: React.FC<{ id: string }> = ({ id }) => {
-  const { isPending } = usePending(id);
+  const { content } = useForum();
+  const isPending = content.pending.isPending(id);
   if (!isPending) return null;
   return (
     <>
@@ -53,27 +48,40 @@ const CommentCard: React.FC<CommentCardProps> = ({
   onUnmoderateComment,
   onModerateUser,
 }) => {
-  const { voteComment, isVoting } = useForumActions();
-  const { canVote } = usePermissions();
-  const userVotes = useUserVotes();
-  const {
-    isBookmarked,
-    loading: bookmarkLoading,
-    toggleBookmark,
-  } = useCommentBookmark(comment, postId);
+  const forum = useForum();
+  const { content, permissions } = forum;
 
-  const commentVotePending = usePendingVote(comment.id);
+  // Check if bookmarked
+  const isBookmarked = content.bookmarks.some(
+    b => b.targetId === comment.id && b.type === 'comment'
+  );
+  const [bookmarkLoading, setBookmarkLoading] = React.useState(false);
+
+  // Use library pending API
+  const commentVotePending = content.pending.isVotePending(comment.id);
+
+  // Get user vote status from filtered comment data
+  const filteredComment = content.filtered.comments.find(
+    c => c.id === comment.id
+  );
+  const userUpvoted = filteredComment
+    ? (filteredComment as unknown as { userUpvoted?: boolean }).userUpvoted
+    : false;
+  const userDownvoted = filteredComment
+    ? (filteredComment as unknown as { userDownvoted?: boolean }).userDownvoted
+    : false;
 
   const handleVoteComment = async (isUpvote: boolean) => {
-    await voteComment(comment.id, isUpvote);
+    await content.vote({ targetId: comment.id, isUpvote });
   };
 
   const handleBookmark = async () => {
-    await toggleBookmark();
-  };
-
-  const getCommentVoteType = () => {
-    return userVotes.getCommentVoteType(comment.id);
+    setBookmarkLoading(true);
+    try {
+      await content.toggleCommentBookmark(comment, postId);
+    } finally {
+      setBookmarkLoading(false);
+    }
   };
 
   return (
@@ -82,12 +90,12 @@ const CommentCard: React.FC<CommentCardProps> = ({
         <div className="flex flex-col items-center">
           <button
             className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
-              getCommentVoteType() === 'upvote' ? 'text-cyber-accent' : ''
+              userUpvoted ? 'text-cyber-accent' : ''
             }`}
             onClick={() => handleVoteComment(true)}
-            disabled={!canVote || isVoting}
+            disabled={!permissions.canVote}
             title={
-              canVote ? 'Upvote comment' : 'Connect wallet and verify to vote'
+              permissions.canVote ? 'Upvote comment' : permissions.reasons.vote
             }
           >
             <ArrowUp className="w-3 h-3" />
@@ -95,17 +103,19 @@ const CommentCard: React.FC<CommentCardProps> = ({
           <span className="text-sm font-bold">{comment.voteScore}</span>
           <button
             className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
-              getCommentVoteType() === 'downvote' ? 'text-cyber-accent' : ''
+              userDownvoted ? 'text-cyber-accent' : ''
             }`}
             onClick={() => handleVoteComment(false)}
-            disabled={!canVote || isVoting}
+            disabled={!permissions.canVote}
             title={
-              canVote ? 'Downvote comment' : 'Connect wallet and verify to vote'
+              permissions.canVote
+                ? 'Downvote comment'
+                : permissions.reasons.vote
             }
           >
             <ArrowDown className="w-3 h-3" />
           </button>
-          {commentVotePending.isPending && (
+          {commentVotePending && (
             <span className="mt-1 text-[10px] text-yellow-500">syncing…</span>
           )}
         </div>

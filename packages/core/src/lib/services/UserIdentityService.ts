@@ -28,15 +28,37 @@ export class UserIdentityService {
   private messageService: MessageService;
   private userIdentityCache: UserIdentityCache = {};
   private refreshListeners: Set<(address: string) => void> = new Set();
+  private ensResolutionCache: Map<string, Promise<string | null>> = new Map();
+  private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(messageService: MessageService) {
     this.messageService = messageService;
   }
 
   /**
-   * Get user identity from cache or resolve from sources
+   * Get user identity from cache or resolve from sources with debouncing
    */
   async getUserIdentity(address: string): Promise<UserIdentity | null> {
+    // Debounce rapid calls to the same address
+    if (this.debounceTimers.has(address)) {
+      clearTimeout(this.debounceTimers.get(address)!);
+    }
+    
+    return new Promise((resolve) => {
+      const timer = setTimeout(async () => {
+        this.debounceTimers.delete(address);
+        const result = await this.getUserIdentityInternal(address);
+        resolve(result);
+      }, 100); // 100ms debounce
+      
+      this.debounceTimers.set(address, timer);
+    });
+  }
+
+  /**
+   * Internal method to get user identity without debouncing
+   */
+  private async getUserIdentityInternal(address: string): Promise<UserIdentity | null> {
     // Check internal cache first
     if (this.userIdentityCache[address]) {
       const cached = this.userIdentityCache[address];
@@ -48,6 +70,16 @@ export class UserIdentityService {
         const ensName = await this.resolveENSName(address);
         if (ensName) {
           cached.ensName = ensName;
+          // Update verification status if ENS is found
+          if (cached.verificationStatus !== EVerificationStatus.ENS_ORDINAL_VERIFIED) {
+            cached.verificationStatus = EVerificationStatus.ENS_ORDINAL_VERIFIED;
+            // Persist the updated verification status to LocalDatabase
+            await localDatabase.upsertUserIdentity(address, {
+              ensName,
+              verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
+              lastUpdated: Date.now(),
+            });
+          }
         }
       }
       return {
@@ -91,6 +123,17 @@ export class UserIdentityService {
         if (ensName) {
           result.ensName = ensName;
           this.userIdentityCache[address].ensName = ensName;
+          // Update verification status if ENS is found
+          if (result.verificationStatus !== EVerificationStatus.ENS_ORDINAL_VERIFIED) {
+            result.verificationStatus = EVerificationStatus.ENS_ORDINAL_VERIFIED;
+            this.userIdentityCache[address].verificationStatus = EVerificationStatus.ENS_ORDINAL_VERIFIED;
+            // Persist the updated verification status to LocalDatabase
+            await localDatabase.upsertUserIdentity(address, {
+              ensName,
+              verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
+              lastUpdated: Date.now(),
+            });
+          }
         }
       }
       return result;
@@ -132,6 +175,17 @@ export class UserIdentityService {
         if (ensName) {
           result.ensName = ensName;
           this.userIdentityCache[address].ensName = ensName;
+          // Update verification status if ENS is found
+          if (result.verificationStatus !== EVerificationStatus.ENS_ORDINAL_VERIFIED) {
+            result.verificationStatus = EVerificationStatus.ENS_ORDINAL_VERIFIED;
+            this.userIdentityCache[address].verificationStatus = EVerificationStatus.ENS_ORDINAL_VERIFIED;
+            // Persist the updated verification status to LocalDatabase
+            await localDatabase.upsertUserIdentity(address, {
+              ensName,
+              verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
+              lastUpdated: Date.now(),
+            });
+          }
         }
       }
       return result;
@@ -152,6 +206,16 @@ export class UserIdentityService {
         lastUpdated: identity.lastUpdated,
         verificationStatus: identity.verificationStatus,
       };
+      
+      // Persist the resolved identity to LocalDatabase for future use
+      await localDatabase.upsertUserIdentity(address, {
+        ensName: identity.ensName,
+        ordinalDetails: identity.ordinalDetails,
+        callSign: identity.callSign,
+        displayPreference: identity.displayPreference,
+        verificationStatus: identity.verificationStatus,
+        lastUpdated: identity.lastUpdated,
+      });
     }
 
     return identity;
@@ -176,6 +240,16 @@ export class UserIdentityService {
         lastUpdated: identity.lastUpdated,
         verificationStatus: identity.verificationStatus,
       };
+      
+      // Persist the fresh identity to LocalDatabase
+      await localDatabase.upsertUserIdentity(address, {
+        ensName: identity.ensName,
+        ordinalDetails: identity.ordinalDetails,
+        callSign: identity.callSign,
+        displayPreference: identity.displayPreference,
+        verificationStatus: identity.verificationStatus,
+        lastUpdated: identity.lastUpdated,
+      });
     }
     return identity;
   }
@@ -324,13 +398,40 @@ export class UserIdentityService {
   }
 
   /**
-   * Resolve ENS name from Ethereum address
+   * Resolve ENS name from Ethereum address with caching to prevent multiple calls
    */
   private async resolveENSName(address: string): Promise<string | null> {
     if (!address.startsWith('0x')) {
       return null; // Not an Ethereum address
     }
 
+    // Check if we already have a pending resolution for this address
+    if (this.ensResolutionCache.has(address)) {
+      return this.ensResolutionCache.get(address)!;
+    }
+
+    // Check if we already have this resolved in the cache and it's recent
+    const cached = this.userIdentityCache[address];
+    if (cached?.ensName && cached.lastUpdated > Date.now() - 300000) { // 5 minutes cache
+      return cached.ensName;
+    }
+
+    // Create and cache the promise
+    const resolutionPromise = this.doResolveENSName(address);
+    this.ensResolutionCache.set(address, resolutionPromise);
+
+    // Clean up the cache after resolution (successful or failed)
+    resolutionPromise.finally(() => {
+      // Remove from cache after 60 seconds to allow for re-resolution if needed
+      setTimeout(() => {
+        this.ensResolutionCache.delete(address);
+      }, 60000);
+    });
+
+    return resolutionPromise;
+  }
+
+  private async doResolveENSName(address: string): Promise<string | null> {
     try {
       // Import the ENS resolver from wagmi
       const { getEnsName } = await import('@wagmi/core');
@@ -445,6 +546,10 @@ export class UserIdentityService {
    */
   clearUserIdentityCache(): void {
     this.userIdentityCache = {};
+    this.ensResolutionCache.clear();
+    // Clear all debounce timers
+    this.debounceTimers.forEach(timer => clearTimeout(timer));
+    this.debounceTimers.clear();
   }
 
   /**

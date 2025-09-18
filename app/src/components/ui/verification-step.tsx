@@ -87,17 +87,25 @@ export function VerificationStep({
   }, [currentUser, verificationResult, walletType, verificationStatus]);
 
   const handleVerify = async () => {
-    if (!currentUser) return;
+    console.log('🔘 Verify button clicked, currentUser:', currentUser);
+    if (!currentUser) {
+      console.log('❌ No currentUser in handleVerify');
+      return;
+    }
 
+    console.log('🔄 Setting loading state and calling verifyWallet...');
     setIsLoading(true);
     setVerificationResult(null);
 
     try {
+      console.log('📞 Calling verifyWallet()...');
       const success = await verifyWallet();
+      console.log('📊 verifyWallet returned:', success);
 
       if (success) {
         // For now, just show success - the actual ownership check will be done
         // by the useEffect when the user state updates
+        console.log('✅ Verification successful, setting result');
         setVerificationResult({
           success: true,
           message:
@@ -107,6 +115,7 @@ export function VerificationStep({
           details: undefined,
         });
       } else {
+        console.log('❌ Verification failed, setting failure result');
         setVerificationResult({
           success: false,
           message:
@@ -116,11 +125,13 @@ export function VerificationStep({
         });
       }
     } catch (error) {
+      console.error('💥 Error in handleVerify:', error);
       setVerificationResult({
         success: false,
         message: `Verification failed. Please try again: ${error}`,
       });
     } finally {
+      console.log('🔄 Setting loading to false');
       setIsLoading(false);
     }
   };

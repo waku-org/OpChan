@@ -123,9 +123,11 @@ class MessageManager {
 }
 
 // Create a default instance that can be used synchronously but initialized asynchronously
-class DefaultMessageManager {
+export class DefaultMessageManager {
   private _instance: MessageManager | null = null;
   private _initPromise: Promise<MessageManager> | null = null;
+  private _pendingHealthSubscriptions: HealthChangeCallback[] = [];
+  private _pendingMessageSubscriptions: ((message: any) => void)[] = [];
 
   // Initialize the manager asynchronously
   async initialize(): Promise<void> {
@@ -133,6 +135,18 @@ class DefaultMessageManager {
       this._initPromise = MessageManager.create();
     }
     this._instance = await this._initPromise;
+    
+    // Establish all pending health subscriptions
+    this._pendingHealthSubscriptions.forEach(callback => {
+      this._instance!.onHealthChange(callback);
+    });
+    this._pendingHealthSubscriptions = [];
+    
+    // Establish all pending message subscriptions
+    this._pendingMessageSubscriptions.forEach(callback => {
+      this._instance!.onMessageReceived(callback);
+    });
+    this._pendingMessageSubscriptions = [];
   }
 
   // Get the messageCache (most common usage)
@@ -170,16 +184,32 @@ class DefaultMessageManager {
 
   onHealthChange(callback: any) {
     if (!this._instance) {
-      // Return a no-op function until initialized
-      return () => {};
+      // Queue the callback for when we're initialized
+      this._pendingHealthSubscriptions.push(callback);
+      
+      // Return a function that removes from the pending queue
+      return () => {
+        const index = this._pendingHealthSubscriptions.indexOf(callback);
+        if (index !== -1) {
+          this._pendingHealthSubscriptions.splice(index, 1);
+        }
+      };
     }
     return this._instance.onHealthChange(callback);
   }
 
   onMessageReceived(callback: any) {
     if (!this._instance) {
-      // Return a no-op function until initialized  
-      return () => {};
+      // Queue the callback for when we're initialized
+      this._pendingMessageSubscriptions.push(callback);
+      
+      // Return a function that removes from the pending queue
+      return () => {
+        const index = this._pendingMessageSubscriptions.indexOf(callback);
+        if (index !== -1) {
+          this._pendingMessageSubscriptions.splice(index, 1);
+        }
+      };
     }
     return this._instance.onMessageReceived(callback);
   }

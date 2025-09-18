@@ -37,3 +37,7 @@ coverage/
 
 # TypeScript cache
 *.tsbuildinfo
+
+.giga
+.cursor
+.cursorrules

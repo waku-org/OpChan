@@ -1,11 +1,12 @@
 import Header from '@/components/Header';
 import CellList from '@/components/CellList';
-import { useNetworkStatus, useForumActions } from '@/hooks';
+import { useForumActions } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Wifi } from 'lucide-react';
+import { useForum } from '@opchan/react';
 
 const Index = () => {
-  const { health } = useNetworkStatus();
+  const {network} = useForum()
   const { refreshData } = useForumActions();
 
   return (
@@ -13,7 +14,7 @@ const Index = () => {
       <Header />
       <main className="page-content relative">
         <CellList />
-        {!health.isConnected && (
+        {!network.isConnected && (
           <div className="fixed bottom-4 right-4">
             <Button
               onClick={refreshData}

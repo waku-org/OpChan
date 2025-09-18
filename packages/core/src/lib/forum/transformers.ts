@@ -8,6 +8,7 @@ import {
   EModerationAction,
 } from '../../types/waku';
 import messageManager from '../waku';
+import { localDatabase } from '../database/LocalDatabase';
 import { RelevanceCalculator } from './RelevanceCalculator';
 import { UserVerificationStatus } from '../../types/forum';
 // Validation is enforced at ingestion time by LocalDatabase. Transformers assume
@@ -68,7 +69,7 @@ export const transformPost = async (
 ): Promise<Post | null> => {
   // Message validity already enforced upstream
 
-  const votes = Object.values(messageManager.messageCache.votes).filter(
+  const votes = Object.values(localDatabase.cache.votes).filter(
     (vote): vote is VoteMessage => vote && vote.targetId === postMessage.id
   );
   // Votes in cache are already validated; just map
@@ -80,13 +81,13 @@ export const transformPost = async (
     (vote): vote is VoteMessage => vote !== null && vote.value === -1
   );
 
-  const modMsg = messageManager.messageCache.moderations[postMessage.id];
+  const modMsg = localDatabase.cache.moderations[postMessage.id];
   const isPostModerated =
     !!modMsg &&
     modMsg.targetType === 'post' &&
     modMsg.action === EModerationAction.MODERATE;
   const userModMsg = Object.values(
-    messageManager.messageCache.moderations
+    localDatabase.cache.moderations
   ).find(
     (m): m is ModerateMessage =>
       m &&
@@ -137,7 +138,7 @@ export const transformPost = async (
 
     // Get comments for this post
     const comments = await Promise.all(
-      Object.values(messageManager.messageCache.comments)
+      Object.values(localDatabase.cache.comments)
         .filter((comment): comment is CommentMessage => comment !== null)
         .map(comment =>
           transformComment(comment, undefined, userVerificationStatus)
@@ -190,7 +191,7 @@ export const transformComment = async (
   userVerificationStatus?: UserVerificationStatus
 ): Promise<Comment | null> => {
   // Message validity already enforced upstream
-  const votes = Object.values(messageManager.messageCache.votes).filter(
+  const votes = Object.values(localDatabase.cache.votes).filter(
     (vote): vote is VoteMessage => vote && vote.targetId === commentMessage.id
   );
   // Votes in cache are already validated
@@ -202,17 +203,17 @@ export const transformComment = async (
     (vote): vote is VoteMessage => vote !== null && vote.value === -1
   );
 
-  const modMsg = messageManager.messageCache.moderations[commentMessage.id];
+  const modMsg = localDatabase.cache.moderations[commentMessage.id];
   const isCommentModerated =
     !!modMsg &&
     modMsg.targetType === 'comment' &&
     modMsg.action === EModerationAction.MODERATE;
   // Find the post to get the correct cell ID
-  const parentPost = Object.values(messageManager.messageCache.posts).find(
+  const parentPost = Object.values(localDatabase.cache.posts).find(
     (post): post is PostMessage => post && post.id === commentMessage.postId
   );
   const userModMsg = Object.values(
-    messageManager.messageCache.moderations
+    localDatabase.cache.moderations
   ).find(
     (m): m is ModerateMessage =>
       m &&
@@ -288,10 +289,10 @@ export const getDataFromCache = async (
   _verifyMessage?: unknown, // Deprecated parameter, kept for compatibility
   userVerificationStatus?: UserVerificationStatus
 ): Promise<{ cells: Cell[]; posts: Post[]; comments: Comment[] }> => {
-  // First transform posts and comments to get relevance scores
+  // Use LocalDatabase cache for immediate hydration, avoiding messageManager race conditions
   // All validation is now handled internally by the transform functions
   const posts = await Promise.all(
-    Object.values(messageManager.messageCache.posts)
+    Object.values(localDatabase.cache.posts)
       .filter((post): post is PostMessage => post !== null)
       .map(post =>
         transformPost(post, undefined, userVerificationStatus)
@@ -299,7 +300,7 @@ export const getDataFromCache = async (
   ).then(posts => posts.filter((post): post is Post => post !== null));
 
   const comments = await Promise.all(
-    Object.values(messageManager.messageCache.comments)
+    Object.values(localDatabase.cache.comments)
       .filter((c): c is CommentMessage => c !== null)
       .map(c =>
         transformComment(c, undefined, userVerificationStatus)
@@ -310,7 +311,7 @@ export const getDataFromCache = async (
 
   // Then transform cells with posts for relevance calculation
   const cells = await Promise.all(
-    Object.values(messageManager.messageCache.cells)
+    Object.values(localDatabase.cache.cells)
       .filter((cell): cell is CellMessage => cell !== null)
       .map(cell =>
         transformCell(cell, undefined, userVerificationStatus, posts)

@@ -5,14 +5,22 @@
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "npm run build:cjs && npm run build:esm && npm run build:types",
+    "build": "npm run clean && npm run build:cjs && cp dist/cjs/index.js dist/index.js && npm run build:esm && npm run build:types",
     "build:cjs": "tsc --module commonjs --outDir dist/cjs",
-    "build:esm": "tsc --module esnext --outDir dist/esm && cp -r dist/esm/* dist/ && mv dist/index.js dist/index.esm.js",
-    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+    "build:esm": "tsc --module esnext --outDir dist/esm && cp dist/esm/index.js dist/index.esm.js && cp -r dist/esm/types dist/ && cp -r dist/esm/lib dist/ && cp -r dist/esm/client dist/",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist && cp dist/cjs/index.d.ts dist/index.d.ts",
     "dev": "tsc --watch",
     "test": "vitest",
     "lint": "eslint src --ext .ts",
@@ -38,7 +46,7 @@
     "ordiscan": "^1.3.0",
     "tailwind-merge": "^2.5.2",
     "uuid": "^11.1.0",
-    "wagmi": "^2.16.1"
+    "wagmi": "^2.17.0"
   },
   "devDependencies": {
     "@types/node": "^22.5.5",

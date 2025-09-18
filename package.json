@@ -4,7 +4,8 @@
   "description": "Browser-based Forum Library over Waku",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "app"
   ],
   "scripts": {
     "build": "npm run build --workspaces",

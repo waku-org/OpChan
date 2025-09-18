@@ -26,7 +26,7 @@ import { RelevanceIndicator } from './ui/relevance-indicator';
 import { ModerationToggle } from './ui/moderation-toggle';
 import { sortCells, SortOption } from '@opchan/core';
 import { Cell } from '@opchan/core';
-import { usePending } from '@/hooks/usePending';
+import { useForum } from '@opchan/react';
 import { ShareButton } from './ui/ShareButton';
 
 // Empty State Component
@@ -76,7 +76,8 @@ const EmptyState: React.FC<{ canCreateCell: boolean }> = ({
 
 // Separate component to properly use hooks
 const CellItem: React.FC<{ cell: Cell }> = ({ cell }) => {
-  const pending = usePending(cell.id);
+  const { content } = useForum();
+  const isPending = content.pending.isPending(cell.id);
 
   return (
     <Link to={`/cell/${cell.id}`} className="group block board-card">
@@ -103,7 +104,7 @@ const CellItem: React.FC<{ cell: Cell }> = ({ cell }) => {
               />
             )}
           </div>
-          {pending.isPending && (
+          {isPending && (
             <div className="mb-2">
               <span className="px-2 py-0.5 rounded-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs">
                 syncing…

@@ -93,11 +93,11 @@ const FeedSidebar: React.FC = () => {
             )}
 
             {verificationStatus === EVerificationStatus.WALLET_CONNECTED && (
-                <div className="text-xs text-muted-foreground">
-                  <CheckCircle className="w-3 h-3 inline mr-1" />
-                  Connected. You can post, comment, and vote.
-                </div>
-              )}
+              <div className="text-xs text-muted-foreground">
+                <CheckCircle className="w-3 h-3 inline mr-1" />
+                Connected. You can post, comment, and vote.
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

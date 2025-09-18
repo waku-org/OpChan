@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Circle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks';
-import { useDelegation } from '@/hooks/useDelegation';
+import { useDelegation } from '@opchan/react';
 import { EVerificationStatus } from '@opchan/core';
 import { WalletConnectionStep } from './wallet-connection-step';
 import { VerificationStep } from './verification-step';

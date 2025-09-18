@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useAuth, useUserActions, useForumActions } from '@/hooks';
-import { useAuth as useAuthContext } from '@/contexts/useAuth';
+import { useUserActions, useForumActions } from '@/hooks';
+import { useAuth } from '@opchan/react';
 import { useUserDisplay } from '@/hooks';
-import { useDelegation } from '@/hooks/useDelegation';
+import { useDelegation } from '@opchan/react';
 import { DelegationFullStatus } from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,8 +41,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   // Get current user from auth context for the address
-  const { currentUser, verificationStatus } = useAuth();
-  const { getDelegationStatus } = useAuthContext();
+  const { currentUser, getDelegationStatus } = useAuth();
   const { delegationStatus } = useDelegation();
   const [delegationInfo, setDelegationInfo] =
     useState<DelegationFullStatus | null>(null);
@@ -55,6 +54,20 @@ export default function ProfilePage() {
 
   // Get comprehensive user information from the unified hook
   const userInfo = useUserDisplay(address || '');
+
+  // Debug current user ENS info
+  console.log('📋 Profile page debug:', {
+    address,
+    currentUser: currentUser
+      ? {
+          address: currentUser.address,
+          callSign: currentUser.callSign,
+          ensDetails: currentUser.ensDetails,
+          verificationStatus: currentUser.verificationStatus,
+        }
+      : null,
+    userInfo,
+  });
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -190,7 +203,8 @@ export default function ProfilePage() {
   };
 
   const getVerificationIcon = () => {
-    switch (verificationStatus) {
+    // Use verification level from UserIdentityService (central database store)
+    switch (userInfo.verificationLevel) {
       case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case EVerificationStatus.WALLET_CONNECTED:
@@ -203,7 +217,8 @@ export default function ProfilePage() {
   };
 
   const getVerificationText = () => {
-    switch (verificationStatus) {
+    // Use verification level from UserIdentityService (central database store)
+    switch (userInfo.verificationLevel) {
       case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return 'Owns ENS or Ordinal';
       case EVerificationStatus.WALLET_CONNECTED:
@@ -216,7 +231,8 @@ export default function ProfilePage() {
   };
 
   const getVerificationColor = () => {
-    switch (verificationStatus) {
+    // Use verification level from UserIdentityService (central database store)
+    switch (userInfo.verificationLevel) {
       case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return 'bg-green-100 text-green-800 border-green-200';
       case EVerificationStatus.WALLET_CONNECTED:
@@ -277,9 +293,32 @@ export default function ProfilePage() {
                           {userInfo.displayName}
                         </div>
                         <div className="text-sm text-cyber-neutral">
-                          {userInfo.ordinalDetails || currentUser.ordinalDetails?.ordinalDetails
-                            ? `Ordinal: ${userInfo.ordinalDetails || currentUser.ordinalDetails?.ordinalDetails}`
-                            : currentUser.ensDetails?.ensName || 'No ENS name'}
+                          {/* Show ENS name if available */}
+                          {(userInfo.ensName ||
+                            currentUser?.ensDetails?.ensName) && (
+                            <div>
+                              ENS:{' '}
+                              {userInfo.ensName ||
+                                currentUser?.ensDetails?.ensName}
+                            </div>
+                          )}
+                          {/* Show Ordinal details if available */}
+                          {(userInfo.ordinalDetails ||
+                            currentUser?.ordinalDetails?.ordinalDetails) && (
+                            <div>
+                              Ordinal:{' '}
+                              {userInfo.ordinalDetails ||
+                                currentUser?.ordinalDetails?.ordinalDetails}
+                            </div>
+                          )}
+                          {/* Show fallback if neither ENS nor Ordinal */}
+                          {!(
+                            userInfo.ensName || currentUser?.ensDetails?.ensName
+                          ) &&
+                            !(
+                              userInfo.ordinalDetails ||
+                              currentUser?.ordinalDetails?.ordinalDetails
+                            ) && <div>No ENS or Ordinal verification</div>}
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           {getVerificationIcon()}

@@ -1,91 +1,80 @@
-// Core hooks - Main exports
-export { useForumData } from './core/useForumData';
-export { useAuth } from './core/useAuth';
-export { useUserDisplay } from './core/useUserDisplay';
+// Core hooks - Re-exported from @opchan/react
 export {
+  useForumData,
+  useAuth,
+  useUserDisplay,
   useBookmarks,
   usePostBookmark,
   useCommentBookmark,
-} from './core/useBookmarks';
+} from '@opchan/react';
 
-// Core types
+// Core types - Re-exported from @opchan/react
 export type {
   ForumData,
   CellWithStats,
   PostWithVoteStatus,
   CommentWithVoteStatus,
-} from './core/useForumData';
-
-export type { AuthState } from './core/useAuth';
-export type {
   Permission,
   PermissionReasons,
   PermissionResult,
-} from './core/usePermissions';
+  UserDisplayInfo,
+} from '@opchan/react';
 
-export type { UserDisplayInfo } from './core/useEnhancedUserDisplay';
+// Derived hooks - Re-exported from @opchan/react
+export { useCell, usePost } from '@opchan/react';
+export type { CellData, PostData } from '@opchan/react';
 
-// Derived hooks
-export { useCell } from './derived/useCell';
-export type { CellData } from './derived/useCell';
-
-export { usePost } from './derived/usePost';
-export type { PostData } from './derived/usePost';
-
-export { useCellPosts } from './derived/useCellPosts';
-export type { CellPostsOptions, CellPostsData } from './derived/useCellPosts';
-
-export { usePostComments } from './derived/usePostComments';
+// Derived hooks - Re-exported from @opchan/react
+export { useCellPosts, usePostComments, useUserVotes } from '@opchan/react';
 export type {
+  CellPostsOptions,
+  CellPostsData,
   PostCommentsOptions,
   PostCommentsData,
-} from './derived/usePostComments';
+  UserVoteData,
+} from '@opchan/react';
 
-export { useUserVotes } from './derived/useUserVotes';
-export type { UserVoteData } from './derived/useUserVotes';
-
-// Action hooks
-export { useForumActions } from './actions/useForumActions';
+// Action hooks - Re-exported from @opchan/react
+export { useForumActions, useUserActions, useAuthActions } from '@opchan/react';
 export type {
   ForumActionStates,
   ForumActions,
-} from './actions/useForumActions';
+  UserActionStates,
+  UserActions,
+  AuthActionStates,
+  AuthActions,
+} from '@opchan/react';
 
-export { useUserActions } from './actions/useUserActions';
-export type { UserActionStates, UserActions } from './actions/useUserActions';
-
-export { useAuthActions } from './actions/useAuthActions';
-export type { AuthActionStates, AuthActions } from './actions/useAuthActions';
-
-// Utility hooks
-export { usePermissions } from './core/usePermissions';
-
-export { useNetworkStatus } from './utilities/useNetworkStatus';
+// Utility hooks - Re-exported from @opchan/react
+export {
+  usePermissions,
+  useNetworkStatus,
+  useForumSelectors,
+  useDelegation,
+  useMessageSigning,
+  usePending,
+  usePendingVote,
+  useWallet,
+} from '@opchan/react';
 export type {
   NetworkHealth,
   SyncStatus,
   ConnectionStatus,
   NetworkStatusData,
-} from './utilities/useNetworkStatus';
-
-export {
-  useWakuHealth,
-  useWakuReady,
-  useWakuHealthStatus,
-} from './useWakuHealth';
-export type { WakuHealthState } from './useWakuHealth';
-
-export { useForumSelectors } from './utilities/selectors';
-export type { ForumSelectors } from './utilities/selectors';
+  ForumSelectors,
+} from '@opchan/react';
 
 // Legacy hooks (for backward compatibility - will be removed)
 // export { useForum } from '@/contexts/useForum'; // Use useForumData instead
 // export { useAuth as useLegacyAuth } from '@/contexts/useAuth'; // Use enhanced useAuth instead
 
-// Re-export existing hooks that don't need changes
+// Re-export existing hooks that don't need changes (UI-specific)
 export { useIsMobile as useMobile } from './use-mobile';
 export { useToast } from './use-toast';
-// export { useCache } from './useCache'; // Removed - functionality moved to useForumData
-export { useDelegation } from './useDelegation';
-export { useMessageSigning } from './useMessageSigning';
-export { useWallet } from './useWallet';
+
+// Waku health hooks - Re-exported from @opchan/react
+export {
+  useWakuHealth,
+  useWakuReady,
+  useWakuHealthStatus,
+} from '@opchan/react';

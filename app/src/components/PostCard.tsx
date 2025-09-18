@@ -3,18 +3,12 @@ import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Post } from '@opchan/core';
-import {
-  useForumActions,
-  usePermissions,
-  useUserVotes,
-  useForumData,
-  usePostBookmark,
-} from '@/hooks';
+// Removed unused imports
 import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
 import { AuthorDisplay } from '@/components/ui/author-display';
 import { BookmarkButton } from '@/components/ui/bookmark-button';
 import { LinkRenderer } from '@/components/ui/link-renderer';
-import { usePending, usePendingVote } from '@/hooks/usePending';
+import { useForum } from '@opchan/react';
 import { ShareButton } from '@/components/ui/ShareButton';
 
 interface PostCardProps {
@@ -23,32 +17,36 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
-  const { cellsWithStats } = useForumData();
-  const { votePost, isVoting } = useForumActions();
-  const { canVote } = usePermissions();
-  const userVotes = useUserVotes();
-  const {
-    isBookmarked,
-    loading: bookmarkLoading,
-    toggleBookmark,
-  } = usePostBookmark(post, post.cellId);
+  const forum = useForum();
+  const { content, permissions } = forum;
 
-  // ✅ Get pre-computed cell data
-  const cell = cellsWithStats.find(c => c.id === post.cellId);
+  // Get cell data from content
+  const cell = content.cells.find(c => c.id === post.cellId);
   const cellName = cell?.name || 'unknown';
 
-  // ✅ Use pre-computed vote data (assuming post comes from useForumData)
+  // Use pre-computed vote data
   const score =
     'voteScore' in post
       ? (post.voteScore as number)
       : post.upvotes.length - post.downvotes.length;
-  const { isPending } = usePending(post.id);
-  const votePending = usePendingVote(post.id);
 
-  // ✅ Get user vote status from hook
-  const userVoteType = userVotes.getPostVoteType(post.id);
-  const userUpvoted = userVoteType === 'upvote';
-  const userDownvoted = userVoteType === 'downvote';
+  // Use library pending API
+  const isPending = content.pending.isPending(post.id);
+  const votePending = content.pending.isVotePending(post.id);
+
+  // Get user vote status from post data
+  const userUpvoted =
+    (post as unknown as { userUpvoted?: boolean }).userUpvoted || false;
+  const userDownvoted =
+    (post as unknown as { userDownvoted?: boolean }).userDownvoted || false;
+
+  // Check if bookmarked
+  const isBookmarked = content.bookmarks.some(
+    b => b.targetId === post.id && b.type === 'post'
+  );
+  const [bookmarkLoading, setBookmarkLoading] = React.useState(false);
+
+  // Remove duplicate vote status logic
 
   // ✅ Content truncation (simple presentation logic is OK)
   const contentPreview =
@@ -58,8 +56,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
 
   const handleVote = async (e: React.MouseEvent, isUpvote: boolean) => {
     e.preventDefault();
-    // ✅ All validation and permission checking handled in hook
-    await votePost(post.id, isUpvote);
+    await content.vote({ targetId: post.id, isUpvote });
   };
 
   const handleBookmark = async (e?: React.MouseEvent) => {
@@ -67,7 +64,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
       e.preventDefault();
       e.stopPropagation();
     }
-    await toggleBookmark();
+    setBookmarkLoading(true);
+    try {
+      await content.togglePostBookmark(post, post.cellId);
+    } finally {
+      setBookmarkLoading(false);
+    }
   };
 
   return (
@@ -82,8 +84,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
                 : 'text-cyber-neutral hover:text-cyber-accent'
             }`}
             onClick={e => handleVote(e, true)}
-            disabled={!canVote || isVoting}
-            title={canVote ? 'Upvote' : 'Connect wallet and verify to vote'}
+            disabled={!permissions.canVote}
+            title={permissions.canVote ? 'Upvote' : permissions.reasons.vote}
           >
             <ArrowUp className="w-5 h-5" />
           </button>
@@ -107,12 +109,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
                 : 'text-cyber-neutral hover:text-blue-400'
             }`}
             onClick={e => handleVote(e, false)}
-            disabled={!canVote || isVoting}
-            title={canVote ? 'Downvote' : 'Connect wallet and verify to vote'}
+            disabled={!permissions.canVote}
+            title={permissions.canVote ? 'Downvote' : permissions.reasons.vote}
           >
             <ArrowDown className="w-5 h-5" />
           </button>
-          {votePending.isPending && (
+          {votePending && (
             <span className="mt-1 text-[10px] text-yellow-400">syncing…</span>
           )}
         </div>

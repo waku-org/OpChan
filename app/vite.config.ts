@@ -16,7 +16,7 @@ export default defineConfig(() => ({
     },
   },
   optimizeDeps: {
-    include: ['buffer'],
+    include: ['buffer', '@opchan/core', '@opchan/hooks'],
   },
   build: {
     target: 'es2022',

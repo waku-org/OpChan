@@ -19,6 +19,7 @@ export {
   DelegationCrypto 
 } from './lib/delegation';
 export * from './lib/delegation/types';
+export type { DelegationFullStatus } from './lib/delegation';
 
 // Export forum functionality
 export { ForumActions } from './lib/forum/ForumActions';
@@ -46,3 +47,6 @@ export * from './lib/waku/network';
 export { WalletManager, walletManager } from './lib/wallet';
 export * from './lib/wallet/config';
 export * from './lib/wallet/types';
+
+// Primary client API
+export { OpChanClient, type OpChanClientConfig } from './client/OpChanClient';

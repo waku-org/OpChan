@@ -62,7 +62,10 @@ export const MarkdownInput: React.FC<MarkdownInputProps> = ({
 
         <TabsContent value="preview">
           <div className="p-3 border rounded-sm bg-card">
-            <MarkdownRenderer content={value} className="prose prose-invert max-w-none" />
+            <MarkdownRenderer
+              content={value}
+              className="prose prose-invert max-w-none"
+            />
           </div>
         </TabsContent>
       </Tabs>
@@ -71,5 +74,3 @@ export const MarkdownInput: React.FC<MarkdownInputProps> = ({
 };
 
 export default MarkdownInput;
-
-

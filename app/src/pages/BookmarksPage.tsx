@@ -24,7 +24,7 @@ import {
   FileText,
   MessageSquare,
 } from 'lucide-react';
-import { useAuth } from '@/contexts/useAuth';
+import { useAuth } from '@opchan/react';
 
 const BookmarksPage = () => {
   const { currentUser } = useAuth();
