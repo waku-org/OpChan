@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useForum } from '@/contexts/useForum';
 import { useAuth } from '@/hooks/core/useAuth';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
-import { DelegationFullStatus } from '@/lib/delegation';
+import { DelegationFullStatus } from '@opchan/core';
 
 export interface NetworkHealth {
   isConnected: boolean;

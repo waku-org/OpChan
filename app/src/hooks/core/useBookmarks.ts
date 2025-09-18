@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bookmark, BookmarkType, Post, Comment } from '@/types/forum';
-import { BookmarkService } from '@/lib/services/BookmarkService';
+import { Bookmark, BookmarkType, Post, Comment } from '@opchan/core';
+import { BookmarkService } from '@opchan/core';
 import { useAuth } from '@/contexts/useAuth';
 
 /**

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useForumData, CellWithStats } from '@/hooks/core/useForumData';
 import { useAuth } from '@/hooks/core/useAuth';
-import { EVerificationStatus } from '@/types/identity';
+import { EVerificationStatus } from '@opchan/core';
 
 export interface CellData extends CellWithStats {
   posts: Array<{

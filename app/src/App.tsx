@@ -26,9 +26,8 @@ import Dashboard from './pages/Dashboard';
 import Index from './pages/Index';
 import ProfilePage from './pages/ProfilePage';
 import BookmarksPage from './pages/BookmarksPage';
-import { appkitConfig } from './lib/wallet/config';
+import { appkitConfig, config } from '@opchan/core';
 import { WagmiProvider } from 'wagmi';
-import { config } from './lib/wallet/config';
 import { AppKitProvider } from '@reown/appkit/react';
 
 // Create a client

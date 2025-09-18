@@ -1,6 +1,6 @@
 import { useAuth as useBaseAuth } from '@/contexts/useAuth';
 import { useForum } from '@/contexts/useForum';
-import { User, EVerificationStatus } from '@/types/identity';
+import { User, EVerificationStatus } from '@opchan/core';
 
 export interface AuthState {
   currentUser: User | null;

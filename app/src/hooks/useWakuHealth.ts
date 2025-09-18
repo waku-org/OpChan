@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HealthStatus } from '@waku/sdk';
-import messageManager from '@/lib/waku';
+import { messageManager } from '@opchan/core';
 
 export interface WakuHealthState {
   isReady: boolean;

@@ -3,7 +3,7 @@ import { useAuth, useUserActions, useForumActions } from '@/hooks';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
 import { useUserDisplay } from '@/hooks';
 import { useDelegation } from '@/hooks/useDelegation';
-import { DelegationFullStatus } from '@/lib/delegation';
+import { DelegationFullStatus } from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,7 +32,7 @@ import {
   Save,
   X,
 } from 'lucide-react';
-import { EDisplayPreference, EVerificationStatus } from '@/types/identity';
+import { EDisplayPreference, EVerificationStatus } from '@opchan/core';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {

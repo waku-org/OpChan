@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Post } from '@/types/forum';
+import { Post } from '@opchan/core';
 import {
   useForumActions,
   usePermissions,

@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import messageManager from '@/lib/waku';
-import { MessageType } from '@/types/waku';
-import type { OpchanMessage } from '@/types/forum';
+import messageManager from '@opchan/core';
+import { MessageType } from '@opchan/core';
+import type { OpchanMessage } from '@opchan/core';
 
 interface ReceivedMessage {
   receivedAt: number;

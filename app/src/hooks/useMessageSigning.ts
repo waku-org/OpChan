@@ -1,6 +1,6 @@
 import { useCallback, useContext } from 'react';
 import { AuthContext } from '@/contexts/AuthContext';
-import { OpchanMessage } from '@/types/forum';
+import { OpchanMessage } from '@opchan/core';
 
 export const useMessageSigning = () => {
   const context = useContext(AuthContext);

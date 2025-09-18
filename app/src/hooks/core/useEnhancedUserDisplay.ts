@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useForum } from '@/contexts/useForum';
-import { EDisplayPreference, EVerificationStatus } from '@/types/identity';
+import { EDisplayPreference, EVerificationStatus } from '@opchan/core';
 
 export interface UserDisplayInfo {
   displayName: string;

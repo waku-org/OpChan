@@ -1,6 +1,6 @@
 import { Wifi, WifiOff, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useWakuHealthStatus } from '@/hooks/useWakuHealth';
-import { cn } from '@/lib/utils';
+import { cn } from '@opchan/core';
 
 interface WakuHealthIndicatorProps {
   className?: string;

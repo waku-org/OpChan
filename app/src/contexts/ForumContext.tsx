@@ -6,25 +6,25 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
-import { Cell, Post, Comment } from '@/types/forum';
+import { Cell, Post, Comment } from '@opchan/core';
 import {
   User,
   EVerificationStatus,
   EDisplayPreference,
-} from '@/types/identity';
+} from '@opchan/core';
 import { useToast } from '@/components/ui/use-toast';
 
-import { ForumActions } from '@/lib/forum/ForumActions';
-import { monitorNetworkHealth, initializeNetwork } from '@/lib/waku/network';
-import messageManager from '@/lib/waku';
-import { getDataFromCache } from '@/lib/forum/transformers';
-import { RelevanceCalculator } from '@/lib/forum/RelevanceCalculator';
-import { UserVerificationStatus } from '@/types/forum';
-import { DelegationManager } from '@/lib/delegation';
-import { UserIdentityService } from '@/lib/services/UserIdentityService';
-import { MessageService } from '@/lib/services/MessageService';
+import { ForumActions } from '@opchan/core';
+import { monitorNetworkHealth, initializeNetwork } from '@opchan/core';
+import { messageManager } from '@opchan/core';
+import { getDataFromCache } from '@opchan/core';
+import { RelevanceCalculator } from '@opchan/core';
+import { UserVerificationStatus } from '@opchan/core';
+import { DelegationManager } from '@opchan/core';
+import { UserIdentityService } from '@opchan/core';
+import { MessageService } from '@opchan/core';
 import { useAuth } from '@/contexts/useAuth';
-import { localDatabase } from '@/lib/database/LocalDatabase';
+import { localDatabase } from '@opchan/core';
 
 interface ForumContextType {
   cells: Cell[];

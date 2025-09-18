@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth, useWakuHealthStatus } from '@/hooks';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
-import { EVerificationStatus } from '@/types/identity';
+import { EVerificationStatus } from '@opchan/core';
 import { useForum } from '@/contexts/useForum';
-import { localDatabase } from '@/lib/database/LocalDatabase';
-import { DelegationFullStatus } from '@/lib/delegation';
+import { localDatabase } from '@opchan/core';
+import { DelegationFullStatus } from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 

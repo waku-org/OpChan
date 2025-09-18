@@ -6,18 +6,9 @@
     "composite": true,
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "baseUrl": "./src",
-    "paths": {
-      "@/*": ["./*"],
-      "@/types/*": ["./types/*"],
-      "@/lib/*": ["./*"],
-      "@/services/*": ["./services/*"],
-      "@/utils/*": ["./utils/*"],
-      "@/database/*": ["./database/*"],
-      "@/delegation/*": ["./delegation/*"],
-      "@/forum/*": ["./forum/*"],
-      "@/waku/*": ["./waku/*"],
-      "@/wallet/*": ["./wallet/*"]
-    }
+    "target": "es2020",
+    "module": "esnext",
+    "lib": ["es2020", "dom"]
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "**/*.test.ts", "**/*.spec.ts"]

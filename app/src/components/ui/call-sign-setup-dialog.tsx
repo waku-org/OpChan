@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { EDisplayPreference } from '@/types/identity';
+import { EDisplayPreference } from '@opchan/core';
 
 const formSchema = z.object({
   callSign: z

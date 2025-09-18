@@ -23,7 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { urlLoads } from '@/lib/utils/urlLoads';
+import { urlLoads } from '@opchan/core';
 
 const formSchema = z.object({
   title: z

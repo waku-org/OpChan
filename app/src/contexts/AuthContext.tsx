@@ -1,23 +1,23 @@
 import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { OpchanMessage } from '@/types/forum';
+import { OpchanMessage } from '@opchan/core';
 import {
   User,
   EVerificationStatus,
   EDisplayPreference,
-} from '@/types/identity';
-import { WalletManager } from '@/lib/wallet';
+} from '@opchan/core';
+import { WalletManager } from '@opchan/core';
 import {
   DelegationManager,
   DelegationDuration,
   DelegationFullStatus,
-} from '@/lib/delegation';
-import { localDatabase } from '@/lib/database/LocalDatabase';
+} from '@opchan/core';
+import { localDatabase } from '@opchan/core';
 import { useAppKitAccount, useDisconnect, modal } from '@reown/appkit/react';
-import { MessageService } from '@/lib/services/MessageService';
-import { UserIdentityService } from '@/lib/services/UserIdentityService';
+import { MessageService } from '@opchan/core';
+import { UserIdentityService } from '@opchan/core';
 import { reconnect } from '@wagmi/core';
-import { config as wagmiConfig } from '@/lib/wallet/config';
+import { config as wagmiConfig } from '@opchan/core';
 
 interface AuthContextType {
   currentUser: User | null;

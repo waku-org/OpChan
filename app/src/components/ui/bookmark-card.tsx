@@ -8,9 +8,9 @@ import {
   Trash2,
   ExternalLink,
 } from 'lucide-react';
-import { Bookmark, BookmarkType } from '@/types/forum';
+import { Bookmark, BookmarkType } from '@opchan/core';
 import { useUserDisplay } from '@/hooks';
-import { cn } from '@/lib/utils';
+import { cn } from '@opchan/core';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 

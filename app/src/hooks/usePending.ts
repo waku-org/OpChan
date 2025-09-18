@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { localDatabase } from '@/lib/database/LocalDatabase';
+import { localDatabase } from '@opchan/core';
 import { useAuth } from '@/contexts/useAuth';
 
 export function usePending(id: string | undefined) {

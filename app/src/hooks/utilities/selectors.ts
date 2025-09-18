@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { ForumData } from '@/hooks/core/useForumData';
-import { Cell, Post, Comment } from '@/types/forum';
-import { EVerificationStatus } from '@/types/identity';
+import { Cell, Post, Comment } from '@opchan/core';
+import { EVerificationStatus } from '@opchan/core';
 
 // Selector types for different data slices
 export type CellSelector<T> = (cells: Cell[]) => T;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUp, ArrowDown, Clock, Shield, UserX } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Comment } from '@/types/forum';
+import { Comment } from '@opchan/core';
 import {
   useForumActions,
   usePermissions,

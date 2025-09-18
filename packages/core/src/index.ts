@@ -2,39 +2,47 @@
  * @opchan/core - Browser library for opchan
  */
 
-export interface OpchanOptions {
-  debug?: boolean;
-  version?: string;
-}
+// Export all types
+export * from './types/forum';
+export * from './types/identity';  
+export * from './types/waku';
 
-export class Opchan {
-  private options: OpchanOptions;
+// Export database functionality
+export { LocalDatabase, localDatabase } from './lib/database/LocalDatabase';
+export * from './lib/database/schema';
 
-  constructor(options: OpchanOptions = {}) {
-    this.options = {
-      debug: false,
-      version: '1.0.0',
-      ...options,
-    };
-  }
+// Export delegation system
+export { 
+  DelegationManager, 
+  delegationManager,
+  DelegationStorage,
+  DelegationCrypto 
+} from './lib/delegation';
+export * from './lib/delegation/types';
 
-  public getVersion(): string {
-    return this.options.version || '1.0.0';
-  }
+// Export forum functionality
+export { ForumActions } from './lib/forum/ForumActions';
+export { RelevanceCalculator } from './lib/forum/RelevanceCalculator';
+export * from './lib/forum/transformers';
 
-  public isDebug(): boolean {
-    return this.options.debug || false;
-  }
+// Export services
+export { BookmarkService } from './lib/services/BookmarkService';
+export { MessageService } from './lib/services/MessageService';
+export { UserIdentityService } from './lib/services/UserIdentityService';
+export { ordinals } from './lib/services/Ordinals';
 
-  public log(message: string): void {
-    if (this.options.debug) {
-      console.log(`[Opchan] ${message}`);
-    }
-  }
-}
+// Export utilities
+export * from './lib/utils';
+export { MessageValidator } from './lib/utils/MessageValidator';
+export * from './lib/utils/sorting';
+export { urlLoads } from './lib/utils/urlLoads';
+export { environment, type EnvironmentConfig } from './lib/utils/environment';
 
-// Default export
-export default Opchan;
+// Export Waku networking
+export { default as messageManager } from './lib/waku';
+export * from './lib/waku/network';
 
-// Named exports for convenience
-export { Opchan as OpchanCore };
+// Export wallet functionality
+export { WalletManager, walletManager } from './lib/wallet';
+export * from './lib/wallet/config';
+export * from './lib/wallet/types';

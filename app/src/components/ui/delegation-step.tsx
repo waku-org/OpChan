@@ -3,7 +3,7 @@ import { Button } from './button';
 import { useAuth, useAuthActions } from '@/hooks';
 import { useAuth as useAuthContext } from '@/contexts/useAuth';
 import { CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
-import { DelegationDuration, DelegationFullStatus } from '@/lib/delegation';
+import { DelegationDuration, DelegationFullStatus } from '@opchan/core';
 
 interface DelegationStepProps {
   onComplete: () => void;

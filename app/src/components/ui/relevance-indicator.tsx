@@ -23,7 +23,7 @@ import {
   MessageSquare,
   ThumbsUp,
 } from 'lucide-react';
-import { RelevanceScoreDetails } from '@/types/forum';
+import { RelevanceScoreDetails } from '@opchan/core';
 
 interface RelevanceIndicatorProps {
   score: number;

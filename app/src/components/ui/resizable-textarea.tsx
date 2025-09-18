@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Resizable } from 're-resizable';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@opchan/core';
 import { Textarea } from '@/components/ui/textarea';
 
 type ResizableTextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {

@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Share2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@opchan/core';
 import { useToast } from '../ui/use-toast';
 
 interface ShareButtonProps {
