@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ContractVerificationButton } from '@/components/ui/contract-verification-button';
-import { submitVerificationToContract } from '@/lib/zkPassport';
-import { verifyAdulthood, discloseCountry, discloseGender } from '@/lib/zkPassport';
+import { CONTRACT_ADDRESS, getVerification, submitVerificationToContract } from '@/lib/zkPassport';
+import { verifyWithZKPassport, ZKPassportVerificationOptions } from '@/lib/zkPassport';
 import { UserIdentityService } from '@/lib/services/UserIdentityService';
 import { useForum } from '@/contexts/useForum';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { EDisplayPreference, EVerificationStatus } from '@/types/identity';
 import { useToast } from '@/hooks/use-toast';
+import { ProofResult } from '@zkpassport/sdk';
 
 export default function ProfilePage() {
   const { updateProfile } = useUserActions();
@@ -73,7 +74,48 @@ export default function ProfilePage() {
   const [progress, setProgress] = useState<string>('');
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [verificationType, setVerificationType] = useState<'adult' | 'country' | 'gender' | null>(null);
+  const [proof, setProof] = useState<ProofResult | null>(null);
+  const [verificationOptions, setVerificationOptions] = useState<ZKPassportVerificationOptions>({
+    verifyAdulthood: false,
+    verifyCountry: false,
+    verifyGender: false
+  });
   const { userIdentityService } = useForum();
+  
+  // Load verification data from contract on component mount
+  useEffect(() => {
+    const loadVerificationData = async () => {
+      if (address) {
+        const verificationData = await getVerification(address);
+        if (verificationData && userIdentityService) {
+          // Update user identity with data from contract
+          if (verificationData.adult) {
+            userIdentityService.updateUserIdentityWithAdulthood(
+              address,
+              '', // uniqueIdentifier not available from contract
+              verificationData.adult
+            );
+          }
+          if (verificationData.country) {
+            userIdentityService.updateUserIdentityWithCountry(
+              address,
+              '', // uniqueIdentifier not available from contract
+              verificationData.country
+            );
+          }
+          if (verificationData.gender) {
+            userIdentityService.updateUserIdentityWithGender(
+              address,
+              '', // uniqueIdentifier not available from contract
+              verificationData.gender
+            );
+          }
+        }
+      }
+    };
+    
+    loadVerificationData();
+  }, [address, userIdentityService]);
 
   // Initialize and update local state when user data changes
   useEffect(() => {
@@ -599,190 +641,211 @@ export default function ProfilePage() {
       </main>
 
       {/* Identity Verification Section */}
-      <div className="max-w-md mx-auto mt-8 p-6 bg-cyber-muted/20 border border-cyber-muted/30 rounded-lg">
-        <h2 className="text-xl font-bold text-white mb-4">Identity Verification</h2>
-        <p className="text-cyber-neutral mb-4">
-          Verify your identity to enhance your profile with verifiable claims.
-        </p>
-        
-        {/* Verification Buttons */}
-        <div className="space-y-3 mb-6">
-          <div className="space-y-2">
-            <Button
-              onClick={async () => {
-                setVerificationType('adult');
-                setIsVerifying(true);
-                try {
-                  const result = await verifyAdulthood(setProgress, setUrl);
-                  if (result && result.claims && result.claims.length > 0 && userIdentityService) {
-                    if (result.uniqueIdentifier && result.claims[0]?.value !== undefined) {
-                      userIdentityService.updateUserIdentityWithAdulthood(
-                        address!,
-                        result.uniqueIdentifier,
-                        result.claims[0].value
-                      );
-                    }
-                  }
-                } catch (error) {
-                  console.error('Adulthood verification failed:', error);
-                } finally {
-                  setIsVerifying(false);
-                  setVerificationType(null);
-                }
-              }}
-              disabled={isVerifying}
-              className="w-full bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono"
-            >
-              {isVerifying && verificationType === 'adult' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                'Verify Adulthood (18+)'
-              )}
-            </Button>
-            {userInfo.identityProviders && userInfo.identityProviders.some(p => p.type === 'zkpassport') && (
-              <ContractVerificationButton
-                onVerify={async () => {
-                  const adulthoodClaim = userInfo.identityProviders?.flatMap(p => p.claims).find(c => c.key === 'adult');
-                  const countryClaim = userInfo.identityProviders?.flatMap(p => p.claims).find(c => c.key === 'country');
-                  const genderClaim = userInfo.identityProviders?.flatMap(p => p.claims).find(c => c.key === 'gender');
-                  
-                  if (adulthoodClaim) {
-                    await submitVerificationToContract(
-                      adulthoodClaim.value as boolean,
-                      countryClaim?.value as string || '',
-                      genderClaim?.value as string || '',
-                      setProgress
-                    );
-                  }
-                }}
-                isVerifying={isVerifying}
-                verificationType="adult"
-              />
-            )}
-          </div>
-          
-          <Button
-            onClick={async () => {
-              setVerificationType('country');
-              setIsVerifying(true);
-              try {
-                const result = await discloseCountry(setProgress, setUrl);
-                if (result && result.claims && result.claims.length > 0 && userIdentityService) {
-                  if (result.uniqueIdentifier && result.claims[0]?.value !== undefined) {
-                    userIdentityService.updateUserIdentityWithCountry(
-                      address!,
-                      result.uniqueIdentifier,
-                      result.claims[0].value
-                    );
-                  }
-                }
-              } catch (error) {
-                console.error('Country disclosure failed:', error);
-              } finally {
-                setIsVerifying(false);
-                setVerificationType(null);
-              }
-            }}
-            disabled={isVerifying}
-            className="w-full bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono"
-          >
-            {isVerifying && verificationType === 'country' ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Verifying...
-              </>
-            ) : (
-              'Disclose Country'
-            )}
-          </Button>
-          
-          <Button
-            onClick={async () => {
-              setVerificationType('gender');
-              setIsVerifying(true);
-              try {
-                const result = await discloseGender(setProgress, setUrl);
-                if (result && result.claims && result.claims.length > 0 && userIdentityService) {
-                  if (result.uniqueIdentifier && result.claims[0]?.value !== undefined) {
-                    userIdentityService.updateUserIdentityWithGender(
-                      address!,
-                      result.uniqueIdentifier,
-                      result.claims[0].value
-                    );
-                  }
-                }
-              } catch (error) {
-                console.error('Gender disclosure failed:', error);
-              } finally {
-                setIsVerifying(false);
-                setVerificationType(null);
-              }
-            }}
-            disabled={isVerifying}
-            className="w-full bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono"
-          >
-            {isVerifying && verificationType === 'gender' ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Verifying...
-              </>
-            ) : (
-              'Disclose Gender'
-            )}
-          </Button>
-        </div>
-        
-        {/* Verification Status */}
-        {userInfo.identityProviders && userInfo.identityProviders.some(p => p.type === 'zkpassport') && (
-          <div className="space-y-3 mb-6">
-            <h3 className="text-sm font-medium text-cyber-neutral uppercase tracking-wide">
-              Verified Claims
-            </h3>
-            <div className="space-y-2">
-              {userInfo.identityProviders.flatMap(p => p.claims).map((claim, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-cyber-dark/50 border border-cyber-muted/30 rounded-md">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="text-sm text-cyber-light capitalize">
-                      {claim.key}
-                    </span>
+      <div className="max-w-4xl mx-auto mt-8 mb-8">
+        <Card className="content-card">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between text-white">
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-cyber-accent" />
+                Identity Verification
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left Column: Verification Status */}
+              <div className="space-y-6">
+                <p className="text-cyber-neutral">
+                  Verify your identity to enhance your profile with verifiable claims.
+                </p>
+                
+                {/* Verification Status */}
+                {userInfo.identityProviders && userInfo.identityProviders.some(p => p.type === 'zkpassport') && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-cyber-neutral uppercase tracking-wide">
+                      Verified (and <a className="text-cyber-accent hover:underline" href={`https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}`} target='_blank'>recorded</a>) Claims
+                    </h3>
+                    <div className="space-y-2">
+                      {userInfo.identityProviders.flatMap(p => p.claims).map((claim, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-cyber-dark/50 border border-cyber-muted/30 rounded-md">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span className="text-sm text-cyber-light capitalize">
+                              {claim.key}
+                            </span>
+                          </div>
+                          <span className="text-sm text-cyber-accent font-mono">
+                            {typeof claim.value === 'boolean' ? (claim.value ? 'Yes' : 'No') : claim.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <span className="text-sm text-cyber-accent font-mono">
-                    {typeof claim.value === 'boolean' ? (claim.value ? 'Yes' : 'No') : claim.value}
-                  </span>
+                )}
+              </div>
+              
+              {/* Right Column: Verification Controls */}
+              <div className="space-y-6">
+                {/* Verification Toggles */}
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="verifyAdulthood"
+                      checked={verificationOptions.verifyAdulthood}
+                      onChange={(e) => setVerificationOptions({...verificationOptions, verifyAdulthood: e.target.checked})}
+                      disabled={isVerifying}
+                      className="w-4 h-4 text-cyber-accent bg-cyber-dark border-cyber-muted/30 rounded focus:ring-cyber-accent focus:ring-2"
+                    />
+                    <label htmlFor="verifyAdulthood" className="text-sm text-cyber-neutral">
+                      Verify Adulthood (18+)
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="verifyCountry"
+                      checked={verificationOptions.verifyCountry}
+                      onChange={(e) => setVerificationOptions({...verificationOptions, verifyCountry: e.target.checked})}
+                      disabled={isVerifying}
+                      className="w-4 h-4 text-cyber-accent bg-cyber-dark border-cyber-muted/30 rounded focus:ring-cyber-accent focus:ring-2"
+                    />
+                    <label htmlFor="verifyCountry" className="text-sm text-cyber-neutral">
+                      Disclose Country
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="verifyGender"
+                      checked={verificationOptions.verifyGender}
+                      onChange={(e) => setVerificationOptions({...verificationOptions, verifyGender: e.target.checked})}
+                      disabled={isVerifying}
+                      className="w-4 h-4 text-cyber-accent bg-cyber-dark border-cyber-muted/30 rounded focus:ring-cyber-accent focus:ring-2"
+                    />
+                    <label htmlFor="verifyGender" className="text-sm text-cyber-neutral">
+                      Disclose Gender
+                    </label>
+                  </div>
                 </div>
-              ))}
+                
+                {/* Verification Button */}
+                <div className="space-y-3">
+                  <Button
+                    onClick={async () => {
+                      // Set verification type based on selected options
+                      if (verificationOptions.verifyAdulthood) setVerificationType('adult');
+                      else if (verificationOptions.verifyCountry) setVerificationType('country');
+                      else if (verificationOptions.verifyGender) setVerificationType('gender');
+                      
+                      setIsVerifying(true);
+                      try {
+                        const result = await verifyWithZKPassport(verificationOptions, setProgress, setUrl, setProof);
+                        if (result && result.claims && result.claims.length > 0 && userIdentityService) {
+                          // Update all verified claims
+                          result.claims.forEach(claim => {
+                            if (claim.key === 'adult' && claim.value !== undefined) {
+                              userIdentityService.updateUserIdentityWithAdulthood(
+                                address!,
+                                result.uniqueIdentifier,
+                                claim.value
+                              );
+                            } else if (claim.key === 'country' && claim.value !== undefined) {
+                              userIdentityService.updateUserIdentityWithCountry(
+                                address!,
+                                result.uniqueIdentifier,
+                                claim.value
+                              );
+                            } else if (claim.key === 'gender' && claim.value !== undefined) {
+                              userIdentityService.updateUserIdentityWithGender(
+                                address!,
+                                result.uniqueIdentifier,
+                                claim.value
+                              );
+                            }
+                          });
+                        }
+                      } catch (error) {
+                        console.error('Verification failed:', error);
+                      } finally {
+                        setIsVerifying(false);
+                        setVerificationType(null);
+                      }
+                    }}
+                    disabled={isVerifying || (!verificationOptions.verifyAdulthood && !verificationOptions.verifyCountry && !verificationOptions.verifyGender)}
+                    className="w-full bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      'Verify Selected Claims'
+                    )}
+                  </Button>
+                  
+                  {/* Contract Verification Button - only show if any claims exist */}
+                  {userInfo.identityProviders && proof && userInfo.identityProviders.some(p => p.type === 'zkpassport') && (
+                    <ContractVerificationButton
+                      onVerify={async () => {
+                        const adulthoodClaim = userInfo.identityProviders?.flatMap(p => p.claims).find(c => c.key === 'adult');
+                        const countryClaim = userInfo.identityProviders?.flatMap(p => p.claims).find(c => c.key === 'country');
+                        const genderClaim = userInfo.identityProviders?.flatMap(p => p.claims).find(c => c.key === 'gender');
+                        
+     
+                          const tx = await submitVerificationToContract(
+                            adulthoodClaim?.value as boolean || false,
+                            countryClaim?.value as string || '',
+                            genderClaim?.value as string || '',
+                            proof,
+                            setProgress
+                          );
+     
+                          if (tx) {
+                            toast({
+                              title: 'Verification Submitted',
+                              description: 'Your verification has been submitted to the contract.',
+                            });
+                          }
+                          return tx;
+                      }}
+                      isVerifying={isVerifying}
+                      verificationType="adult"
+                    />
+                  )}
+                </div>
+                
+                {/* Progress and QR Code */}
+                {progress && (
+                  <p className="mt-4 text-sm text-cyber-neutral">{progress}</p>
+                )}
+                {url && (
+                  <div className="mt-4 space-y-4">
+                    <div className="text-center">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyber-accent hover:underline font-medium"
+                      >
+                        Open verification in new tab
+                      </a>
+                    </div>
+                    <div className="flex justify-center p-4 bg-white rounded-lg shadow-lg inline-block">
+                      <QRCodeCanvas value={url} size={200} level="H" includeMargin={true} />
+                    </div>
+                    <p className="text-xs text-cyber-neutral text-center">
+                      Scan this QR code to open the verification page on your mobile device
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-        
-        {/* Progress and QR Code */}
-        {progress && (
-          <p className="mt-4 text-sm text-cyber-neutral">{progress}</p>
-        )}
-        {url && (
-          <div className="mt-4 space-y-4">
-            <div className="text-center">
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-cyber-accent hover:underline font-medium"
-              >
-                Open verification in new tab
-              </a>
-            </div>
-            <div className="flex justify-center p-4 bg-white rounded-lg shadow-lg inline-block">
-              <QRCodeCanvas value={url} size={200} level="H" includeMargin={true} />
-            </div>
-            <p className="text-xs text-cyber-neutral text-center">
-              Scan this QR code to open the verification page on your mobile device
-            </p>
-          </div>
-        )}
+          </CardContent>
+        </Card>
       </div>
 
       <footer className="page-footer">

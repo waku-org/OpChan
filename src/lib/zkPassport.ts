@@ -1,63 +1,222 @@
 import { BrowserProvider, Contract } from 'ethers';
 import { config } from '@/lib/wallet/config';
 // Contract configuration - these should be moved to environment variables in production
-const CONTRACT_ADDRESS = "0x971B0B5de23C63160602a3fbe68e96166Fc11D1A"; // Hardhat default deploy address
+export const CONTRACT_ADDRESS = "0xaA649E71A6d7347742e3642AAe209d580913f021"; // Hardhat default deploy address
 const CONTRACT_ABI = [
-  {
-    "inputs": [
-      {
-        "internalType": "bool",
-        "name": "adult",
-        "type": "bool"
-      },
-      {
-        "internalType": "string",
-        "name": "country",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "gender",
-        "type": "string"
-      }
-    ],
-    "name": "setVerification",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
-    "name": "getVerification",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      },
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-];
-import { EU_COUNTRIES, ZKPassport } from '@zkpassport/sdk';
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_zkVerifier",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "adult",
+          "type": "bool"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "country",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "gender",
+          "type": "string"
+        }
+      ],
+      "name": "VerificationUpdated",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "getVerification",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "adult",
+          "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "country",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "gender",
+          "type": "string"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "vkeyHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes",
+              "name": "proof",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "publicInputs",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "bytes",
+              "name": "committedInputs",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "committedInputCounts",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "validityPeriodInSeconds",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "domain",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "scope",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "devMode",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct ProofVerificationParams",
+          "name": "params",
+          "type": "tuple"
+        }
+      ],
+      "name": "setVerification",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "usedUniqueIdentifiers",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "verifications",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "adult",
+          "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "country",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "gender",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "zkVerifier",
+      "outputs": [
+        {
+          "internalType": "contract IZKVerifier",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ];
+
+const devMode = true;
+const proofMode = "compressed-evm"; //"fast"
+import { EU_COUNTRIES, ProofResult, SolidityVerifierParameters, ZKPassport } from '@zkpassport/sdk';
 import { Claim } from '@/types/identity';
+import { V } from 'vitest/dist/chunks/environment.d.cL3nLXbE.js';
 
 export interface ZKPassportVerificationResult {
   verified: boolean;
@@ -66,111 +225,54 @@ export interface ZKPassportVerificationResult {
 }
 
 /**
- * Verify that the user is an adult (18+ years old)
+ * Options for ZKPassport verification
  */
-export const verifyAdulthood = async (setProgress: (status:string) => void, setUrl: (url:string) => void): Promise<ZKPassportVerificationResult | null> => {
-  const zkPassport = new ZKPassport();
-
-  const queryBuilder = await zkPassport.request({
-    name: "OpChan",
-    logo: "https://zkpassport.id/logo.png",
-    purpose: "Prove you are 18+ years old",
-    scope: "adult",
-  });
-
-  const {
-    url,
-    onResult,
-    onGeneratingProof,
-    onError,
-    onProofGenerated,
-    onReject,
-    onRequestReceived
-  } = queryBuilder.gte("age", 18).done();
-
-  setUrl(url);
-
-  return new Promise((resolve, reject) => {
-    try {
-      console.log("Starting adulthood verification with zkPassport");
-      onRequestReceived(() => {
-        setProgress("Request received, preparing for age verification");
-        console.log("Request received, preparing for age verification");
-      });
-
-      onGeneratingProof(() => {
-        setProgress("Generating cryptographic proof of age");
-        console.log("Generating cryptographic proof of age");
-      });
-
-      onProofGenerated(() => {
-        setProgress("Age proof generated successfully");
-        console.log("Age proof generated successfully");
-      });
-
-      onReject(() => {
-        setProgress("Age verification request was rejected");
-        console.log("Age verification request was rejected by the user");
-        resolve(null);
-      });
-
-      onError((error) => {
-        setProgress(`Age verification error: ${error}`);
-        console.error("Age verification error", error);
-        resolve(null);
-      });
-
-      onResult(({ verified, uniqueIdentifier, result }) => {
-        try {
-          console.log("Adulthood verification result", verified, result);
-          if (verified) {
-            const claims: Claim[] = [
-              {
-                key: "adult",
-                value: result.age?.gte?.result,
-                verified: true
-              }
-            ];
-            
-            resolve({
-              verified: true,
-              uniqueIdentifier: uniqueIdentifier || '',
-              claims
-            });
-            console.log("User is verified as adult", claims);
-          } else {
-            setProgress("Age verification failed");
-            resolve(null);
-          }
-        } catch (error) {
-          console.error("Adulthood verification result processing error", error);
-          setProgress(`Adulthood verification result processing error: ${error}`);
-          resolve(null);
-        } finally {
-          setUrl('');
-          setProgress('');
-        }
-      });
-    } catch (error) {
-      console.error("Adulthood verification exception", error);
-      setProgress(`Adulthood verification exception: ${error}`);
-      reject(error);
-    }
-  });
+export interface ZKPassportVerificationOptions {
+  verifyAdulthood: boolean;
+  verifyCountry: boolean;
+  verifyGender: boolean;
 }
 
 /**
- * Disclose the user's country of nationality
+ * Perform ZKPassport verification with selective disclosure based on provided options
  */
-export const discloseCountry = async (setProgress: (status:string) => void, setUrl: (url:string) => void): Promise<ZKPassportVerificationResult | null> => {
+export const verifyWithZKPassport = async (
+  options: ZKPassportVerificationOptions,
+  setProgress: (status: string) => void,
+  setUrl: (url: string) => void,
+  setProof: (proof: ProofResult) => void,
+): Promise<ZKPassportVerificationResult | null> => {
   const zkPassport = new ZKPassport();
+
+  // Build purpose message based on selected verifications
+  const selectedVerifications = [];
+  if (options.verifyAdulthood) selectedVerifications.push("being 18+");
+  if (options.verifyCountry) selectedVerifications.push("your country of nationality");
+  if (options.verifyGender) selectedVerifications.push("your gender");
+  
+  const purpose = selectedVerifications.length > 0
+    ? `Verify ${selectedVerifications.join(", ")}`
+    : "Verify your identity";
 
   const queryBuilder = await zkPassport.request({
     name: "OpChan",
     logo: "https://zkpassport.id/logo.png",
-    purpose: "Verify your country of nationality",
-    scope: "country",
+    purpose,
+    scope: "identity",
+    devMode: devMode,
+    mode: proofMode,
   });
+
+  // Conditionally add verification requirements based on options
+  if (options.verifyAdulthood) {
+    queryBuilder.gte("age", 18);
+  }
+  if (options.verifyCountry) {
+    queryBuilder.disclose("nationality");
+  }
+  if (options.verifyGender) {
+    queryBuilder.disclose("gender");
+  }
 
   const {
     url,
@@ -180,159 +282,84 @@ export const discloseCountry = async (setProgress: (status:string) => void, setU
     onProofGenerated,
     onReject,
     onRequestReceived
-  } = queryBuilder.disclose("nationality").done();
+  } = queryBuilder.done();
 
   setUrl(url);
 
   return new Promise((resolve, reject) => {
     try {
-      console.log("Starting country disclosure with zkPassport");
+      console.log("Starting ZKPassport verification with options:", options);
       onRequestReceived(() => {
-        setProgress("Request received, preparing for country disclosure");
-        console.log("Request received, preparing for country disclosure");
+        setProgress("Request received, preparing for verification");
+        console.log("Request received, preparing for verification");
       });
 
       onGeneratingProof(() => {
-        setProgress("Generating cryptographic proof of country");
-        console.log("Generating cryptographic proof of country");
+        setProgress("Generating cryptographic proof");
+        console.log("Generating cryptographic proof");
       });
 
-      onProofGenerated(() => {
-        setProgress("Country proof generated successfully");
-        console.log("Country proof generated successfully");
+      onProofGenerated((proof: ProofResult) => {
+        setProgress("Proof generated successfully");
+        console.log("Proof generated successfully");
+        setProof(proof);
       });
 
       onReject(() => {
-        setProgress("Country disclosure request was rejected");
-        console.log("Country disclosure request was rejected by the user");
+        setProgress("Verification request was rejected");
+        console.log("Verification request was rejected by the user");
         resolve(null);
       });
 
       onError((error) => {
-        setProgress(`Country disclosure error: ${error}`);
-        console.error("Country disclosure error", error);
+        setProgress(`Verification error: ${error}`);
+        console.error("Verification error", error);
         resolve(null);
       });
 
       onResult(({ verified, uniqueIdentifier, result }) => {
         try {
-          console.log("Country disclosure result", verified, result);
-          if (verified && result.nationality?.disclose?.result) {
-            const claims: Claim[] = [
-              {
+          console.log("ZKPassport verification result", verified, result);
+          if (verified) {
+            const claims: Claim[] = [];
+
+            if (options.verifyAdulthood && result.age?.gte?.result) {
+              claims.push({
+                key: "adult",
+                value: result.age.gte.result,
+                verified: true
+              });
+            }
+
+            if (options.verifyCountry && result.nationality?.disclose?.result) {
+              claims.push({
                 key: "country",
                 value: result.nationality.disclose.result,
                 verified: true
-              }
-            ];
-            
-            resolve({
-              verified: true,
-              uniqueIdentifier: uniqueIdentifier || '',
-              claims
-            });
-            console.log("User country disclosed", claims);
-          } else {
-            setProgress("Country disclosure failed");
-            resolve(null);
-          }
-        } catch (error) {
-          console.error("Country disclosure result processing error", error);
-          setProgress(`Country disclosure result processing error: ${error}`);
-          resolve(null);
-        } finally {
-          setUrl('');
-          setProgress('');
-        }
-      });
-    } catch (error) {
-      console.error("Country disclosure exception", error);
-      setProgress(`Country disclosure exception: ${error}`);
-      reject(error);
-    }
-  });
-}
+              });
+            }
 
-/**
- * Disclose the user's gender
- */
-export const discloseGender = async (setProgress: (status:string) => void, setUrl: (url:string) => void): Promise<ZKPassportVerificationResult | null> => {
-  const zkPassport = new ZKPassport();
-
-  const queryBuilder = await zkPassport.request({
-    name: "OpChan",
-    logo: "https://zkpassport.id/logo.png",
-    purpose: "Verify your gender",
-    scope: "gender",
-  });
-
-  const {
-    url,
-    onResult,
-    onGeneratingProof,
-    onError,
-    onProofGenerated,
-    onReject,
-    onRequestReceived
-  } = queryBuilder.disclose("gender").done();
-
-  setUrl(url);
-
-  return new Promise((resolve, reject) => {
-    try {
-      console.log("Starting gender disclosure with zkPassport");
-      onRequestReceived(() => {
-        setProgress("Request received, preparing for gender disclosure");
-        console.log("Request received, preparing for gender disclosure");
-      });
-
-      onGeneratingProof(() => {
-        setProgress("Generating cryptographic proof of gender");
-        console.log("Generating cryptographic proof of gender");
-      });
-
-      onProofGenerated(() => {
-        setProgress("Gender proof generated successfully");
-        console.log("Gender proof generated successfully");
-      });
-
-      onReject(() => {
-        setProgress("Gender disclosure request was rejected");
-        console.log("Gender disclosure request was rejected by the user");
-        resolve(null);
-      });
-
-      onError((error) => {
-        setProgress(`Gender disclosure error: ${error}`);
-        console.error("Gender disclosure error", error);
-        resolve(null);
-      });
-
-      onResult(({ verified, uniqueIdentifier, result }) => {
-        try {
-          console.log("Gender disclosure result", verified, result);
-          if (verified && result.gender?.disclose?.result) {
-            const claims: Claim[] = [
-              {
+            if (options.verifyGender && result.gender?.disclose?.result) {
+              claims.push({
                 key: "gender",
                 value: result.gender.disclose.result,
                 verified: true
-              }
-            ];
-            
+              });
+            }
+
             resolve({
               verified: true,
               uniqueIdentifier: uniqueIdentifier || '',
               claims
             });
-            console.log("User gender disclosed", claims);
+            console.log("User verified with claims", claims);
           } else {
-            setProgress("Gender disclosure failed");
+            setProgress("Verification failed");
             resolve(null);
           }
         } catch (error) {
-          console.error("Gender disclosure result processing error", error);
-          setProgress(`Gender disclosure result processing error: ${error}`);
+          console.error("Verification result processing error", error);
+          setProgress(`Verification result processing error: ${error}`);
           resolve(null);
         } finally {
           setUrl('');
@@ -340,8 +367,8 @@ export const discloseGender = async (setProgress: (status:string) => void, setUr
         }
       });
     } catch (error) {
-      console.error("Gender disclosure exception", error);
-      setProgress(`Gender disclosure exception: ${error}`);
+      console.error("ZKPassport verification exception", error);
+      setProgress(`ZKPassport verification exception: ${error}`);
       reject(error);
     }
   });
@@ -392,7 +419,7 @@ const getSigner = async (): Promise<any | null> => {
 };
 
 /**
- * Submit verification data to the blockchain contract
+ * Record verified claims on the blockchain
  * @param adult Whether the user is 18+
  * @param country The user's country of nationality
  * @param gender The user's gender
@@ -403,9 +430,22 @@ export const submitVerificationToContract = async (
   adult: boolean,
   country: string,
   gender: string,
+  proof: ProofResult,
   setProgress: (status: string) => void
 ): Promise<string | null> => {
   setProgress('Initializing blockchain connection...');
+  const zkPassport = new ZKPassport();
+
+
+  // Get verification parameters
+  const verifierParams = zkPassport.getSolidityVerifierParameters({
+    proof: proof,
+    // Use the same scope as the one you specified with the request function
+    scope: "identity",
+    // Enable dev mode if you want to use mock passports, otherwise keep it false
+    devMode: true,
+  });
+        
   
   try {
     const signer = await getSigner();
@@ -420,11 +460,11 @@ export const submitVerificationToContract = async (
       return null;
     }
     const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer) as unknown as {
-      setVerification: (adult: boolean, country: string, gender: string) => Promise<any>;
+      setVerification: (adult: boolean, country: string, gender: string, verifierParams: SolidityVerifierParameters) => Promise<any>;
     };
 
     setProgress('Submitting verification data to blockchain...');
-    const tx = await contract.setVerification(adult, country, gender);
+    const tx = await contract.setVerification(adult, country, gender, verifierParams);
     
     setProgress('Waiting for blockchain confirmation...');
     const receipt = await tx.wait();
@@ -443,6 +483,26 @@ export const submitVerificationToContract = async (
     } else {
       setProgress('Failed to submit verification to contract');
     }
+    return null;
+  }
+}
+
+/**
+ * Fetch verification data for a user from the ZKPassport verifier contract
+ * @param address The wallet address of the user to fetch verification data for
+ * @returns Promise resolving to an object containing adult status, country, and gender, or null if not found
+ */
+export const getVerification = async (address: string): Promise<{ adult: boolean; country: string; gender: string } | null> => {
+  try {
+    const provider = new BrowserProvider(window.ethereum as any);
+    const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider) as unknown as {
+      getVerification: (address: string) => Promise<[boolean, string, string]>;
+    };
+    
+    const [adult, country, gender] = await contract.getVerification(address);
+    return { adult, country, gender };
+  } catch (error) {
+    console.error('Error fetching verification data:', error);
     return null;
   }
 };
