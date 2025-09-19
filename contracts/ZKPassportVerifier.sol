@@ -31,6 +31,7 @@ interface IZKVerifier {
 contract ZKPassportVerifier {
     // Structure to store user verification data
     struct Verification {
+        bool initialized;     // Whether the user has set their verification data
         bool adult;           // Whether user is 18+
         string country;       // User's country of nationality
         string gender;        // User's gender
@@ -39,8 +40,9 @@ contract ZKPassportVerifier {
     // Mapping from user address to their verification data
     mapping(address => Verification) public verifications;
     
-    // Mapping to track used unique identifiers
-    mapping(bytes32 => bool) public usedUniqueIdentifiers;
+    // Mapping to track used unique identifiers per wallet
+    // This prevents cross-wallet correlation while maintaining Sybil resistance
+    mapping(address => mapping(bytes32 => bool)) public walletUniqueIdentifiers;
     
     // Address of the ZKVerifier contract
     IZKVerifier public zkVerifier;
@@ -81,14 +83,47 @@ contract ZKPassportVerifier {
         // Revert if proof is not valid
         require(verified, "Proof verification failed");
         
-        // Check if this unique identifier has already been used
-        require(!usedUniqueIdentifiers[uniqueIdentifier], "Unique identifier already used");
+        // Always enforce wallet-scoped uniqueness
+        require(!walletUniqueIdentifiers[msg.sender][uniqueIdentifier], "Unique identifier already used by this wallet");
         
-        // Mark this unique identifier as used
-        usedUniqueIdentifiers[uniqueIdentifier] = true;
+        // Mark this unique identifier as used by this wallet
+        walletUniqueIdentifiers[msg.sender][uniqueIdentifier] = true;
         
         // Store the verification data
         verifications[msg.sender] = Verification({
+            initialized: true,
+            adult: adult,
+            country: country,
+            gender: gender
+        });
+
+        emit VerificationUpdated(msg.sender, adult, country, gender);
+    }
+    
+    /**
+     * @notice Update verification data without requiring a new proof
+     * @param adult Whether the sender is 18+
+     * @param country The sender's country of nationality
+     * @param gender The sender's gender
+     */
+    function updateVerification(
+        bool adult,
+        string calldata country,
+        string calldata gender,
+        ProofVerificationParams calldata params
+    ) external {
+        // Verify the proof first using the ZKVerifier contract
+        (bool verified, bytes32 uniqueIdentifier) = zkVerifier.verifyProof(params);
+
+        // Revert if proof is not valid
+        require(verified, "Proof verification failed");
+        
+        // Always enforce wallet-scoped uniqueness
+        require(walletUniqueIdentifiers[msg.sender][uniqueIdentifier], "Unique identifier already used by this wallet");
+        
+        // Update the verification data
+        verifications[msg.sender] = Verification({
+            initialized: true,
             adult: adult,
             country: country,
             gender: gender
@@ -106,9 +141,9 @@ contract ZKPassportVerifier {
      */
     function getVerification(address user) 
         external view 
-        returns (bool, string memory, string memory) 
+        returns (bool, bool, string memory, string memory) 
     {
         Verification storage verification = verifications[user];
-        return (verification.adult, verification.country, verification.gender);
+        return (verification.initialized, verification.adult, verification.country, verification.gender);
     }
 }

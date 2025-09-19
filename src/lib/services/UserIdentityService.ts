@@ -9,6 +9,7 @@ import { MessageService } from './MessageService';
 import messageManager from '@/lib/waku';
 import { localDatabase } from '@/lib/database/LocalDatabase';
 import { WalletManager } from '@/lib/wallet';
+import { getVerification } from '../zkPassport';
 
 export interface UserIdentity {
   address: string;
@@ -393,6 +394,7 @@ export class UserIdentityService {
         displayPreference,
         lastUpdated: timestamp,
         verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
+        identityProviders: []
       };
     }
 
@@ -710,5 +712,188 @@ export class UserIdentityService {
     }
 
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
+
+  /**
+   * Get ZKPassport claims with multi-layer cache support
+   */
+  async getZKPassportClaims(address: string): Promise<Claim[] | null> {
+    // 1. Check in-memory cache first (fastest)
+    if (this.userIdentityCache[address]?.identityProviders) {
+      const zkPassportProvider = this.userIdentityCache[address].identityProviders?.find(p => p.type === 'zkpassport');
+      if (zkPassportProvider) {
+        return zkPassportProvider.claims;
+      }
+    }
+
+    // 2. Check LocalDatabase persistence (warm start)
+    const persisted = localDatabase.cache.userIdentities[address];
+    if (persisted?.identityProviders) {
+      const zkPassportProvider = persisted.identityProviders.find(p => p.type === 'zkpassport');
+      if (zkPassportProvider) {
+        // Restore in memory cache
+        this.userIdentityCache[address] = {
+          ...persisted,
+          identityProviders: persisted.identityProviders
+        };
+        return zkPassportProvider.claims;
+      }
+    }
+
+    // 3. Check Waku message cache (network cache)
+    const cacheServiceData = messageManager.messageCache.userIdentities[address];
+    if (cacheServiceData?.identityProviders) {
+      const zkPassportProvider = cacheServiceData.identityProviders.find(p => p.type === 'zkpassport');
+      if (zkPassportProvider) {
+        // Store in internal cache for future use
+        this.userIdentityCache[address] = {
+          ...cacheServiceData,
+          identityProviders: cacheServiceData.identityProviders
+        };
+        return zkPassportProvider.claims;
+      }
+    }
+
+    // 4. Fetch from blockchain (source of truth)
+    return this.resolveZKPassportClaims(address);
+  }
+
+  /**
+   * Force fresh resolution of ZKPassport claims (bypass caches)
+   */
+  async getZKPassportClaimsFresh(address: string): Promise<Claim[] | null> {
+    return this.resolveZKPassportClaims(address);
+  }
+
+  /**
+   * Resolve ZKPassport claims from blockchain contract with TTL caching
+   */
+  private async resolveZKPassportClaims(address: string): Promise<Claim[] | null> {
+    try {
+      // Check if we have a recent cached version
+      const cached = this.userIdentityCache[address]?.identityProviders?.find(p => p.type === 'zkpassport');
+      const now = Date.now();
+      const CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL
+
+      // If we have a recent cache and it's still valid, return it
+      if (cached && cached.verifiedAt && (now - cached.verifiedAt) < CACHE_TTL) {
+        return cached.claims;
+      }
+
+      const claimsData = await getVerification(address);
+      if (!claimsData) return null;
+
+      const claims: Claim[] = [];
+      
+      // Process adult claim
+      if (claimsData.adult !== undefined) {
+        claims.push({
+          key: 'adult',
+          value: claimsData.adult,
+          verified: true
+        });
+      }
+      
+      // Process country claim
+      if (claimsData.country) {
+        claims.push({
+          key: 'country',
+          value: claimsData.country,
+          verified: true
+        });
+      }
+      
+      // Process gender claim
+      if (claimsData.gender) {
+        claims.push({
+          key: 'gender',
+          value: claimsData.gender,
+          verified: true
+        });
+      }
+
+      // Update identity with claims (this updates all cache layers)
+      this.updateUserIdentityWithZKPassportClaims(address, claims);
+
+      return claims;
+    } catch (error) {
+      console.error('Failed to resolve ZKPassport claims:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update user identity with ZKPassport claims (updates all cache layers)
+   */
+  updateUserIdentityWithZKPassportClaims(address: string, claims: Claim[]): void {
+    const timestamp = Date.now();
+    
+    // Initialize identity if it doesn't exist
+    if (!this.userIdentityCache[address]) {
+      this.userIdentityCache[address] = {
+        ensName: undefined,
+        ordinalDetails: undefined,
+        callSign: undefined,
+        displayPreference: EDisplayPreference.WALLET_ADDRESS,
+        lastUpdated: timestamp,
+        verificationStatus: EVerificationStatus.WALLET_CONNECTED,
+        identityProviders: []
+      };
+    }
+
+    // Create or update ZKPassport provider with TTL
+    const zkPassportProvider: IdentityProvider = {
+      type: 'zkpassport',
+      verifiedAt: timestamp,
+      expiresAt: timestamp + 24 * 60 * 60 * 1000, // 24 hours validity
+      claims: [...claims]
+    };
+
+    // Replace or add provider
+    const existingProviderIndex = this.userIdentityCache[address].identityProviders!.findIndex(
+      p => p.type === 'zkpassport'
+    );
+
+    if (existingProviderIndex >= 0) {
+      this.userIdentityCache[address].identityProviders![existingProviderIndex] = zkPassportProvider;
+    } else {
+      this.userIdentityCache[address].identityProviders!.push(zkPassportProvider);
+    }
+
+    // Update last updated timestamp
+    this.userIdentityCache[address].lastUpdated = timestamp;
+
+    // Update verification status if user has verified claims
+    if (claims.some(c => c.verified)) {
+      this.userIdentityCache[address].verificationStatus = EVerificationStatus.ENS_ORDINAL_VERIFIED;
+    }
+
+    // Notify listeners that the user identity has been updated
+    this.notifyRefreshListeners(address);
+
+    // Persist to IndexedDB
+    localDatabase.upsertUserIdentity(address, {
+      identityProviders: this.userIdentityCache[address].identityProviders,
+      lastUpdated: timestamp
+    });
+  }
+
+  /**
+   * Batch resolve multiple user identities for post processing
+   */
+  async resolveMultipleUsers(addresses: string[]): Promise<Map<string, UserIdentity>> {
+    const result = new Map<string, UserIdentity>();
+    
+    // Process all resolutions in parallel
+    await Promise.all(
+      addresses.map(async (address) => {
+        const identity = await this.getUserIdentity(address);
+        if (identity) {
+          result.set(address, identity);
+        }
+      })
+    );
+    
+    return result;
   }
 }

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ContractVerificationButton } from '@/components/ui/contract-verification-button';
-import { CONTRACT_ADDRESS, getVerification, submitVerificationToContract } from '@/lib/zkPassport';
+import { CONTRACT_ADDRESS, getVerification, submitVerificationToContract, updateVerification } from '@/lib/zkPassport';
 import { verifyWithZKPassport, ZKPassportVerificationOptions } from '@/lib/zkPassport';
 import { UserIdentityService } from '@/lib/services/UserIdentityService';
 import { useForum } from '@/contexts/useForum';
@@ -795,22 +795,43 @@ export default function ProfilePage() {
                         const countryClaim = userInfo.identityProviders?.flatMap(p => p.claims).find(c => c.key === 'country');
                         const genderClaim = userInfo.identityProviders?.flatMap(p => p.claims).find(c => c.key === 'gender');
                         
-     
-                          const tx = await submitVerificationToContract(
+                        // Check if verification already exists
+                        const existingVerification = await getVerification(address!);
+                        const hasExistingVerification = existingVerification && (
+                          existingVerification.adult !== undefined ||
+                          existingVerification.country !== '' ||
+                          existingVerification.gender !== ''
+                        );
+                        console.log('Existing verification:', existingVerification, hasExistingVerification);
+
+                        let tx;
+                        if (hasExistingVerification) {
+                          // Use updateVerification for existing verifications
+                          tx = await updateVerification(
                             adulthoodClaim?.value as boolean || false,
                             countryClaim?.value as string || '',
                             genderClaim?.value as string || '',
                             proof,
                             setProgress
                           );
-     
-                          if (tx) {
-                            toast({
-                              title: 'Verification Submitted',
-                              description: 'Your verification has been submitted to the contract.',
-                            });
-                          }
-                          return tx;
+                        } else {
+                          // Use submitVerificationToContract for new verifications
+                          tx = await submitVerificationToContract(
+                            adulthoodClaim?.value as boolean || false,
+                            countryClaim?.value as string || '',
+                            genderClaim?.value as string || '',
+                            proof,
+                            setProgress
+                          );
+                        }
+      
+                        if (tx) {
+                          toast({
+                            title: 'Verification Submitted',
+                            description: 'Your verification has been submitted to the contract.',
+                          });
+                        }
+                        return tx;
                       }}
                       isVerifying={isVerifying}
                       verificationType="adult"

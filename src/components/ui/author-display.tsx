@@ -13,7 +13,7 @@ export function AuthorDisplay({
   className = '',
   showBadge = true,
 }: AuthorDisplayProps) {
-  const { displayName, callSign, ensName, ordinalDetails } =
+  const { displayName, callSign, ensName, ordinalDetails, countryFlag, ageEmoji, genderEmoji } =
     useUserDisplay(address);
 
   // Only show a badge if the author has ENS, Ordinal, or Call Sign
@@ -21,7 +21,12 @@ export function AuthorDisplay({
 
   return (
     <div className={`flex items-center gap-1.5 ${className}`}>
-      <span className="text-xs text-muted-foreground">{displayName}</span>
+      <span className="text-xs text-muted-foreground">
+        {displayName}
+        {countryFlag && <span className="ml-1">{countryFlag}</span>}
+        {ageEmoji && <span className="ml-1">{ageEmoji}</span>}
+        {genderEmoji && <span className="ml-1">{genderEmoji}</span>}
+      </span>
 
       {shouldShowBadge && (
         <Badge

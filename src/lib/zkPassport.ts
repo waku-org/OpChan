@@ -1,7 +1,7 @@
 import { BrowserProvider, Contract } from 'ethers';
 import { config } from '@/lib/wallet/config';
 // Contract configuration - these should be moved to environment variables in production
-export const CONTRACT_ADDRESS = "0xaA649E71A6d7347742e3642AAe209d580913f021"; // Hardhat default deploy address
+export const CONTRACT_ADDRESS = "0x1753dbd9f4bb6473ee2905b2db183760B95be475"; // Hardhat default deploy address
 const CONTRACT_ABI = [
     {
       "inputs": [
@@ -57,17 +57,22 @@ const CONTRACT_ABI = [
       "outputs": [
         {
           "internalType": "bool",
-          "name": "",
+          "name": "initialized",
+          "type": "bool"
+        },
+        {
+          "internalType": "bool",
+          "name": "adult",
           "type": "bool"
         },
         {
           "internalType": "string",
-          "name": "",
+          "name": "country",
           "type": "string"
         },
         {
           "internalType": "string",
-          "name": "",
+          "name": "gender",
           "type": "string"
         }
       ],
@@ -152,20 +157,76 @@ const CONTRACT_ABI = [
     {
       "inputs": [
         {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
-        }
-      ],
-      "name": "usedUniqueIdentifiers",
-      "outputs": [
-        {
           "internalType": "bool",
-          "name": "",
+          "name": "adult",
           "type": "bool"
+        },
+        {
+          "internalType": "string",
+          "name": "country",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "gender",
+          "type": "string"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "vkeyHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes",
+              "name": "proof",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes32[]",
+              "name": "publicInputs",
+              "type": "bytes32[]"
+            },
+            {
+              "internalType": "bytes",
+              "name": "committedInputs",
+              "type": "bytes"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "committedInputCounts",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "validityPeriodInSeconds",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "domain",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "scope",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "devMode",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct ProofVerificationParams",
+          "name": "params",
+          "type": "tuple"
         }
       ],
-      "stateMutability": "view",
+      "name": "updateVerification",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -192,6 +253,30 @@ const CONTRACT_ABI = [
           "internalType": "string",
           "name": "gender",
           "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "walletUniqueIdentifiers",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -449,6 +534,7 @@ export const submitVerificationToContract = async (
   
   try {
     const signer = await getSigner();
+    console.log(signer)
     if (!signer) {
       setProgress('Failed to connect to wallet');
       return null;
@@ -496,13 +582,130 @@ export const getVerification = async (address: string): Promise<{ adult: boolean
   try {
     const provider = new BrowserProvider(window.ethereum as any);
     const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider) as unknown as {
-      getVerification: (address: string) => Promise<[boolean, string, string]>;
+      getVerification: (address: string) => Promise<[boolean, boolean, string, string]>;
     };
     
-    const [adult, country, gender] = await contract.getVerification(address);
+    const [initialized, adult, country, gender] = await contract.getVerification(address);
+    if (!initialized) {
+      return null; // No verification data set for this user
+    }
     return { adult, country, gender };
   } catch (error) {
     console.error('Error fetching verification data:', error);
+    return null;
+  }
+};
+
+/**
+ * Update verification data for a user without requiring a new proof
+ * @param adult Whether the user is 18+
+ * @param country The user's country of nationality
+ * @param gender The user's gender
+ * @param setProgress Function to update progress status
+ * @returns Promise resolving to transaction hash on success, null on failure
+ */
+export const updateVerification = async (
+  adult: boolean,
+  country: string,
+  gender: string,
+  proof: ProofResult,
+  setProgress: (status: string) => void
+): Promise<string | null> => {
+  setProgress('Initializing blockchain connection...');
+  const zkPassport = new ZKPassport();
+
+  // Get verification parameters
+  const verifierParams = zkPassport.getSolidityVerifierParameters({
+    proof: proof,
+    // Use the same scope as the one you specified with the request function
+    scope: "identity",
+    // Enable dev mode if you want to use mock passports, otherwise keep it false
+    devMode: true,
+  });
+        
+  
+  try {
+    const signer = await getSigner();
+    if (!signer) {
+      setProgress('Failed to connect to wallet');
+      return null;
+    }
+
+    setProgress('Connecting to contract...');
+    if (!signer) {
+      setProgress('Failed to get signer');
+      return null;
+    }
+    const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer) as unknown as {
+      updateVerification: (adult: boolean, country: string, gender: string, verifierParams: SolidityVerifierParameters) => Promise<any>;
+    };
+
+    setProgress('Updating verification data on blockchain...');
+    const tx = await contract.updateVerification(adult, country, gender, verifierParams);
+    
+    setProgress('Waiting for blockchain confirmation...');
+    const receipt = await tx.wait();
+    
+    if (receipt && receipt.hash) {
+      setProgress('Verification successfully updated on blockchain!');
+      return receipt.hash;
+    } else {
+      setProgress('Transaction completed but no hash received');
+      return null;
+    }
+  } catch (error: any) {
+    console.error('Error updating verification:', error);
+    if (error.message) {
+      setProgress(`Error: ${error.message}`);
+    } else {
+      setProgress('Failed to update verification on contract');
+    }
+    return null;
+  }
+};
+
+/**
+ * Fetch ZKPassport claims for a user with proper typing
+ * @param address The wallet address of the user to fetch claims for
+ * @returns Promise resolving to claims array or null if not found
+ */
+export const fetchZKPassportClaims = async (address: string): Promise<Claim[] | null> => {
+  try {
+    const claimsData = await getVerification(address);
+    if (!claimsData) return null;
+
+    const claims: Claim[] = [];
+    
+    // Process adult claim
+    if (claimsData.adult !== undefined) {
+      claims.push({
+        key: 'adult',
+        value: claimsData.adult,
+        verified: true
+      });
+    }
+    
+    // Process country claim
+    if (claimsData.country) {
+      claims.push({
+        key: 'country',
+        value: claimsData.country,
+        verified: true
+      });
+    }
+    
+    // Process gender claim
+    if (claimsData.gender) {
+      claims.push({
+        key: 'gender',
+        value: claimsData.gender,
+        verified: true
+      });
+    }
+    
+    return claims.length > 0 ? claims : null;
+  } catch (error) {
+    console.error('Error fetching ZKPassport claims:', error);
     return null;
   }
 };
