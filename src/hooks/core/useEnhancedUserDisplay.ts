@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useForum } from '@/contexts/useForum';
-import { EDisplayPreference, EVerificationStatus } from '@/types/identity';
+import { EDisplayPreference, EVerificationStatus, IdentityProvider } from '@/types/identity';
 
 export interface UserDisplayInfo {
   displayName: string;
@@ -11,6 +11,7 @@ export interface UserDisplayInfo {
   displayPreference: EDisplayPreference | null;
   isLoading: boolean;
   error: string | null;
+  identityProviders: IdentityProvider[] | null;
 }
 
 /**
@@ -27,6 +28,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
     displayPreference: null,
     isLoading: true,
     error: null,
+    identityProviders: null,
   });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -104,6 +106,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
             displayPreference: identity.displayPreference || null,
             isLoading: false,
             error: null,
+            identityProviders: identity.identityProviders || null,
           });
         } else {
           setDisplayInfo({
@@ -117,6 +120,7 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
             displayPreference: null,
             isLoading: false,
             error: null,
+            identityProviders: null,
           });
         }
       } catch (error) {

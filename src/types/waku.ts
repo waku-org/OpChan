@@ -1,4 +1,4 @@
-import { EDisplayPreference, EVerificationStatus } from './identity';
+import { EDisplayPreference, EVerificationStatus, IdentityProvider } from './identity';
 import { DelegationProof } from '@/lib/delegation/types';
 
 /**
@@ -177,5 +177,6 @@ export interface UserIdentityCache {
     displayPreference: EDisplayPreference;
     lastUpdated: number;
     verificationStatus: EVerificationStatus;
+    identityProviders?: IdentityProvider[];
   };
 }

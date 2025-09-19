@@ -1,4 +1,4 @@
-import { EVerificationStatus, EDisplayPreference } from '@/types/identity';
+import { EVerificationStatus, EDisplayPreference, IdentityProvider, Claim } from '@/types/identity';
 import {
   UnsignedUserProfileUpdateMessage,
   UserProfileUpdateMessage,
@@ -21,6 +21,7 @@ export interface UserIdentity {
   displayPreference: EDisplayPreference;
   lastUpdated: number;
   verificationStatus: EVerificationStatus;
+  identityProviders?: IdentityProvider[];
 }
 
 export class UserIdentityService {
@@ -59,6 +60,7 @@ export class UserIdentityService {
         verificationStatus: this.mapVerificationStatus(
           cached.verificationStatus
         ),
+        identityProviders: cached.identityProviders
       };
     }
 
@@ -191,6 +193,7 @@ export class UserIdentityService {
       displayPreference: cached.displayPreference,
       lastUpdated: cached.lastUpdated,
       verificationStatus: this.mapVerificationStatus(cached.verificationStatus),
+      identityProviders: cached.identityProviders
     }));
   }
 
@@ -250,6 +253,7 @@ export class UserIdentityService {
                 : this.userIdentityCache[address].callSign,
             displayPreference,
             lastUpdated: timestamp,
+            identityProviders: this.userIdentityCache[address].identityProviders
           };
 
           localDatabase.cache.userIdentities[address] = updatedIdentity;
@@ -315,6 +319,7 @@ export class UserIdentityService {
         displayPreference: defaultDisplayPreference,
         lastUpdated: Date.now(),
         verificationStatus,
+        identityProviders: []
       };
     } catch (error) {
       console.error('Failed to resolve user identity:', error);
@@ -406,6 +411,218 @@ export class UserIdentityService {
   }
 
   /**
+   * Update user identity with ZKPassport adulthood verification
+   */
+  updateUserIdentityWithAdulthood(
+    address: string,
+    uniqueIdentifier: string,
+    isAdult: boolean
+  ): void {
+    const timestamp = Date.now();
+    
+    if (!this.userIdentityCache[address]) {
+      // Create new identity entry if it doesn't exist
+      this.userIdentityCache[address] = {
+        ensName: undefined,
+        ordinalDetails: undefined,
+        callSign: undefined,
+        displayPreference: EDisplayPreference.WALLET_ADDRESS,
+        lastUpdated: timestamp,
+        verificationStatus: EVerificationStatus.WALLET_CONNECTED,
+      };
+    }
+
+    // Create or update ZKPassport provider
+    if (!this.userIdentityCache[address].identityProviders) {
+      this.userIdentityCache[address].identityProviders = [];
+    }
+
+    const provider = this.userIdentityCache[address].identityProviders!.find(p => p.type === 'zkpassport');
+    const claims: Claim[] = provider?.claims || [];
+
+    // Update or add adulthood claim
+    const existingClaimIndex = claims.findIndex(c => c.key === 'adult');
+    const claim: Claim = {
+      key: 'adult',
+      value: isAdult,
+      verified: true
+    };
+
+    if (existingClaimIndex >= 0) {
+      claims[existingClaimIndex] = claim;
+    } else {
+      claims.push(claim);
+    }
+
+    // Create or update provider
+    const zkPassportProvider: IdentityProvider = {
+      type: 'zkpassport',
+      verifiedAt: timestamp,
+      uniqueIdentifier,
+      claims
+    };
+
+    const existingProviderIndex = this.userIdentityCache[address].identityProviders!.findIndex(
+      p => p.type === 'zkpassport'
+    );
+
+    if (existingProviderIndex >= 0) {
+      this.userIdentityCache[address].identityProviders![existingProviderIndex] = zkPassportProvider;
+    } else {
+      this.userIdentityCache[address].identityProviders!.push(zkPassportProvider);
+    }
+
+    // Update last updated timestamp
+    this.userIdentityCache[address].lastUpdated = timestamp;
+
+    // Update verification status if user is verified as adult
+    if (isAdult) {
+      this.userIdentityCache[address].verificationStatus = EVerificationStatus.ENS_ORDINAL_VERIFIED;
+    }
+
+    // Notify listeners that the user identity has been updated
+    this.notifyRefreshListeners(address);
+  }
+
+  /**
+   * Update user identity with ZKPassport country disclosure
+   */
+  updateUserIdentityWithCountry(
+    address: string,
+    uniqueIdentifier: string,
+    country: string
+  ): void {
+    const timestamp = Date.now();
+    
+    if (!this.userIdentityCache[address]) {
+      // Create new identity entry if it doesn't exist
+      this.userIdentityCache[address] = {
+        ensName: undefined,
+        ordinalDetails: undefined,
+        callSign: undefined,
+        displayPreference: EDisplayPreference.WALLET_ADDRESS,
+        lastUpdated: timestamp,
+        verificationStatus: EVerificationStatus.WALLET_CONNECTED,
+      };
+    }
+
+    // Create or update ZKPassport provider
+    if (!this.userIdentityCache[address].identityProviders) {
+      this.userIdentityCache[address].identityProviders = [];
+    }
+
+    const provider = this.userIdentityCache[address].identityProviders!.find(p => p.type === 'zkpassport');
+    const claims: Claim[] = provider?.claims || [];
+
+    // Update or add country claim
+    const existingClaimIndex = claims.findIndex(c => c.key === 'country');
+    const claim: Claim = {
+      key: 'country',
+      value: country,
+      verified: true
+    };
+
+    if (existingClaimIndex >= 0) {
+      claims[existingClaimIndex] = claim;
+    } else {
+      claims.push(claim);
+    }
+
+    // Create or update provider
+    const zkPassportProvider: IdentityProvider = {
+      type: 'zkpassport',
+      verifiedAt: timestamp,
+      uniqueIdentifier,
+      claims
+    };
+
+    const existingProviderIndex = this.userIdentityCache[address].identityProviders!.findIndex(
+      p => p.type === 'zkpassport'
+    );
+
+    if (existingProviderIndex >= 0) {
+      this.userIdentityCache[address].identityProviders![existingProviderIndex] = zkPassportProvider;
+    } else {
+      this.userIdentityCache[address].identityProviders!.push(zkPassportProvider);
+    }
+
+    // Update last updated timestamp
+    this.userIdentityCache[address].lastUpdated = timestamp;
+
+    // Notify listeners that the user identity has been updated
+    this.notifyRefreshListeners(address);
+  }
+
+  /**
+   * Update user identity with ZKPassport gender disclosure
+   */
+  updateUserIdentityWithGender(
+    address: string,
+    uniqueIdentifier: string,
+    gender: string
+  ): void {
+    const timestamp = Date.now();
+    
+    if (!this.userIdentityCache[address]) {
+      // Create new identity entry if it doesn't exist
+      this.userIdentityCache[address] = {
+        ensName: undefined,
+        ordinalDetails: undefined,
+        callSign: undefined,
+        displayPreference: EDisplayPreference.WALLET_ADDRESS,
+        lastUpdated: timestamp,
+        verificationStatus: EVerificationStatus.WALLET_CONNECTED,
+      };
+    }
+
+    // Create or update ZKPassport provider
+    if (!this.userIdentityCache[address].identityProviders) {
+      this.userIdentityCache[address].identityProviders = [];
+    }
+
+    const provider = this.userIdentityCache[address].identityProviders!.find(p => p.type === 'zkpassport');
+    const claims: Claim[] = provider?.claims || [];
+
+    // Update or add gender claim
+    const existingClaimIndex = claims.findIndex(c => c.key === 'gender');
+    const claim: Claim = {
+      key: 'gender',
+      value: gender,
+      verified: true
+    };
+
+    if (existingClaimIndex >= 0) {
+      claims[existingClaimIndex] = claim;
+    } else {
+      claims.push(claim);
+    }
+
+    // Create or update provider
+    const zkPassportProvider: IdentityProvider = {
+      type: 'zkpassport',
+      verifiedAt: timestamp,
+      uniqueIdentifier,
+      claims
+    };
+
+    const existingProviderIndex = this.userIdentityCache[address].identityProviders!.findIndex(
+      p => p.type === 'zkpassport'
+    );
+
+    if (existingProviderIndex >= 0) {
+      this.userIdentityCache[address].identityProviders![existingProviderIndex] = zkPassportProvider;
+    } else {
+      this.userIdentityCache[address].identityProviders!.push(zkPassportProvider);
+    }
+
+    // Update last updated timestamp
+    this.userIdentityCache[address].lastUpdated = timestamp;
+
+    // Notify listeners that the user identity has been updated
+    this.notifyRefreshListeners(address);
+  }
+
+  /**
    * Map verification status string to enum
    */
   private mapVerificationStatus(status: string): EVerificationStatus {
@@ -435,8 +652,19 @@ export class UserIdentityService {
    * Refresh user identity (force re-resolution)
    */
   async refreshUserIdentity(address: string): Promise<void> {
+    // Preserve identity providers when refreshing
+    const preservedProviders = this.userIdentityCache[address]?.identityProviders;
+    
     delete this.userIdentityCache[address];
+    
+    // Get fresh identity
     await this.getUserIdentity(address);
+    
+    // Restore identity providers if they existed
+    if (preservedProviders && this.userIdentityCache[address]) {
+      this.userIdentityCache[address].identityProviders = preservedProviders;
+      this.userIdentityCache[address].lastUpdated = Date.now();
+    }
   }
 
   /**

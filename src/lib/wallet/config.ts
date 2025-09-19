@@ -2,9 +2,9 @@ import { AppKitOptions } from '@reown/appkit';
 import { BitcoinAdapter } from '@reown/appkit-adapter-bitcoin';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { createStorage } from 'wagmi';
-import { mainnet, bitcoin, AppKitNetwork } from '@reown/appkit/networks';
+import { mainnet, sepolia, bitcoin, AppKitNetwork } from '@reown/appkit/networks';
 
-const networks: [AppKitNetwork, ...AppKitNetwork[]] = [mainnet, bitcoin];
+const networks: [AppKitNetwork, ...AppKitNetwork[]] = [mainnet, sepolia, bitcoin];
 
 const projectId =
   process.env.VITE_REOWN_SECRET || '2ead96ea166a03e5ab50e5c190532e72';
