@@ -173,6 +173,48 @@ export const AuthProvider: React.FC<{
     autoConnect();
   }, [isWalletConnected, connectedAddress, walletType]); // Remove currentUser and verifyOwnership dependencies
 
+  // Ensure verificationStatus reflects a connected wallet even if a user was preloaded
+  useEffect(() => {
+    const syncConnectedStatus = async () => {
+      if (!isWalletConnected || !connectedAddress || !currentUser) return;
+
+      const needsAddressSync =
+        currentUser.address !== connectedAddress ||
+        currentUser.walletType !== (walletType as 'bitcoin' | 'ethereum');
+
+      const needsStatusUpgrade =
+        currentUser.verificationStatus === EVerificationStatus.WALLET_UNCONNECTED;
+
+      if (needsAddressSync || needsStatusUpgrade) {
+        const nextStatus =
+          currentUser.verificationStatus ===
+          EVerificationStatus.ENS_ORDINAL_VERIFIED
+            ? EVerificationStatus.ENS_ORDINAL_VERIFIED
+            : EVerificationStatus.WALLET_CONNECTED;
+
+        const updatedUser: User = {
+          ...currentUser,
+          address: connectedAddress,
+          walletType: walletType as 'bitcoin' | 'ethereum',
+          verificationStatus: nextStatus,
+          lastChecked: Date.now(),
+        } as User;
+
+        setCurrentUser(updatedUser);
+        await localDatabase.storeUser(updatedUser);
+        await localDatabase.upsertUserIdentity(connectedAddress, {
+          ensName: updatedUser.ensDetails?.ensName,
+          ordinalDetails: updatedUser.ordinalDetails,
+          verificationStatus: nextStatus,
+          lastUpdated: Date.now(),
+        });
+      }
+    };
+
+    syncConnectedStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWalletConnected, connectedAddress, walletType, currentUser]);
+
   const connectWallet = useCallback(async (): Promise<boolean> => {
     if (!isWalletConnected || !connectedAddress) return false;
     

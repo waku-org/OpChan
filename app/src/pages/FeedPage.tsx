@@ -167,7 +167,7 @@ const FeedPage: React.FC = () => {
                     {verificationStatus !==
                       EVerificationStatus.ENS_ORDINAL_VERIFIED && (
                       <p className="text-sm text-cyber-neutral/80">
-                        Connect your wallet and verify Ordinal ownership to
+                        Connect your wallet to
                         start posting
                       </p>
                     )}

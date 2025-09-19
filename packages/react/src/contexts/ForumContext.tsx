@@ -131,6 +131,14 @@ export const ForumProvider: React.FC<{
     };
   }, [client, updateFromCache]);
 
+  // 2b) Pending state wiring – rehydrate when local pending queue changes
+  useEffect(() => {
+    const off = localDatabase.onPendingChange(async () => {
+      try { await updateFromCache(); } catch {}
+    });
+    return () => { try { off && off(); } catch {} };
+  }, [updateFromCache]);
+
   // 3) Visibility change: re-check connection immediately when tab becomes active
   useEffect(() => {
     const handleVisibility = async () => {

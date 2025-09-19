@@ -297,7 +297,7 @@ const PostDetail = () => {
       {!permissions.canComment && (
         <div className="mb-6 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 text-center">
           <p className="text-sm mb-3">
-            Connect wallet and verify Ordinal ownership to comment
+            Connect your wallet to comment
           </p>
           <Button asChild size="sm">
             <Link to="/">Connect Wallet</Link>

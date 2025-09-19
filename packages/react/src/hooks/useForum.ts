@@ -394,7 +394,7 @@ export function useForumApi(): UseForumApi {
               currentUser,
               isAuthenticated: !!currentUser,
             },
-            async () => {} // updateStateFromCache handled by ForumProvider
+            async () => { await refreshData(); }
           );
           return result.data || null;
         } catch {
@@ -403,7 +403,7 @@ export function useForumApi(): UseForumApi {
       },
       createPost: async (input: { cellId: string; title: string; content: string }) => {
         if (!permissions.canPost) {
-          throw new Error('You need to verify Ordinal ownership to create posts.');
+          throw new Error('Connect your wallet to create posts.');
         }
         if (!input.title.trim() || !input.content.trim()) {
           throw new Error('Please provide both a title and content for the post.');
@@ -417,7 +417,7 @@ export function useForumApi(): UseForumApi {
               currentUser,
               isAuthenticated: !!currentUser,
             },
-            async () => {}
+            async () => { await refreshData(); }
           );
           return result.data || null;
         } catch {
@@ -439,7 +439,7 @@ export function useForumApi(): UseForumApi {
               currentUser,
               isAuthenticated: !!currentUser,
             },
-            async () => {}
+            async () => { await refreshData(); }
           );
           return result.data || null;
         } catch {
@@ -460,7 +460,7 @@ export function useForumApi(): UseForumApi {
               currentUser,
               isAuthenticated: !!currentUser,
             },
-            async () => {}
+            async () => { await refreshData(); }
           );
           return result.success;
         } catch {
@@ -472,7 +472,7 @@ export function useForumApi(): UseForumApi {
           try {
             const result = await client.forumActions.moderatePost(
               { cellId, postId, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
-              async () => {}
+              async () => { await refreshData(); }
             );
             return result.success;
           } catch { return false; }
@@ -481,7 +481,7 @@ export function useForumApi(): UseForumApi {
           try {
             const result = await client.forumActions.unmoderatePost(
               { cellId, postId, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
-              async () => {}
+              async () => { await refreshData(); }
             );
             return result.success;
           } catch { return false; }
@@ -490,7 +490,7 @@ export function useForumApi(): UseForumApi {
           try {
             const result = await client.forumActions.moderateComment(
               { cellId, commentId, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
-              async () => {}
+              async () => { await refreshData(); }
             );
             return result.success;
           } catch { return false; }
@@ -499,7 +499,7 @@ export function useForumApi(): UseForumApi {
           try {
             const result = await client.forumActions.unmoderateComment(
               { cellId, commentId, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
-              async () => {}
+              async () => { await refreshData(); }
             );
             return result.success;
           } catch { return false; }
@@ -508,7 +508,7 @@ export function useForumApi(): UseForumApi {
           try {
             const result = await client.forumActions.moderateUser(
               { cellId, userAddress, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
-              async () => {}
+              async () => { await refreshData(); }
             );
             return result.success;
           } catch { return false; }
@@ -517,7 +517,7 @@ export function useForumApi(): UseForumApi {
           try {
             const result = await client.forumActions.unmoderateUser(
               { cellId, userAddress, reason, currentUser, isAuthenticated: !!currentUser, cellOwner: currentUser?.address || '' },
-              async () => {}
+              async () => { await refreshData(); }
             );
             return result.success;
           } catch { return false; }

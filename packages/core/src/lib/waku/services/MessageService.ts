@@ -55,6 +55,7 @@ export class MessageService {
         onSent: id => {
           console.log(`Message ${id} sent`);
           statusCallback?.onSent?.(id);
+          try { localDatabase.clearPending(message.id); } catch {}
         },
         onAcknowledged: id => {
           console.log(`Message ${id} acknowledged`);

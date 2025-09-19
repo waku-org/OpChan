@@ -363,7 +363,7 @@ export class ForumActions {
       return {
         success: false,
         error:
-          'Authentication required. You need to verify Ordinal ownership to moderate posts.',
+          'Authentication required. Connect your wallet to moderate posts.',
       };
     }
     if (currentUser.address !== cellOwner) {
@@ -437,7 +437,7 @@ export class ForumActions {
       return {
         success: false,
         error:
-          'Authentication required. You need to verify Ordinal ownership to moderate comments.',
+          'Authentication required. Connect your wallet to moderate comments.',
       };
     }
     if (currentUser.address !== cellOwner) {
@@ -511,7 +511,7 @@ export class ForumActions {
       return {
         success: false,
         error:
-          'Authentication required. You need to verify Ordinal ownership to moderate users.',
+          'Authentication required. Connect your wallet to moderate users.',
       };
     }
     if (currentUser.address !== cellOwner) {
@@ -579,7 +579,7 @@ export class ForumActions {
       return {
         success: false,
         error:
-          'Authentication required. You need to verify Ordinal ownership to unmoderate posts.',
+          'Authentication required. Connect your wallet to unmoderate posts.',
       };
     }
     if (currentUser.address !== cellOwner) {
@@ -653,7 +653,7 @@ export class ForumActions {
       return {
         success: false,
         error:
-          'Authentication required. You need to verify Ordinal ownership to unmoderate comments.',
+          'Authentication required. Connect your wallet to unmoderate comments.',
       };
     }
     if (currentUser.address !== cellOwner) {
@@ -727,7 +727,7 @@ export class ForumActions {
       return {
         success: false,
         error:
-          'Authentication required. You need to verify Ordinal ownership to unmoderate users.',
+          'Authentication required. Connect your wallet to unmoderate users.',
       };
     }
     if (currentUser.address !== cellOwner) {

@@ -244,7 +244,7 @@ const PostList = () => {
       {!canPost && !currentUser && (
         <div className="section-spacing content-card-sm text-center">
           <p className="text-sm mb-3">
-            Connect wallet and verify Ordinal ownership to post
+            Connect your wallet to post
           </p>
           <Button asChild size="sm">
             <Link to="/">Connect Wallet</Link>
@@ -260,7 +260,7 @@ const PostList = () => {
             <p className="empty-state-description">
               {canPost
                 ? 'Be the first to post in this cell!'
-                : 'Connect your wallet and verify Ordinal ownership to start a thread.'}
+                : 'Connect your wallet to start a thread.'}
             </p>
           </div>
         ) : (
@@ -273,7 +273,7 @@ const PostList = () => {
                     onClick={() => handleVotePost(post.id, true)}
                     disabled={!canVote || isVoting}
                     title={
-                      canVote ? 'Upvote' : 'Connect wallet and verify to vote'
+                      canVote ? 'Upvote' : 'Connect your wallet to vote'
                     }
                   >
                     <ArrowUp className="w-4 h-4" />
@@ -286,7 +286,7 @@ const PostList = () => {
                     onClick={() => handleVotePost(post.id, false)}
                     disabled={!canVote || isVoting}
                     title={
-                      canVote ? 'Downvote' : 'Connect wallet and verify to vote'
+                      canVote ? 'Downvote' : 'Connect your wallet to vote'
                     }
                   >
                     <ArrowDown className="w-4 h-4" />
