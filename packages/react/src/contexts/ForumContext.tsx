@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { localDatabase, ForumActions, OpChanClient, getDataFromCache } from '@opchan/core';
 import { transformCell, transformPost, transformComment } from '@opchan/core';
 import { useAuth } from './AuthContext';
-import { Cell, Post, Comment, UserVerificationStatus } from '@opchan/core';
+import { Cell, Post, Comment, UserVerificationStatus, EVerificationStatus } from '@opchan/core';
 
 export interface ForumContextValue {
   cells: Cell[];
@@ -42,14 +42,39 @@ export const ForumProvider: React.FC<{
 
   const updateFromCache = useCallback(async () => {
     try {
-      const data = await getDataFromCache(undefined, userVerificationStatus);
+      // Rebuild verification status map from centralized user identity cache
+      const nextVerificationStatus: UserVerificationStatus = {};
+      try {
+        const identities = localDatabase.cache.userIdentities || {};
+        Object.entries(identities).forEach(([address, record]) => {
+          const hasENS = Boolean((record as { ensName?: unknown }).ensName);
+          const hasOrdinal = Boolean((record as { ordinalDetails?: unknown }).ordinalDetails);
+          const verificationStatus = (record as { verificationStatus?: EVerificationStatus }).verificationStatus;
+          const isVerified =
+            hasENS ||
+            hasOrdinal ||
+            verificationStatus === EVerificationStatus.WALLET_CONNECTED ||
+            verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
+          nextVerificationStatus[address] = {
+            isVerified,
+            hasENS,
+            hasOrdinal,
+            ensName: (record as { ensName?: string }).ensName,
+            verificationStatus,
+          };
+        });
+      } catch {}
+
+      setUserVerificationStatus(nextVerificationStatus);
+
+      const data = await getDataFromCache(undefined, nextVerificationStatus);
       setCells(data.cells);
       setPosts(data.posts);
       setComments(data.comments);
     } catch (e) {
       console.error('Failed to read cache', e);
     }
-  }, [userVerificationStatus]);
+  }, []);
 
   const refreshData = useCallback(async () => {
     setIsRefreshing(true);
@@ -88,9 +113,12 @@ export const ForumProvider: React.FC<{
     console.log('🔌 ForumContext initial state:', { initialReady, initialHealth });
     setIsNetworkConnected(!!initialReady);
 
-    unsubHealth = client.messageManager.onHealthChange((ready: boolean, health: any) => {
+    unsubHealth = client.messageManager.onHealthChange(async (ready: boolean, health: any) => {
       console.log('🔌 ForumContext health change:', { ready, health });
       setIsNetworkConnected(!!ready);
+      if (ready) {
+        try { await updateFromCache(); } catch {}
+      }
     });
 
     unsubMsg = client.messageManager.onMessageReceived(async () => {
@@ -105,11 +133,14 @@ export const ForumProvider: React.FC<{
 
   // 3) Visibility change: re-check connection immediately when tab becomes active
   useEffect(() => {
-    const handleVisibility = () => {
+    const handleVisibility = async () => {
       if (document.visibilityState === 'visible') {
         const ready = client.messageManager.isReady;
         setIsNetworkConnected(!!ready);
         console.debug('🔌 ForumContext visibility check, ready:', ready);
+        if (ready) {
+          try { await updateFromCache(); } catch {}
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);

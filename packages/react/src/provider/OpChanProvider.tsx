@@ -37,6 +37,12 @@ export const OpChanProvider: React.FC<OpChanProviderProps> = ({
       // Open local DB early for warm cache
       await localDatabase.open().catch(console.error);
 
+      try {
+        await client.messageManager.initialize();
+      } catch (e) {
+        console.error('Failed to initialize message manager:', e);
+      }
+
 
       if (!cancelled) setIsReady(true);
     };
