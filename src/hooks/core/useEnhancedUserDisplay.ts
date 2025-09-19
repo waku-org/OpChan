@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useForum } from '@/contexts/useForum';
-import { EDisplayPreference, EVerificationStatus } from '@/types/identity';
+import { EDisplayPreference, EVerificationStatus, IdentityProvider } from '@/types/identity';
 
 export interface UserDisplayInfo {
   displayName: string;
@@ -11,6 +11,10 @@ export interface UserDisplayInfo {
   displayPreference: EDisplayPreference | null;
   isLoading: boolean;
   error: string | null;
+  identityProviders: IdentityProvider[] | null;
+  countryFlag: string | null;
+  ageEmoji: string | null;
+  genderEmoji: string | null;
 }
 
 /**
@@ -27,6 +31,10 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
     displayPreference: null,
     isLoading: true,
     error: null,
+    identityProviders: null,
+    countryFlag: null,
+    ageEmoji: null,
+    genderEmoji: null,
   });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -83,6 +91,10 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
           displayPreference: null,
           isLoading: false,
           error: null,
+          identityProviders: null,
+          countryFlag: null,
+          ageEmoji: null,
+          genderEmoji: null,
         });
         return;
       }
@@ -92,6 +104,32 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
 
         if (identity) {
           const displayName = userIdentityService.getDisplayName(address);
+
+          // Extract country, adult, and gender claims from identity providers
+          let countryFlag = null;
+          let ageEmoji = null;
+          let genderEmoji = null;
+          
+          if (identity.identityProviders) {
+            for (const provider of identity.identityProviders) {
+              if (provider.type === 'zkpassport') {
+                for (const claim of provider.claims) {
+                  if (claim.key === 'country' && claim.verified && typeof claim.value === 'string') {
+                    // Convert country code to flag emoji
+                    countryFlag = getCountryFlag(claim.value);
+                  }
+                  if (claim.key === 'adult' && claim.verified && typeof claim.value === 'boolean') {
+                    ageEmoji = claim.value ? '🧓' : '👶';
+                  }
+                  if (claim.key === 'gender' && claim.verified && typeof claim.value === 'string') {
+                    // Map gender to emoji
+                    genderEmoji = claim.value.toLowerCase() === 'm' ? '♂️' :
+                                 claim.value.toLowerCase() === 'f' ? '♀️' : '⚧️';
+                  }
+                }
+              }
+            }
+          }
 
           setDisplayInfo({
             displayName,
@@ -104,6 +142,10 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
             displayPreference: identity.displayPreference || null,
             isLoading: false,
             error: null,
+            identityProviders: identity.identityProviders || null,
+            countryFlag,
+            ageEmoji,
+            genderEmoji,
           });
         } else {
           setDisplayInfo({
@@ -117,6 +159,10 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
             displayPreference: null,
             isLoading: false,
             error: null,
+            identityProviders: null,
+            countryFlag: null,
+            ageEmoji: null,
+            genderEmoji: null,
           });
         }
       } catch (error) {
@@ -133,6 +179,10 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
           displayPreference: null,
           isLoading: false,
           error: error instanceof Error ? error.message : 'Unknown error',
+          identityProviders: null,
+          countryFlag: null,
+          ageEmoji: null,
+          genderEmoji: null,
         });
       }
     };
@@ -156,6 +206,17 @@ export function useEnhancedUserDisplay(address: string): UserDisplayInfo {
     displayInfo.isLoading,
     verificationInfo,
   ]);
+
+  // Helper function to convert country code to flag emoji
+  function getCountryFlag(countryCode: string): string {
+    // Convert country code to flag emoji using regional indicator symbols
+    // For example, 'US' -> '🇺🇸'
+    return countryCode
+      .toUpperCase()
+      .replace(/./g, char =>
+        String.fromCodePoint(127397 + char.charCodeAt(0))
+      );
+  }
 
   return displayInfo;
 }

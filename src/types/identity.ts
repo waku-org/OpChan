@@ -37,3 +37,20 @@ export enum EDisplayPreference {
   CALL_SIGN = 'call-sign',
   WALLET_ADDRESS = 'wallet-address',
 }
+
+// New interfaces for identity providers and claims
+export interface Claim {
+  key: string;
+  value: any;
+  verified: boolean;
+  proof?: string;
+  expiresAt?: number;
+}
+
+export interface IdentityProvider {
+  type: string;
+  verifiedAt: number;
+  expiresAt?: number;
+  uniqueIdentifier?: string;
+  claims: Claim[];
+}
