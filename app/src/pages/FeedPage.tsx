@@ -15,8 +15,7 @@ import { ModerationToggle } from '@/components/ui/moderation-toggle';
 import { useForumData, useAuth } from '@/hooks';
 import { useForum } from '@opchan/react';
 import { EVerificationStatus } from '@opchan/core';
-import { sortPosts, SortOption } from '@opchan/core';
-
+import { sortPosts, SortOption } from '@/utils/sorting';
 const FeedPage: React.FC = () => {
   const forumData = useForumData();
   const { verificationStatus } = useAuth();

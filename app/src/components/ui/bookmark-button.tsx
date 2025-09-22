@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
-import { cn } from '@opchan/core';
+import { cn } from '../../utils'
 
 interface BookmarkButtonProps {
   isBookmarked: boolean;

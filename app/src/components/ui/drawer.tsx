@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
 
-import { cn } from '@opchan/core';
+import { cn } from '../../utils'
 
 const Drawer = ({
   shouldScaleBackground = true,

@@ -1,4 +1,4 @@
-import { cn } from '@opchan/core';
+import { cn } from '../../utils';
 
 function Skeleton({
   className,

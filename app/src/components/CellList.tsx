@@ -24,8 +24,8 @@ import {
 import { CypherImage } from './ui/CypherImage';
 import { RelevanceIndicator } from './ui/relevance-indicator';
 import { ModerationToggle } from './ui/moderation-toggle';
-import { sortCells, SortOption } from '@opchan/core';
-import { Cell } from '@opchan/core';
+import { sortCells, SortOption } from '@/utils/sorting';
+import type { Cell } from '@opchan/core';
 import { useForum } from '@opchan/react';
 import { ShareButton } from './ui/ShareButton';
 

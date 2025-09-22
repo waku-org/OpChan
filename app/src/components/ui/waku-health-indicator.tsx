@@ -1,6 +1,6 @@
-import { Wifi, WifiOff, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Wifi, WifiOff, CheckCircle } from 'lucide-react';
 import { useNetworkStatus } from '@opchan/react';
-import { cn } from '@opchan/core';
+import { cn } from '../../utils'
 
 interface WakuHealthIndicatorProps {
   className?: string;
@@ -24,12 +24,8 @@ export function WakuHealthIndicator({
     switch (connectionStatus) {
       case 'connected':
         return <CheckCircle className="text-green-500" />;
-      case 'connecting':
-        return <Wifi className="text-yellow-500 animate-pulse" />;
       case 'disconnected':
         return <WifiOff className="text-red-500" />;
-      case 'error':
-        return <AlertTriangle className="text-red-500" />;
       default:
         return <Wifi className="text-gray-500" />;
     }

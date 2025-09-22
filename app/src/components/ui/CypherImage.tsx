@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { cn } from '@opchan/core';
+import { cn } from '../../utils'
 
 type CypherImageProps = {
   src?: string;

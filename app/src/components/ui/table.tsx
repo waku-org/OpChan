@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { cn } from '@opchan/core';
+import { cn } from '../../utils'
 
 const Table = React.forwardRef<
   HTMLTableElement,

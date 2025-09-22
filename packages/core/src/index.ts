@@ -35,8 +35,6 @@ export { ordinals } from './lib/services/Ordinals';
 // Export utilities
 export * from './lib/utils';
 export { MessageValidator } from './lib/utils/MessageValidator';
-export * from './lib/utils/sorting';
-export { urlLoads } from './lib/utils/urlLoads';
 export { environment, type EnvironmentConfig } from './lib/utils/environment';
 
 // Export Waku networking

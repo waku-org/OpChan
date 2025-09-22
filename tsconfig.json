@@ -19,6 +19,6 @@
     "incremental": true,
     "tsBuildInfoFile": ".tsbuildinfo"
   },
-  "include": ["packages/*/src/**/*"],
+  "include": ["packages/*/src/**/*", "app/utils/urlLoads.test.ts", "app/utils/urlLoads.ts"],
   "exclude": ["node_modules", "**/dist", "**/*.test.ts", "**/*.spec.ts"]
 }

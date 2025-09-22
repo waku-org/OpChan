@@ -76,12 +76,10 @@ export function useNetworkStatus(): NetworkStatusData {
       try {
         const nowReady = Boolean(client?.messageManager?.isReady);
         setWakuReady(nowReady);
-        console.debug('[useNetworkStatus] primed wakuReady from client', { nowReady });
       } catch {}
 
       const off = client?.messageManager?.onHealthChange?.(
         (ready: boolean) => {
-          console.debug('[useNetworkStatus] onHealthChange -> wakuReady', { ready });
           setWakuReady(Boolean(ready));
         }
       );
@@ -118,18 +116,6 @@ export function useNetworkStatus(): NetworkStatusData {
     const isHealthy = issues.length === 0;
     const lastSync = Date.now(); // This would come from actual sync tracking
     const syncAge = lastSync ? formatTimeAgo(lastSync) : null;
-
-    // Debug: surface the raw inputs to health computation
-    console.debug('[useNetworkStatus] health', {
-      forumIsNetworkConnected: isNetworkConnected,
-      fallbackConnected,
-      effectiveConnected,
-      isInitialLoading,
-      isRefreshing,
-      error,
-      delegationValid: delegationInfo?.isValid,
-      issues,
-    });
 
     return {
       isConnected: effectiveConnected,
@@ -185,13 +171,6 @@ export function useNetworkStatus(): NetworkStatusData {
   // Helper methods
   const getStatusMessage = useMemo(() => {
     return (): string => {
-      console.debug('[useNetworkStatus] statusMessage inputs', {
-        isInitialLoading,
-        isRefreshing,
-        isNetworkConnected,
-        error,
-        issues: health.issues,
-      });
       if (isInitialLoading) return 'Loading forum data...';
       if (isRefreshing) return 'Refreshing data...';
       const fallbackConnected = Boolean(wakuReady);
@@ -213,12 +192,6 @@ export function useNetworkStatus(): NetworkStatusData {
 
   const getHealthColor = useMemo(() => {
     return (): 'green' | 'yellow' | 'red' => {
-      console.debug('[useNetworkStatus] healthColor inputs', {
-        isNetworkConnected,
-        error,
-        issues: health.issues,
-        delegationValid: delegationInfo?.isValid,
-      });
       const fallbackConnected = Boolean(wakuReady);
       const effectiveConnected = isNetworkConnected || fallbackConnected;
       if (!effectiveConnected || error) return 'red';

@@ -61,19 +61,17 @@ const Header = () => {
   const { toast } = useToast();
   const forumContext = useForumContext();
 
-  // Use AppKit hooks for multi-chain support
   const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
   const ethereumAccount = useAppKitAccount({ namespace: 'eip155' });
   const { disconnect } = useDisconnect();
 
-  // Determine which account is connected
-  const isBitcoinConnected = bitcoinAccount.isConnected;
-  const isEthereumConnected = ethereumAccount.isConnected;
-  const isConnected = isBitcoinConnected || isEthereumConnected;
-  
+  const isConnected = bitcoinAccount.isConnected || ethereumAccount.isConnected;
+
+
+
   // Use currentUser address (which has ENS details) instead of raw AppKit address
   const address = currentUser?.address || (isConnected
-    ? isBitcoinConnected
+    ? bitcoinAccount.isConnected
       ? bitcoinAccount.address
       : ethereumAccount.address
     : undefined);
@@ -81,12 +79,9 @@ const Header = () => {
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // ✅ Use UserIdentityService via useUserDisplay hook for centralized display logic
   const { displayName, verificationLevel } = useUserDisplay(address || '');
   
-  // ✅ Removed console.log to prevent spam during development
 
-  // Load delegation status
   React.useEffect(() => {
     getDelegationStatus().then(setDelegationInfo).catch(console.error);
   }, [getDelegationStatus]);
@@ -158,7 +153,6 @@ const Header = () => {
   const getStatusIcon = () => {
     if (!isConnected) return <CircleSlash className="w-4 h-4" />;
 
-    // Use verification level from UserIdentityService (central database store)
     if (
       verificationLevel === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
       delegationInfo?.isValid
