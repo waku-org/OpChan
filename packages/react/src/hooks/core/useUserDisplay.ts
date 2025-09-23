@@ -1,7 +1,6 @@
 import { EDisplayPreference, EVerificationStatus } from '@opchan/core';
 import { useEffect, useState } from 'react';
 import { useClient } from '../../contexts/ClientContext';
-import { useIdentity } from '../../contexts/IdentityContext';
 
 export interface UserDisplayInfo {
   displayName: string;
@@ -19,7 +18,7 @@ export interface UserDisplayInfo {
  */
 export function useUserDisplay(address: string): UserDisplayInfo {
   const client = useClient();
-  const { getIdentity, getDisplayName } = useIdentity();
+  const getDisplayName = (addr: string) => client.userIdentityService.getDisplayName(addr);
   const [displayInfo, setDisplayInfo] = useState<UserDisplayInfo>({
     displayName: `${address.slice(0, 6)}...${address.slice(-4)}`,
     callSign: null,
@@ -30,7 +29,7 @@ export function useUserDisplay(address: string): UserDisplayInfo {
     isLoading: true,
     error: null,
   });
-  // Subscribe via IdentityContext by relying on its internal listener
+  // Subscribe to identity service refresh events directly
   useEffect(() => {
     let cancelled = false;
     const prime = async () => {
@@ -69,24 +68,27 @@ export function useUserDisplay(address: string): UserDisplayInfo {
     };
     prime();
     return () => { cancelled = true; };
-  }, [address, client.userIdentityService, getDisplayName]);
+  }, [address, client, getDisplayName]);
 
-  // Reactively reflect IdentityContext cache changes
   useEffect(() => {
     if (!address) return;
-    const id = getIdentity(address);
-    if (!id) return;
-    setDisplayInfo(prev => ({
-      ...prev,
-      displayName: getDisplayName(address),
-      callSign: id.callSign,
-      ensName: id.ensName,
-      ordinalDetails: id.ordinalDetails,
-      verificationLevel: id.verificationStatus,
-      isLoading: false,
-      error: null,
-    }));
-  }, [address, getIdentity, getDisplayName]);
+    const off = client.userIdentityService.addRefreshListener(async (changed) => {
+      if (changed !== address) return;
+      const identity = await client.userIdentityService.getUserIdentity(address);
+      if (!identity) return;
+      setDisplayInfo(prev => ({
+        ...prev,
+        displayName: getDisplayName(address),
+        callSign: identity.callSign || null,
+        ensName: identity.ensName || null,
+        ordinalDetails: identity.ordinalDetails ? identity.ordinalDetails.ordinalDetails : null,
+        verificationLevel: identity.verificationStatus,
+        isLoading: false,
+        error: null,
+      }));
+    });
+    return () => { try { off && off(); } catch {} };
+  }, [address, client, getDisplayName]);
 
   return displayInfo;
 }

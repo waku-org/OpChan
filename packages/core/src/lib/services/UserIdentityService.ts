@@ -9,7 +9,6 @@ import { MessageService } from './MessageService';
 import messageManager from '../waku';
 import { localDatabase } from '../database/LocalDatabase';
 import { WalletManager } from '../wallet';
-import { environment } from '../utils/environment';
 
 export interface UserIdentity {
   address: string;
@@ -62,9 +61,6 @@ export class UserIdentityService {
     // Check internal cache first
     if (this.userIdentityCache[address]) {
       const cached = this.userIdentityCache[address];
-      if (environment.isDev) {
-        console.debug('UserIdentityService: cache hit (internal)');
-      }
       // Enrich with ENS name if missing and ETH address
       if (!cached.ensName && address.startsWith('0x')) {
         const ensName = await this.resolveENSName(address);
@@ -144,9 +140,6 @@ export class UserIdentityService {
       messageManager.messageCache.userIdentities[address];
 
     if (cacheServiceData) {
-      if (environment.isDev) {
-        console.debug('UserIdentityService: cache hit (message cache)');
-      }
 
       // Store in internal cache for future use
       this.userIdentityCache[address] = {
@@ -191,9 +184,6 @@ export class UserIdentityService {
       return result;
     }
 
-    if (environment.isDev) {
-      console.debug('UserIdentityService: cache miss, resolving');
-    }
 
     // Try to resolve identity from various sources
     const identity = await this.resolveUserIdentity(address);
@@ -226,9 +216,6 @@ export class UserIdentityService {
    * Useful for explicit verification flows where we must hit upstream resolvers.
    */
   async getUserIdentityFresh(address: string): Promise<UserIdentity | null> {
-    if (environment.isDev) {
-      console.debug('UserIdentityService: fresh resolve requested');
-    }
     const identity = await this.resolveUserIdentity(address);
     if (identity) {
       // Update in-memory cache to reflect the fresh result
@@ -278,9 +265,6 @@ export class UserIdentityService {
     displayPreference: EDisplayPreference
   ): Promise<boolean> {
     try {
-      if (environment.isDev) {
-        console.debug('UserIdentityService: updating profile', { address });
-      }
 
       const timestamp = Date.now();
       const unsignedMessage: UnsignedUserProfileUpdateMessage = {
@@ -295,19 +279,10 @@ export class UserIdentityService {
         unsignedMessage.callSign = callSign.trim();
       }
 
-      if (environment.isDev) {
-        console.debug('UserIdentityService: created unsigned message');
-      }
-
       const signedMessage =
         await this.messageService.signAndBroadcastMessage(unsignedMessage);
 
-      if (environment.isDev) {
-        console.debug(
-          'UserIdentityService: message broadcast result',
-          !!signedMessage
-        );
-      }
+      
 
       // If broadcast was successful, immediately update local cache
       if (signedMessage) {

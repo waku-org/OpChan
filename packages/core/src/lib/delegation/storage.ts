@@ -7,11 +7,6 @@ export class DelegationStorage {
    * Store delegation information in IndexedDB
    */
   static async store(delegation: DelegationInfo): Promise<void> {
-    // Reduce verbose logging in production; keep minimal signal
-    if (!environment.isProduction) {
-      console.log('DelegationStorage.store');
-    }
-
     try {
       await localDatabase.storeDelegation(delegation);
     } catch (e) {
@@ -25,9 +20,6 @@ export class DelegationStorage {
   static async retrieve(): Promise<DelegationInfo | null> {
     try {
       const delegation = await localDatabase.loadDelegation();
-      if (!environment.isProduction) {
-        console.log('DelegationStorage.retrieve');
-      }
       return delegation;
     } catch (e) {
       console.error('Failed to retrieve delegation information', e);

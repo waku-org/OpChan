@@ -201,10 +201,6 @@ export class WalletManager {
     walletType: 'bitcoin' | 'ethereum'
   ): Promise<boolean> {
     try {
-      if (environment.isDev) {
-        // Keep this lightweight in dev; avoid logging full message/signature repeatedly
-        console.debug('WalletManager.verifySignature', { walletType });
-      }
       if (walletType === 'ethereum') {
         return await verifyEthereumMessage(config, {
           address: walletAddress as `0x${string}`,

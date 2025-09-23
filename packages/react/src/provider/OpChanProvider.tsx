@@ -5,7 +5,6 @@ import { ClientProvider } from '../contexts/ClientContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ForumProvider } from '../contexts/ForumContext';
 import { ModerationProvider } from '../contexts/ModerationContext';
-import { IdentityProvider } from '../contexts/IdentityContext';
 
 export interface OpChanProviderProps {
   ordiscanApiKey: string;
@@ -56,13 +55,11 @@ export const OpChanProvider: React.FC<OpChanProviderProps> = ({
     if (!isReady || !clientRef.current) return null;
     return (
       <ClientProvider client={clientRef.current}>
-        <IdentityProvider client={clientRef.current}>
-          <AuthProvider>
-            <ModerationProvider>
-              <ForumProvider>{children}</ForumProvider>
-            </ModerationProvider>
-          </AuthProvider>
-        </IdentityProvider>
+        <AuthProvider>
+          <ModerationProvider>
+            <ForumProvider>{children}</ForumProvider>
+          </ModerationProvider>
+        </AuthProvider>
       </ClientProvider>
     );
   }, [isReady, children]);

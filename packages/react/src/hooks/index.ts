@@ -6,6 +6,7 @@ export { useForumApi } from './useForum';
 export { useForumData } from './core/useForumData';
 export { usePermissions } from './core/usePermissions';
 export { useUserDisplay } from './core/useUserDisplay';
+export { useIdentity } from './useIdentity';
 
 // Derived hooks (data slicing utilities)
 export { useCell } from './derived/useCell';

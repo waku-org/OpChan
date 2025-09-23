@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { User, EVerificationStatus, EDisplayPreference } from '@opchan/core';
-import { delegationManager, type messageManager, localDatabase } from '@opchan/core';
+import { delegationManager, localDatabase } from '@opchan/core';
 import { DelegationDuration } from '@opchan/core';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useClient } from './ClientContext';
@@ -19,7 +19,11 @@ export interface AuthContextValue {
   getDelegationStatus: () => ReturnType<typeof delegationManager.getStatus>;
   clearDelegation: () => Promise<void>;
 
-  signMessage: typeof messageManager.sendMessage;
+  signMessage: (message: unknown, statusCallback?: {
+    onSent?: (messageId: string) => void;
+    onAcknowledged?: (messageId: string) => void;
+    onError?: (messageId: string, error: string) => void;
+  }) => Promise<void>;
   verifyMessage: (message: unknown) => Promise<boolean>;
 }
 

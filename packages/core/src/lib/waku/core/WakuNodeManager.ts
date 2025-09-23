@@ -33,9 +33,7 @@ export class WakuNodeManager {
       const health = event.detail;
       this._currentHealth = health;
 
-      if (environment.isDev) {
-        console.debug(`Waku health status: ${health}`);
-      }
+
 
       const wasReady = this._isReady;
       this._isReady =
