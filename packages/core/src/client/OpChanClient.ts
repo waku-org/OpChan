@@ -10,15 +10,11 @@ import { MessageService } from '../lib/services/MessageService';
 
 export interface OpChanClientConfig {
   ordiscanApiKey: string;
-  debug?: boolean;
-  isDevelopment?: boolean;
-  isProduction?: boolean;
 }
 
 export class OpChanClient {
   readonly config: OpChanClientConfig;
 
-  // Exposed subsystems
   readonly messageManager: DefaultMessageManager = messageManager;
   readonly database: LocalDatabase = localDatabase;
   readonly forumActions = new ForumActions();
@@ -32,8 +28,7 @@ export class OpChanClient {
     this.config = config;
 
     const env: EnvironmentConfig = {
-      isDevelopment: config.isDevelopment ?? config.debug ?? false,
-      isProduction: config.isProduction ?? !config.debug,
+      
       apiKeys: {
         ordiscan: config.ordiscanApiKey,
       },

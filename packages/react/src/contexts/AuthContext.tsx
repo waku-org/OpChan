@@ -1,8 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { User, EVerificationStatus, OpChanClient, EDisplayPreference } from '@opchan/core';
-import { walletManager, delegationManager, messageManager, LocalDatabase, localDatabase, WalletManager } from '@opchan/core';
+import { User, EVerificationStatus, EDisplayPreference } from '@opchan/core';
+import { delegationManager, type messageManager, localDatabase } from '@opchan/core';
 import { DelegationDuration } from '@opchan/core';
 import { useAppKitAccount } from '@reown/appkit/react';
+import { useClient } from './ClientContext';
 
 export interface AuthContextValue {
   currentUser: User | null;
@@ -24,10 +25,8 @@ export interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export const AuthProvider: React.FC<{ 
-  client: OpChanClient; 
-  children: React.ReactNode 
-}> = ({ client, children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const client = useClient();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
@@ -78,7 +77,7 @@ export const AuthProvider: React.FC<{
       await localDatabase.storeUser(updatedUser);
       return false;
     }
-  }, [client.userIdentityService, currentUser]);
+  }, [client, currentUser]);
 
   // Hydrate user from LocalDatabase on mount
   useEffect(() => {
@@ -307,10 +306,10 @@ export const AuthProvider: React.FC<{
       delegateKey,
       getDelegationStatus,
       clearDelegation,
-      signMessage: messageManager.sendMessage.bind(messageManager),
+      signMessage: client.messageManager.sendMessage.bind(client.messageManager),
       verifyMessage,
     };
-  }, [currentUser, isAuthenticating, connectWallet, disconnectWallet, verifyOwnership, delegateKey, getDelegationStatus, clearDelegation, verifyMessage]);
+  }, [client, currentUser, isAuthenticating, connectWallet, disconnectWallet, verifyOwnership, delegateKey, getDelegationStatus, clearDelegation, verifyMessage]);
 
   return <AuthContext.Provider value={ctx}>{children}</AuthContext.Provider>;
 };

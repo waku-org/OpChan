@@ -1,8 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { localDatabase, ForumActions, OpChanClient, getDataFromCache } from '@opchan/core';
-import { transformCell, transformPost, transformComment } from '@opchan/core';
+import { localDatabase, getDataFromCache } from '@opchan/core';
 import { useAuth } from './AuthContext';
 import { Cell, Post, Comment, UserVerificationStatus, EVerificationStatus } from '@opchan/core';
+import { useClient } from './ClientContext';
+import type { ForumActions } from '@opchan/core';
 
 export interface ForumContextValue {
   cells: Cell[];
@@ -24,10 +25,8 @@ export interface ForumContextValue {
 
 const ForumContext = createContext<ForumContextValue | null>(null);
 
-export const ForumProvider: React.FC<{ 
-  client: OpChanClient; 
-  children: React.ReactNode 
-}> = ({ client, children }) => {
+export const ForumProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const client = useClient();
   const { currentUser } = useAuth();
   const [cells, setCells] = useState<Cell[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -38,7 +37,7 @@ export const ForumProvider: React.FC<{
   const [isNetworkConnected, setIsNetworkConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const actions = useMemo(() => new ForumActions(), []);
+  const actions = useMemo(() => client.forumActions, [client]);
 
   const updateFromCache = useCallback(async () => {
     try {

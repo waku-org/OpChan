@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { OpChanClient } from '@opchan/core';
-import { localDatabase, messageManager } from '@opchan/core';
+import { localDatabase } from '@opchan/core';
 import { ClientProvider } from '../contexts/ClientContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ForumProvider } from '../contexts/ForumContext';
@@ -30,8 +30,6 @@ export const OpChanProvider: React.FC<OpChanProviderProps> = ({
       // Configure environment and create client
       const client = new OpChanClient({
         ordiscanApiKey,
-        debug: !!debug,
-        isDevelopment: !!debug,
       });
       clientRef.current = client;
 
@@ -59,9 +57,9 @@ export const OpChanProvider: React.FC<OpChanProviderProps> = ({
     return (
       <ClientProvider client={clientRef.current}>
         <IdentityProvider client={clientRef.current}>
-          <AuthProvider client={clientRef.current}>
+          <AuthProvider>
             <ModerationProvider>
-              <ForumProvider client={clientRef.current}>{children}</ForumProvider>
+              <ForumProvider>{children}</ForumProvider>
             </ModerationProvider>
           </AuthProvider>
         </IdentityProvider>

@@ -4,29 +4,17 @@
  */
 
 export interface EnvironmentConfig {
-  isDevelopment?: boolean;
-  isProduction?: boolean;
   apiKeys?: {
     ordiscan?: string;
   };
 }
 
-class Environment {
+class Environment { 
   private config: EnvironmentConfig = {
-    isDevelopment: false,
-    isProduction: true,
   };
 
   public configure(config: EnvironmentConfig): void {
     this.config = { ...this.config, ...config };
-  }
-
-  public get isDev(): boolean {
-    return this.config.isDevelopment || false;
-  }
-
-  public get isProduction(): boolean {
-    return this.config.isProduction ?? true;
   }
 
   public get ordiscanApiKey(): string | undefined {
