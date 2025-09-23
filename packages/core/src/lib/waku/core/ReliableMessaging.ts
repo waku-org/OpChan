@@ -2,7 +2,7 @@ import {
   IDecodedMessage,
   LightNode,
   ReliableChannel,
-  ReliableChannelEvent,
+  ReliableChannelEvents,
 } from '@waku/sdk';
 import { CodecManager } from '../CodecManager';
 import { generateStringId } from '../../utils';
@@ -39,7 +39,8 @@ export class ReliableMessaging {
         channelId,
         senderId,
         encoder,
-        decoder
+        decoder,
+        { initialQueryLookbackMs: 30 * 24 * 60 * 60 * 1000 }
       );
       this.setupChannelListeners(this.channel);
     } catch (error) {
@@ -50,8 +51,9 @@ export class ReliableMessaging {
   private setupChannelListeners(
     channel: ReliableChannel<IDecodedMessage>
   ): void {
-    channel.addEventListener(ReliableChannelEvent.InMessageReceived, event => {
+    channel.addEventListener("message-received", event => {
       try {
+        console.log("received a message, processing...", event.detail);
         const wakuMessage = event.detail;
         if (wakuMessage.payload) {
           const opchanMessage = this.codecManager.decodeMessage(
@@ -66,13 +68,13 @@ export class ReliableMessaging {
       }
     });
 
-    channel.addEventListener(ReliableChannelEvent.OutMessageSent, event => {
+    channel.addEventListener("message-sent", event => {
       const messageId = event.detail;
       this.messageCallbacks.get(messageId)?.onSent?.(messageId);
     });
 
     channel.addEventListener(
-      ReliableChannelEvent.OutMessageAcknowledged,
+      "message-acknowledged",
       event => {
         const messageId = event.detail;
         this.messageCallbacks.get(messageId)?.onAcknowledged?.(messageId);
@@ -80,7 +82,7 @@ export class ReliableMessaging {
     );
 
     channel.addEventListener(
-      ReliableChannelEvent.OutMessageIrrecoverableError,
+      "sending-message-irrecoverable-error",
       event => {
         const messageId = event.detail.messageId;
         const error = event.detail.error;
@@ -98,7 +100,7 @@ export class ReliableMessaging {
   public async sendMessage(
     message: OpchanMessage,
     statusCallback?: MessageStatusCallback
-  ): Promise<void> {
+  ) {
     if (!this.channel) {
       throw new Error('Reliable channel not initialized');
     }

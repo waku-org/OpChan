@@ -41,7 +41,7 @@
     "@reown/appkit-adapter-wagmi": "^1.7.17",
     "@reown/appkit-common": "^1.7.17",
     "@reown/appkit-controllers": "^1.7.17",
-    "@waku/sdk": "^0.0.35-67a7287.0",
+    "@waku/sdk": "^0.0.36-79dfb35.0",
     "clsx": "^2.1.1",
     "ordiscan": "^1.3.0",
     "tailwind-merge": "^2.5.2",

@@ -23,6 +23,7 @@ import Dashboard from './pages/Dashboard';
 import Index from './pages/Index';
 import ProfilePage from './pages/ProfilePage';
 import BookmarksPage from './pages/BookmarksPage';
+import DebugPage from './pages/DebugPage';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/post/:postId" element={<PostPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/bookmarks" element={<BookmarksPage />} />
+          <Route path="/debug" element={<DebugPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>

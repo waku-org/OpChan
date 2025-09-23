@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth, useForumContext, useNetworkStatus } from '@opchan/react';
 import { EVerificationStatus } from '@opchan/core';
@@ -57,7 +57,7 @@ const Header = () => {
   const wakuHealth = {
     statusMessage: network.getStatusMessage(),
   };
-  const location = useLocation();
+  const location = useLocation()
   const { toast } = useToast();
   const forumContext = useForumContext();
 
@@ -66,6 +66,10 @@ const Header = () => {
   const { disconnect } = useDisconnect();
 
   const isConnected = bitcoinAccount.isConnected || ethereumAccount.isConnected;
+
+  useEffect(()=> {
+    console.log('currentUser', currentUser);
+  }, [])
 
 
 
