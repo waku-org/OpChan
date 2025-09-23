@@ -5,8 +5,15 @@ import { DelegationDuration } from '@opchan/core';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useClient } from './ClientContext';
 
+// Extend the base User with convenient, display-focused fields
+export type CurrentUser = User & {
+  displayName: string;
+  ensName?: string;
+  ordinalDetailsText?: string;
+};
+
 export interface AuthContextValue {
-  currentUser: User | null;
+  currentUser: CurrentUser | null;
   isAuthenticated: boolean;
   isAuthenticating: boolean;
   verificationStatus: EVerificationStatus;
@@ -31,7 +38,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const client = useClient();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Get wallet connection status from AppKit
@@ -41,6 +48,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isWalletConnected = bitcoinAccount.isConnected || ethereumAccount.isConnected;
   const connectedAddress = bitcoinAccount.address || ethereumAccount.address;
   const walletType = bitcoinAccount.isConnected ? 'bitcoin' : 'ethereum';
+
+  // Helper: enrich a base User with identity-derived display fields
+  const enrichUserWithIdentity = useCallback(async (baseUser: User): Promise<CurrentUser> => {
+    const address = baseUser.address;
+    // Resolve identity (debounced) and read display name from service
+    const identity = await client.userIdentityService.getUserIdentity(address);
+    const displayName = client.userIdentityService.getDisplayName(address);
+
+    const ensName = identity?.ensName ?? baseUser.ensDetails?.ensName;
+    const ordinalDetailsText = identity?.ordinalDetails?.ordinalDetails ?? baseUser.ordinalDetails?.ordinalDetails;
+    const callSign = identity?.callSign ?? baseUser.callSign;
+    const displayPreference = identity?.displayPreference ?? baseUser.displayPreference;
+    const verificationStatus = identity?.verificationStatus ?? baseUser.verificationStatus;
+
+    return {
+      ...baseUser,
+      callSign,
+      displayPreference,
+      verificationStatus,
+      displayName,
+      ensName,
+      ordinalDetailsText,
+    } as CurrentUser;
+  }, [client]);
 
   // ✅ Removed console.log to prevent infinite loop spam
 
@@ -56,14 +87,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const newVerificationStatus = identity?.verificationStatus ?? EVerificationStatus.WALLET_CONNECTED;
 
-      const updatedUser = {
+      const updatedUser: User = {
         ...currentUser,
         verificationStatus: newVerificationStatus,
         ensDetails: identity?.ensName ? { ensName: identity.ensName } : undefined,
         ordinalDetails: identity?.ordinalDetails,
       } as User;
 
-      setCurrentUser(updatedUser);
+      const enriched = await enrichUserWithIdentity(updatedUser);
+      setCurrentUser(enriched);
       await localDatabase.storeUser(updatedUser);
 
       await localDatabase.upsertUserIdentity(currentUser.address, {
@@ -77,11 +109,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('❌ Verification failed:', error);
       const updatedUser = { ...currentUser, verificationStatus: EVerificationStatus.WALLET_CONNECTED } as User;
-      setCurrentUser(updatedUser);
+      const enriched = await enrichUserWithIdentity(updatedUser);
+      setCurrentUser(enriched);
       await localDatabase.storeUser(updatedUser);
       return false;
     }
-  }, [client, currentUser]);
+  }, [client, currentUser, enrichUserWithIdentity]);
 
   // Hydrate user from LocalDatabase on mount
   useEffect(() => {
@@ -90,7 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const user = await localDatabase.loadUser();
         if (mounted && user) {
-          setCurrentUser(user);
+          const enriched = await enrichUserWithIdentity(user);
+          setCurrentUser(enriched);
           
           // 🔄 Sync verification status with UserIdentityService
           await localDatabase.upsertUserIdentity(user.address, {
@@ -118,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       mounted = false;
     };
-  }, []); // Remove verifyOwnership dependency to prevent infinite loops
+  }, [enrichUserWithIdentity]); // Remove verifyOwnership dependency to prevent infinite loops
 
   // Auto-connect when wallet is detected
   useEffect(() => {
@@ -143,7 +177,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             lastChecked: Date.now(),
           };
           
-          setCurrentUser(user);
+          const enriched = await enrichUserWithIdentity(user);
+          setCurrentUser(enriched);
           await localDatabase.storeUser(user);
           
           // Also store identity info so UserIdentityService can access it
@@ -174,7 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     autoConnect();
-  }, [isWalletConnected, connectedAddress, walletType]); // Remove currentUser and verifyOwnership dependencies
+  }, [isWalletConnected, connectedAddress, walletType, enrichUserWithIdentity]); // Remove currentUser and verifyOwnership dependencies
 
   // Ensure verificationStatus reflects a connected wallet even if a user was preloaded
   useEffect(() => {
@@ -203,7 +238,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           lastChecked: Date.now(),
         } as User;
 
-        setCurrentUser(updatedUser);
+        const enriched = await enrichUserWithIdentity(updatedUser);
+        setCurrentUser(enriched);
         await localDatabase.storeUser(updatedUser);
         await localDatabase.upsertUserIdentity(connectedAddress, {
           ensName: updatedUser.ensDetails?.ensName,
@@ -216,7 +252,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     syncConnectedStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWalletConnected, connectedAddress, walletType, currentUser]);
+  }, [isWalletConnected, connectedAddress, walletType, currentUser, enrichUserWithIdentity]);
+
+  // Keep currentUser in sync with identity updates (e.g., profile changes)
+  useEffect(() => {
+    if (!currentUser) return;
+    const off = client.userIdentityService.addRefreshListener(async (addr) => {
+      if (addr !== currentUser.address) return;
+      const enriched = await enrichUserWithIdentity(currentUser as User);
+      setCurrentUser(enriched);
+    });
+    return () => {
+      try { off && off(); } catch {}
+    };
+  }, [client, currentUser, enrichUserWithIdentity]);
 
   const connectWallet = useCallback(async (): Promise<boolean> => {
     if (!isWalletConnected || !connectedAddress) return false;
@@ -231,7 +280,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         verificationStatus: EVerificationStatus.WALLET_CONNECTED,
         lastChecked: Date.now(),
       };
-      setCurrentUser(user);
+      const enriched = await enrichUserWithIdentity(user);
+      setCurrentUser(enriched);
       await localDatabase.storeUser(user);
       return true;
     } catch (e) {
@@ -240,7 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsAuthenticating(false);
     }
-  }, [currentUser?.displayPreference, isWalletConnected, connectedAddress, walletType]);
+  }, [currentUser?.displayPreference, isWalletConnected, connectedAddress, walletType, enrichUserWithIdentity]);
 
   const disconnectWallet = useCallback(() => {
     setCurrentUser(null);
