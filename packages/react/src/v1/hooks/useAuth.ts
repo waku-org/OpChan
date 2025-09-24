@@ -6,6 +6,7 @@ import {
   EVerificationStatus,
   DelegationDuration,
   EDisplayPreference,
+  walletManager,
 } from '@opchan/core';
 import type { DelegationFullStatus } from '@opchan/core';
 
@@ -101,17 +102,17 @@ export function useAuth() {
   }, [client, currentUser]);
 
   const delegate = React.useCallback(async (
-    signFunction: (message: string) => Promise<string>,
     duration: DelegationDuration = '7days',
   ): Promise<boolean> => {
     const user = currentUser;
     if (!user) return false;
     try {
+      const signer = ((message: string) => walletManager.getInstance().signMessage(message));
       const ok = await client.delegation.delegate(
         user.address,
         user.walletType,
         duration,
-        signFunction,
+        signer,
       );
 
       const status = await client.delegation.getStatus(user.address, user.walletType);
@@ -132,12 +133,18 @@ export function useAuth() {
     return client.delegation.getStatus(user.address, user.walletType);
   }, [client, currentUser]);
 
-  const clearDelegation = React.useCallback(async () => {
-    await client.delegation.clear();
-    setOpchanState(prev => ({
-      ...prev,
-      session: { ...prev.session, delegation: null },
-    }));
+  const clearDelegation = React.useCallback(async (): Promise<boolean> => {
+    try {
+      await client.delegation.clear();
+      setOpchanState(prev => ({
+        ...prev,
+        session: { ...prev.session, delegation: null },
+      }));
+      return true;
+    } catch (e) {
+      console.error('clearDelegation failed', e);
+      return false;
+    }
   }, [client]);
 
   const updateProfile = React.useCallback(async (updates: { callSign?: string; displayPreference?: EDisplayPreference }): Promise<boolean> => {
@@ -167,19 +174,20 @@ export function useAuth() {
     }
   }, [client, currentUser]);
 
+  const delegationInfo = React.useMemo<DelegationFullStatus & { expiresAt?: Date }>(() => {
+    const base: DelegationFullStatus =
+      delegation ?? ({ hasDelegation: false, isValid: false } as const);
+    const expiresAt = base?.proof?.expiryTimestamp
+      ? new Date(base.proof.expiryTimestamp)
+      : undefined;
+    return { ...base, expiresAt };
+  }, [delegation]);
+
   return {
     currentUser,
     verificationStatus,
     isAuthenticated: currentUser !== null,
-    // Provide a stable, non-null delegation object for UI safety
-    delegation: ((): DelegationFullStatus & { expiresAt?: Date } => {
-      const base: DelegationFullStatus =
-        delegation ?? ({ hasDelegation: false, isValid: false } as const);
-      const expiresAt = base?.proof?.expiryTimestamp
-        ? new Date(base.proof.expiryTimestamp)
-        : undefined;
-      return { ...base, expiresAt };
-    })(),
+    delegationInfo,
     connect,
     disconnect,
     verifyOwnership,

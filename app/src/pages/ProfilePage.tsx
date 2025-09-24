@@ -40,7 +40,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   // Get current user from auth context for the address
-  const { currentUser, delegation } = useAuth();
+  const { currentUser, delegationInfo } = useAuth();
   const address = currentUser?.address;
 
   // Debug current user ENS info
@@ -461,7 +461,7 @@ export default function ProfilePage() {
                       <Shield className="h-5 w-5 text-cyber-accent" />
                       Security
                     </div>
-                    {delegation.hasDelegation && (
+                    {delegationInfo.hasDelegation && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -469,7 +469,7 @@ export default function ProfilePage() {
                         className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
                       >
                         <Settings className="w-4 h-4 mr-2" />
-                        {delegation.isValid ? 'Renew' : 'Setup'}
+                        {delegationInfo.isValid ? 'Renew' : 'Setup'}
                       </Button>
                     )}
                   </CardTitle>
@@ -482,25 +482,25 @@ export default function ProfilePage() {
                         Delegation
                       </span>
                       <Badge
-                        variant={delegation.isValid ? 'default' : 'secondary'}
+                        variant={delegationInfo.isValid ? 'default' : 'secondary'}
                         className={
-                          delegation.isValid
+                          delegationInfo.isValid
                             ? 'bg-green-500/20 text-green-400 border-green-500/30'
                             : 'bg-red-500/20 text-red-400 border-red-500/30'
                         }
                       >
-                        {delegation.isValid ? 'Active' : 'Inactive'}
+                        {delegationInfo.isValid ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
 
                     {/* Expiry Date */}
-                    {delegation.expiresAt && (
+                    {delegationInfo.expiresAt && (
                       <div className="space-y-1">
                         <span className="text-xs text-cyber-neutral">
                           Valid until
                         </span>
                         <div className="text-sm font-mono text-cyber-light">
-                          {delegation.expiresAt.toLocaleDateString()}
+                          {delegationInfo.expiresAt.toLocaleDateString()}
                         </div>
                       </div>
                     )}
@@ -513,12 +513,12 @@ export default function ProfilePage() {
                       <Badge
                         variant="outline"
                         className={
-                          delegation.isValid
+                          delegationInfo.isValid
                             ? 'text-green-400 border-green-500/30 bg-green-500/10'
                             : 'text-red-400 border-red-500/30 bg-red-500/10'
                         }
                       >
-                        {delegation.isValid ? 'Valid' : 'Not signed'}
+                        {delegationInfo.isValid ? 'Valid' : 'Not signed'}
                       </Badge>
                     </div>
                   </div>
@@ -530,17 +530,17 @@ export default function ProfilePage() {
                     </Label>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 font-mono text-xs bg-cyber-dark/50 border border-cyber-muted/30 px-2 py-1 rounded text-cyber-light">
-                        {delegation.publicKey
-                          ? `${delegation.publicKey.slice(0, 12)}...${delegation.publicKey.slice(-8)}`
+                        {delegationInfo.publicKey
+                          ? `${delegationInfo.publicKey.slice(0, 12)}...${delegationInfo.publicKey.slice(-8)}`
                           : 'Not delegated'}
                       </div>
-                      {delegation.publicKey && (
+                      {delegationInfo.publicKey && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() =>
                             copyToClipboard(
-                              delegation.publicKey!,
+                              delegationInfo.publicKey!,
                               'Public Key'
                             )
                           }
@@ -553,7 +553,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Warning for expired delegation */}
-                  {(!delegation.isValid && delegation.hasDelegation) && (
+                  {(!delegationInfo.isValid && delegationInfo.hasDelegation) && (
                         <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
                           <div className="flex items-center gap-2 text-orange-400">
                             <AlertTriangle className="w-4 h-4" />

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from './button';
 import { useAuth } from '@opchan/react';
 import { CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
-import { DelegationDuration, DelegationFullStatus } from '@opchan/core';
+import { DelegationDuration } from '@opchan/core';
 
 interface DelegationStepProps {
   onComplete: () => void;
@@ -17,15 +17,7 @@ export function DelegationStep({
   isLoading,
   setIsLoading,
 }: DelegationStepProps) {
-  const { currentUser, isAuthenticating, getDelegationStatus } = useAuth();
-  const [delegationInfo, setDelegationInfo] =
-    useState<DelegationFullStatus | null>(null);
-  const { delegateKey, clearDelegation } = useAuth();
-
-  // Load delegation status
-  useEffect(() => {
-    getDelegationStatus().then(setDelegationInfo).catch(console.error);
-  }, [getDelegationStatus]);
+  const { currentUser, delegationInfo, delegate, clearDelegation } = useAuth();
 
   const [selectedDuration, setSelectedDuration] =
     React.useState<DelegationDuration>('7days');
@@ -42,11 +34,11 @@ export function DelegationStep({
     setDelegationResult(null);
 
     try {
-      const success = await delegateKey(selectedDuration);
+      const success = await delegate(selectedDuration);
 
       if (success) {
-        const expiryDate = currentUser.delegationExpiry
-          ? new Date(currentUser.delegationExpiry).toLocaleString()
+        const expiryDate = delegationInfo?.expiresAt
+          ? delegationInfo.expiresAt.toLocaleString()
           : `${selectedDuration === '7days' ? '1 week' : '30 days'} from now`;
 
         setDelegationResult({
@@ -211,13 +203,7 @@ export function DelegationStep({
             <div className="flex justify-end">
               <Button
                 onClick={async () => {
-                  const ok = await clearDelegation();
-                  if (ok) {
-                    // Refresh status so UI immediately reflects cleared state
-                    getDelegationStatus()
-                      .then(setDelegationInfo)
-                      .catch(console.error);
-                  }
+                  await clearDelegation();
                 }}
                 variant="outline"
                 size="sm"
@@ -245,7 +231,7 @@ export function DelegationStep({
           <Button
             onClick={handleDelegate}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={isLoading || isAuthenticating}
+            disabled={isLoading}
           >
             {isLoading ? 'Delegating...' : 'Delegate Key'}
           </Button>

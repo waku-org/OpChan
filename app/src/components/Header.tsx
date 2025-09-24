@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth, useForum, useNetwork } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
 import { localDatabase } from '@opchan/core';
-import { DelegationFullStatus } from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -49,9 +48,7 @@ import { WalletWizard } from '@/components/ui/wallet-wizard';
 import { WakuHealthDot } from '@/components/ui/waku-health-indicator';
 
 const Header = () => {
-  const { currentUser, delegationStatus } = useAuth();
-  const [delegationInfo, setDelegationInfo] =
-    useState<DelegationFullStatus | null>(null);
+  const { currentUser, delegationInfo } = useAuth();
   const {statusMessage} = useNetwork();
 
   const location = useLocation()
@@ -75,13 +72,6 @@ const Header = () => {
 
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-
-  
-
-  React.useEffect(() => {
-    delegationStatus().then(setDelegationInfo).catch(console.error);
-  }, [delegationStatus]);
 
   useEffect(() => {
     console.log({currentUser})

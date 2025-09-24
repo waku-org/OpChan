@@ -10,7 +10,6 @@ import { config } from './config';
 import { Provider } from '@reown/appkit-controllers';
 import { WalletInfo, ActiveWallet } from './types';
 import { Inscription } from 'ordiscan';
-import { environment } from '../utils/environment';
 export class WalletManager {
   private static instance: WalletManager | null = null;
 
