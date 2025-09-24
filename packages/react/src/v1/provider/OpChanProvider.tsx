@@ -1,6 +1,6 @@
 import React from 'react';
 import { OpChanClient, type OpChanClientConfig } from '@opchan/core';
-import { OpChanProvider as ClientProvider } from '../context/ClientContext';
+import { ClientProvider } from '../context/ClientContext';
 import { StoreWiring } from './StoreWiring';
 import { setOpchanState } from '../store/opchanStore';
 import { EVerificationStatus } from '@opchan/core';

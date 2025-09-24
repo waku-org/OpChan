@@ -9,7 +9,7 @@ const ClientContext = createContext<ClientContextValue | null>(null);
 
 type ProviderProps = { client: OpChanClient; children: React.ReactNode };
 
-export function OpChanProvider({ client, children }: ProviderProps) {
+export function ClientProvider({ client, children }: ProviderProps) {
   return (
     <ClientContext.Provider value={{ client }}>
       {children}
@@ -19,7 +19,7 @@ export function OpChanProvider({ client, children }: ProviderProps) {
 
 export function useClient(): OpChanClient {
   const ctx = useContext(ClientContext);
-  if (!ctx) throw new Error('useClient must be used within OpChanProvider');
+  if (!ctx) throw new Error('useClient must be used within ClientProvider');
   return ctx.client;
 }
 

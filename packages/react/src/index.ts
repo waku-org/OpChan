@@ -1,8 +1,8 @@
 
 
 export {
-  OpChanProvider as ClientProvider ,
-  useClient ,
+  ClientProvider,
+  useClient,
 } from './v1/context/ClientContext';
 
 export { OpChanProvider } from './v1/provider/OpChanProvider';
