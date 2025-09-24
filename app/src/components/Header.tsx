@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth, useForumContext, useNetworkStatus } from '@opchan/react';
+import { useAuth, useForum, useNetwork } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
 import { localDatabase } from '@opchan/core';
 import { DelegationFullStatus } from '@opchan/core';
@@ -46,30 +46,23 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
 
-import { useUserDisplay } from '@/hooks';
 import { WakuHealthDot } from '@/components/ui/waku-health-indicator';
 
 const Header = () => {
-  const { currentUser, getDelegationStatus } = useAuth();
+  const { currentUser, delegationStatus } = useAuth();
   const [delegationInfo, setDelegationInfo] =
     useState<DelegationFullStatus | null>(null);
-  const network = useNetworkStatus();
-  const wakuHealth = {
-    statusMessage: network.getStatusMessage(),
-  };
+  const {statusMessage} = useNetwork();
+
   const location = useLocation()
   const { toast } = useToast();
-  const forumContext = useForumContext();
+  const { content } = useForum();
 
   const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
   const ethereumAccount = useAppKitAccount({ namespace: 'eip155' });
   const { disconnect } = useDisconnect();
 
   const isConnected = bitcoinAccount.isConnected || ethereumAccount.isConnected;
-
-  useEffect(()=> {
-    console.log('currentUser', currentUser);
-  }, [])
 
 
 
@@ -83,12 +76,17 @@ const Header = () => {
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { displayName, verificationLevel } = useUserDisplay(address || '');
+
   
 
   React.useEffect(() => {
-    getDelegationStatus().then(setDelegationInfo).catch(console.error);
-  }, [getDelegationStatus]);
+    delegationStatus().then(setDelegationInfo).catch(console.error);
+  }, [delegationStatus]);
+
+  useEffect(() => {
+    console.log({currentUser})
+    
+  }, [currentUser])
 
   // Use LocalDatabase to persist wizard state across navigation
   const getHasShownWizard = async (): Promise<boolean> => {
@@ -158,14 +156,14 @@ const Header = () => {
     if (!isConnected) return <CircleSlash className="w-4 h-4" />;
 
     if (
-      verificationLevel === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
+      currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
       delegationInfo?.isValid
     ) {
       return <CheckCircle className="w-4 h-4" />;
-    } else if (verificationLevel === EVerificationStatus.WALLET_CONNECTED) {
+    } else if (currentUser?.verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
       return <AlertTriangle className="w-4 h-4" />;
     } else if (
-      verificationLevel === EVerificationStatus.ENS_ORDINAL_VERIFIED
+      currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
     ) {
       return <Key className="w-4 h-4" />;
     } else {
@@ -195,13 +193,13 @@ const Header = () => {
               <div className="flex items-center space-x-2 px-3 py-1 bg-cyber-muted/20 rounded-full border border-cyber-muted/30">
                 <WakuHealthDot />
                 <span className="text-xs font-mono text-cyber-neutral">
-                  {wakuHealth.statusMessage}
+                  {statusMessage}
                 </span>
-                {forumContext.lastSync && (
+                {content.lastSync && (
                   <div className="flex items-center space-x-1 text-xs text-cyber-neutral/70">
                     <Clock className="w-3 h-3" />
                     <span>
-                      {new Date(forumContext.lastSync).toLocaleTimeString([], {
+                      {new Date(content.lastSync).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
@@ -225,11 +223,11 @@ const Header = () => {
                   <Badge
                     variant="outline"
                     className={`font-mono text-xs border-0 ${
-                      verificationLevel ===
+                      currentUser?.verificationStatus ===
                         EVerificationStatus.ENS_ORDINAL_VERIFIED &&
                       delegationInfo?.isValid
                         ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                        : verificationLevel ===
+                        : currentUser?.verificationStatus ===
                             EVerificationStatus.ENS_ORDINAL_VERIFIED
                           ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
                           : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
@@ -237,11 +235,11 @@ const Header = () => {
                   >
                     {getStatusIcon()}
                     <span className="ml-1">
-                      {verificationLevel === EVerificationStatus.WALLET_UNCONNECTED
+                      {currentUser?.verificationStatus === EVerificationStatus.WALLET_UNCONNECTED
                         ? 'CONNECT'
                         : delegationInfo?.isValid
                           ? 'READY'
-                          : verificationLevel === EVerificationStatus.ENS_ORDINAL_VERIFIED
+                          : currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
                             ? 'EXPIRED'
                             : 'DELEGATE'}
                     </span>
@@ -255,7 +253,7 @@ const Header = () => {
                         size="sm"
                         className="flex items-center space-x-2 text-white hover:bg-cyber-muted/30"
                       >
-                        <div className="text-sm font-mono">{displayName}</div>
+                        <div className="text-sm font-mono">{currentUser?.displayName}</div>
                         <Settings className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -265,7 +263,7 @@ const Header = () => {
                     >
                       <div className="px-3 py-2 border-b border-cyber-muted/30">
                         <div className="text-sm font-medium text-white">
-                          {displayName}
+                          {currentUser?.displayName}
                         </div>
                         <div className="text-xs text-cyber-neutral">
                           {address?.slice(0, 8)}...{address?.slice(-4)}
@@ -473,10 +471,10 @@ const Header = () => {
               <div className="px-4 py-3 border-t border-cyber-muted/20">
                 <div className="flex items-center space-x-2 text-xs text-cyber-neutral">
                   <WakuHealthDot />
-                  <span>{wakuHealth.statusMessage}</span>
-                  {forumContext.lastSync && (
+                  <span>{statusMessage}</span>
+                  {content.lastSync && (
                     <span className="ml-auto">
-                      {new Date(forumContext.lastSync).toLocaleTimeString([], {
+                      {new Date(content.lastSync).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}

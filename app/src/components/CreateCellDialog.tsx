@@ -3,8 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
-import { usePermissions } from '@/hooks';
-import { useForum } from '@opchan/react';
+import { useContent, usePermissions } from '@/hooks';
 import {
   Form,
   FormControl,
@@ -58,8 +57,7 @@ export function CreateCellDialog({
   open: externalOpen,
   onOpenChange,
 }: CreateCellDialogProps = {}) {
-  const forum = useForum();
-  const {createCell} = forum.content;
+  const { createCell } = useContent();
   const isCreatingCell = false;
   const { canCreateCell } = usePermissions();
   const { toast } = useToast();

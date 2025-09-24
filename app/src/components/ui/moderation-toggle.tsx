@@ -1,13 +1,15 @@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
-import { useModeration } from '@opchan/react';
-import { usePermissions, useForumData } from '@opchan/react';
+import React from 'react';
+import { usePermissions, useContent, useUIState } from '@/hooks';
 
 export function ModerationToggle() {
-  const { showModerated, toggleShowModerated } = useModeration();
   const { canModerate } = usePermissions();
-  const { cellsWithStats } = useForumData();
+  const { cellsWithStats } = useContent();
+
+  const [showModerated, setShowModerated] = useUIState<boolean>('showModerated', false);
+  const toggleShowModerated = React.useCallback((value: boolean) => setShowModerated(value), [setShowModerated]);
 
   // Check if user is admin of any cell
   const isAdminOfAnyCell = cellsWithStats.some(cell => canModerate(cell.id));

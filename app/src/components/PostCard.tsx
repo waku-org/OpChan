@@ -2,37 +2,44 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import type { Post } from '@opchan/core';
-// Removed unused imports
+import type { Post, PostMessage } from '@opchan/core';
 import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
 import { AuthorDisplay } from '@/components/ui/author-display';
 import { BookmarkButton } from '@/components/ui/bookmark-button';
 import { LinkRenderer } from '@/components/ui/link-renderer';
-import { useForum } from '@opchan/react';
+import { useContent, usePermissions } from '@/hooks';
 import { ShareButton } from '@/components/ui/ShareButton';
 
 interface PostCardProps {
-  post: Post;
+  post: Post | PostMessage;
   commentCount?: number;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
-  const forum = useForum();
-  const { content, permissions } = forum;
+  const content = useContent();
+  const permissions = usePermissions();
 
   // Get cell data from content
-  const cell = content.cells.find(c => c.id === post.cellId);
+  const cell = content.cells.find((c) => c.id === post.cellId);
   const cellName = cell?.name || 'unknown';
 
-  // Use pre-computed vote data
-  const score =
-    'voteScore' in post
-      ? (post.voteScore as number)
-      : post.upvotes.length - post.downvotes.length;
+  // Use pre-computed vote data or safely compute from arrays when available
+  const computedVoteScore =
+    'voteScore' in post && typeof (post as Post).voteScore === 'number'
+      ? (post as Post).voteScore
+      : undefined;
+  const upvoteCount =
+    'upvotes' in post && Array.isArray((post as Post).upvotes)
+      ? (post as Post).upvotes.length
+      : 0;
+  const downvoteCount =
+    'downvotes' in post && Array.isArray((post as Post).downvotes)
+      ? (post as Post).downvotes.length
+      : 0;
+  const score = computedVoteScore ?? upvoteCount - downvoteCount;
 
   // Use library pending API
   const isPending = content.pending.isPending(post.id);
-  const votePending = content.pending.isVotePending(post.id);
 
   // Get user vote status from post data
   const userUpvoted =
@@ -41,18 +48,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
     (post as unknown as { userDownvoted?: boolean }).userDownvoted || false;
 
   // Check if bookmarked
-  const isBookmarked = content.bookmarks.some(
-    b => b.targetId === post.id && b.type === 'post'
-  );
+  const isBookmarked = content.bookmarks.some((b) => b.targetId === post.id && b.type === 'post');
   const [bookmarkLoading, setBookmarkLoading] = React.useState(false);
 
   // Remove duplicate vote status logic
 
   // ✅ Content truncation (simple presentation logic is OK)
+  const contentText = typeof post.content === 'string' ? post.content : String(post.content ?? '');
   const contentPreview =
-    post.content.length > 200
-      ? post.content.substring(0, 200) + '...'
-      : post.content;
+    contentText.length > 200
+      ? contentText.substring(0, 200) + '...'
+      : contentText;
 
   const handleVote = async (e: React.MouseEvent, isUpvote: boolean) => {
     e.preventDefault();
@@ -114,7 +120,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
           >
             <ArrowDown className="w-5 h-5" />
           </button>
-          {votePending && (
+          {isPending && (
             <span className="mt-1 text-[10px] text-yellow-400">syncing…</span>
           )}
         </div>
@@ -140,12 +146,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
                   addSuffix: true,
                 })}
               </span>
-              {post.relevanceScore !== undefined && (
+              {('relevanceScore' in post) && typeof (post as Post).relevanceScore === 'number' && (
                 <>
                   <span>•</span>
                   <RelevanceIndicator
-                    score={post.relevanceScore}
-                    details={post.relevanceDetails}
+                    score={(post as Post).relevanceScore as number}
+                    details={('relevanceDetails' in post ? (post as Post).relevanceDetails : undefined)}
                     type="post"
                     className="text-xs"
                     showTooltip={true}

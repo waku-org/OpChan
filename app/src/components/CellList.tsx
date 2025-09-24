@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useForumData, usePermissions } from '@/hooks';
+import {  useContent, usePermissions } from '@/hooks';
 import {
   Layout,
   MessageSquare,
@@ -26,7 +26,7 @@ import { RelevanceIndicator } from './ui/relevance-indicator';
 import { ModerationToggle } from './ui/moderation-toggle';
 import { sortCells, SortOption } from '@/utils/sorting';
 import type { Cell } from '@opchan/core';
-import { useForum } from '@opchan/react';
+import { useForum } from '@/hooks';
 import { ShareButton } from './ui/ShareButton';
 
 // Empty State Component
@@ -140,8 +140,8 @@ const CellItem: React.FC<{ cell: Cell }> = ({ cell }) => {
 };
 
 const CellList = () => {
-  const { cellsWithStats, isInitialLoading } = useForumData();
-  const { content } = useForum();
+  const { cellsWithStats } = useContent();
+  const content = useContent();
   const { canCreateCell } = usePermissions();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
@@ -150,7 +150,7 @@ const CellList = () => {
     return sortCells(cellsWithStats, sortOption);
   }, [cellsWithStats, sortOption]);
 
-  if (isInitialLoading) {
+  if (!cellsWithStats.length) {
     return (
       <div className="container mx-auto px-4 pt-24 pb-16 text-center">
         <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-primary" />
@@ -222,12 +222,12 @@ const CellList = () => {
                 variant="outline"
                 size="icon"
                 onClick={content.refresh}
-                disabled={isInitialLoading}
+                disabled={false}
                 title="Refresh data"
                 className="px-3 border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${isInitialLoading ? 'animate-spin' : ''}`}
+                  className="w-4 h-4"
                 />
               </Button>
 

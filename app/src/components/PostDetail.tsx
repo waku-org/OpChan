@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { usePost, usePostComments } from '@/hooks';
 import { Button } from '@/components/ui/button';
-//
-// import ResizableTextarea from '@/components/ui/resizable-textarea';
 import { MarkdownInput } from '@/components/ui/markdown-input';
 import {
   ArrowLeft,
@@ -16,12 +13,12 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-import { RelevanceIndicator } from './ui/relevance-indicator';
 import { AuthorDisplay } from './ui/author-display';
 import { BookmarkButton } from './ui/bookmark-button';
 import { MarkdownRenderer } from './ui/markdown-renderer';
 import CommentCard from './CommentCard';
-import { useForum } from '@opchan/react';
+import { useContent, usePermissions } from '@/hooks';
+import type { Cell as ForumCell } from '@opchan/core';
 import { ShareButton } from './ui/ShareButton';
 
 const PostDetail = () => {
@@ -29,21 +26,19 @@ const PostDetail = () => {
   const navigate = useNavigate();
 
   // Use aggregated forum API
-  const forum = useForum();
-  const { content, permissions } = forum;
+  const content = useContent();
+  const permissions = usePermissions();
 
   // Get post and comments using focused hooks
-  const post = usePost(postId);
-  const comments = usePostComments(postId);
+  const post = content.posts.find((p) => p.id === postId);
+  const visibleComments = postId ? content.commentsByPost[postId] ?? [] : [];
 
   // Use library pending API
   const postPending = content.pending.isPending(post?.id);
-  const postVotePending = content.pending.isVotePending(post?.id);
+  const postVotePending = content.pending.isPending(post?.id);
 
   // Check if bookmarked
-  const isBookmarked = content.bookmarks.some(
-    b => b.targetId === post?.id && b.type === 'post'
-  );
+  const isBookmarked = content.bookmarks.some((b) => b.targetId === post?.id && b.type === 'post');
   const [bookmarkLoading, setBookmarkLoading] = React.useState(false);
 
   const [newComment, setNewComment] = useState('');
@@ -51,7 +46,7 @@ const PostDetail = () => {
   if (!postId) return <div>Invalid post ID</div>;
 
   // ✅ Loading state handled by hook
-  if (comments.isLoading) {
+  if (postPending) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-primary" />
@@ -77,8 +72,7 @@ const PostDetail = () => {
   }
 
   // ✅ All data comes pre-computed from hooks
-  const { cell } = post;
-  const visibleComments = comments.comments; // Already filtered by hook
+  const cell = content.cells.find((c: ForumCell) => c.id === post?.cellId);
 
   const handleCreateComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,11 +115,11 @@ const PostDetail = () => {
     }
   };
 
-  // Get vote status from post data
-  const isPostUpvoted =
-    (post as unknown as { userUpvoted?: boolean }).userUpvoted || false;
-  const isPostDownvoted =
-    (post as unknown as { userDownvoted?: boolean }).userDownvoted || false;
+  // Get vote status from post data (enhanced posts only)
+  const enhanced = post as unknown as { userUpvoted?: boolean; userDownvoted?: boolean; voteScore?: number };
+  const isPostUpvoted = Boolean(enhanced.userUpvoted);
+  const isPostDownvoted = Boolean(enhanced.userDownvoted);
+  const score = typeof enhanced.voteScore === 'number' ? enhanced.voteScore : 0;
 
   const handleModerateComment = async (commentId: string) => {
     const reason =
@@ -176,7 +170,7 @@ const PostDetail = () => {
               >
                 <ArrowUp className="w-4 h-4" />
               </button>
-              <span className="text-sm font-bold">{post.voteScore}</span>
+              <span className="text-sm font-bold">{score}</span>
               <button
                 className={`p-1 rounded-sm hover:bg-muted/50 ${
                   isPostDownvoted ? 'text-primary' : ''
@@ -217,18 +211,7 @@ const PostDetail = () => {
                     addSuffix: true,
                   })}
                 </span>
-                {post.relevanceScore !== undefined && (
-                  <>
-                    <span>•</span>
-                    <RelevanceIndicator
-                      score={post.relevanceScore}
-                      details={post.relevanceDetails}
-                      type="post"
-                      className="text-sm"
-                      showTooltip={true}
-                    />
-                  </>
-                )}
+                {/* Relevance details unavailable in raw PostMessage; skip indicator */}
                 {postPending && (
                   <>
                     <span>•</span>
@@ -323,7 +306,7 @@ const PostDetail = () => {
             </p>
           </div>
         ) : (
-          visibleComments.map(comment => (
+          visibleComments.map((comment) => (
             <CommentCard
               key={comment.id}
               comment={comment}

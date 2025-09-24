@@ -2,7 +2,7 @@ import Header from '@/components/Header';
 import CellList from '@/components/CellList';
 import { Button } from '@/components/ui/button';
 import { Wifi } from 'lucide-react';
-import { useForum } from '@opchan/react';
+import { useForum } from '@/hooks';
 
 const Index = () => {
   const { network, content } = useForum();

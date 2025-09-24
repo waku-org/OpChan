@@ -5,9 +5,9 @@ export type User = {
   ordinalDetails?: OrdinalDetails;
   ensDetails?: EnsDetails;
 
-  //TODO: implement call sign & display preference setup
   callSign?: string;
   displayPreference: EDisplayPreference;
+  displayName: string;
 
   verificationStatus: EVerificationStatus;
 

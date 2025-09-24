@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState} from 'react';
 import { useForum } from '@opchan/react';
 import { useAuth } from '@opchan/react';
-import { useUserDisplay } from '@/hooks';
-import { DelegationFullStatus } from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,18 +40,8 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   // Get current user from auth context for the address
-  const { currentUser, getDelegationStatus } = useAuth();
-  const [delegationInfo, setDelegationInfo] =
-    useState<DelegationFullStatus | null>(null);
+  const { currentUser, delegation } = useAuth();
   const address = currentUser?.address;
-
-  // Load delegation status
-  useEffect(() => {
-    getDelegationStatus().then(setDelegationInfo).catch(console.error);
-  }, [getDelegationStatus]);
-
-  // Get comprehensive user information from the unified hook
-  const userInfo = useUserDisplay(address || '');
 
   // Debug current user ENS info
   console.log('📋 Profile page debug:', {
@@ -65,8 +53,7 @@ export default function ProfilePage() {
           ensDetails: currentUser.ensDetails,
           verificationStatus: currentUser.verificationStatus,
         }
-      : null,
-    userInfo,
+      : null
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -76,21 +63,6 @@ export default function ProfilePage() {
     EDisplayPreference.WALLET_ADDRESS
   );
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
-
-  // Initialize and update local state when user data changes
-  useEffect(() => {
-    if (currentUser) {
-      // Use the same data source as the display (userInfo) for consistency
-      const currentCallSign = userInfo.callSign || currentUser.callSign || '';
-      const currentDisplayPreference =
-        userInfo.displayPreference ||
-        currentUser.displayPreference ||
-        EDisplayPreference.WALLET_ADDRESS;
-
-      setCallSign(currentCallSign);
-      setDisplayPreference(currentDisplayPreference);
-    }
-  }, [currentUser, userInfo.callSign, userInfo.displayPreference]);
 
   // Copy to clipboard function
   const copyToClipboard = async (text: string, label: string) => {
@@ -191,9 +163,9 @@ export default function ProfilePage() {
 
   const handleCancel = () => {
     // Reset to the same data source as display for consistency
-    const currentCallSign = userInfo.callSign || currentUser.callSign || '';
+    const currentCallSign = currentUser.callSign || currentUser.callSign || '';
     const currentDisplayPreference =
-      userInfo.displayPreference ||
+      currentUser.displayPreference ||
       currentUser.displayPreference ||
       EDisplayPreference.WALLET_ADDRESS;
 
@@ -204,7 +176,7 @@ export default function ProfilePage() {
 
   const getVerificationIcon = () => {
     // Use verification level from UserIdentityService (central database store)
-    switch (userInfo.verificationLevel) {
+    switch (currentUser.verificationStatus) {
       case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case EVerificationStatus.WALLET_CONNECTED:
@@ -218,7 +190,7 @@ export default function ProfilePage() {
 
   const getVerificationText = () => {
     // Use verification level from UserIdentityService (central database store)
-    switch (userInfo.verificationLevel) {
+    switch (currentUser.verificationStatus) {
       case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return 'Owns ENS or Ordinal';
       case EVerificationStatus.WALLET_CONNECTED:
@@ -232,7 +204,7 @@ export default function ProfilePage() {
 
   const getVerificationColor = () => {
     // Use verification level from UserIdentityService (central database store)
-    switch (userInfo.verificationLevel) {
+    switch (currentUser.verificationStatus) {
       case EVerificationStatus.ENS_ORDINAL_VERIFIED:
         return 'bg-green-100 text-green-800 border-green-200';
       case EVerificationStatus.WALLET_CONNECTED:
@@ -290,36 +262,30 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex-1">
                         <div className="text-xl font-mono font-bold text-white">
-                          {userInfo.displayName}
+                          {currentUser.displayName}
                         </div>
                         <div className="text-sm text-cyber-neutral">
                           {/* Show ENS name if available */}
-                          {(userInfo.ensName ||
-                            currentUser?.ensDetails?.ensName) && (
+                          {(currentUser.ensDetails?.ensName ) && (
                             <div>
                               ENS:{' '}
-                              {userInfo.ensName ||
-                                currentUser?.ensDetails?.ensName}
+                              {currentUser.ensDetails?.ensName}
                             </div>
                           )}
                           {/* Show Ordinal details if available */}
-                          {(userInfo.ordinalDetails ||
-                            currentUser?.ordinalDetails?.ordinalDetails) && (
+                          {(currentUser.ordinalDetails ) && (
                             <div>
                               Ordinal:{' '}
-                              {userInfo.ordinalDetails ||
-                                currentUser?.ordinalDetails?.ordinalDetails}
+                              {currentUser.ordinalDetails.ordinalDetails}
                             </div>
                           )}
                           {/* Show fallback if neither ENS nor Ordinal */}
                           {!(
-                            userInfo.ensName || currentUser?.ensDetails?.ensName
+                            currentUser.ensDetails?.ensName
                           ) &&
                             !(
-                              userInfo.ordinalDetails ||
-                              currentUser?.ordinalDetails?.ordinalDetails
+                              currentUser.ordinalDetails?.ordinalDetails
                             ) && <div>No ENS or Ordinal verification</div>}
-                        </div>
                         <div className="flex items-center gap-2 mt-2">
                           {getVerificationIcon()}
                           <Badge className={getVerificationColor()}>
@@ -328,6 +294,7 @@ export default function ProfilePage() {
                         </div>
                       </div>
                     </div>
+                  </div>
                   </div>
 
                   {/* Wallet Section */}
@@ -398,7 +365,7 @@ export default function ProfilePage() {
                           />
                         ) : (
                           <div className="text-sm bg-cyber-dark/50 border border-cyber-muted/30 px-3 py-2 rounded-md text-cyber-light">
-                            {userInfo.callSign ||
+                            {currentUser.callSign ||
                               currentUser.callSign ||
                               'Not set'}
                           </div>
@@ -444,7 +411,7 @@ export default function ProfilePage() {
                           </Select>
                         ) : (
                           <div className="text-sm bg-cyber-dark/50 border border-cyber-muted/30 px-3 py-2 rounded-md text-cyber-light">
-                            {(userInfo.displayPreference ||
+                            {(currentUser.displayPreference ||
                               displayPreference) ===
                             EDisplayPreference.CALL_SIGN
                               ? 'Call Sign (when available)'
@@ -494,8 +461,7 @@ export default function ProfilePage() {
                       <Shield className="h-5 w-5 text-cyber-accent" />
                       Security
                     </div>
-                    {(forum.user.delegation.hasDelegation ||
-                      delegationInfo?.hasDelegation) && (
+                    {delegation.hasDelegation && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -503,9 +469,7 @@ export default function ProfilePage() {
                         className="border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
                       >
                         <Settings className="w-4 h-4 mr-2" />
-                        {forum.user.delegation.isValid || delegationInfo?.isValid
-                          ? 'Renew'
-                          : 'Setup'}
+                        {delegation.isValid ? 'Renew' : 'Setup'}
                       </Button>
                     )}
                   </CardTitle>
@@ -518,35 +482,25 @@ export default function ProfilePage() {
                         Delegation
                       </span>
                       <Badge
-                        variant={
-                          forum.user.delegation.isValid || delegationInfo?.isValid
-                            ? 'default'
-                            : 'secondary'
-                        }
+                        variant={delegation.isValid ? 'default' : 'secondary'}
                         className={
-                          forum.user.delegation.isValid || delegationInfo?.isValid
+                          delegation.isValid
                             ? 'bg-green-500/20 text-green-400 border-green-500/30'
                             : 'bg-red-500/20 text-red-400 border-red-500/30'
                         }
                       >
-                        {forum.user.delegation.isValid || delegationInfo?.isValid
-                          ? 'Active'
-                          : 'Inactive'}
+                        {delegation.isValid ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
 
                     {/* Expiry Date */}
-                    {(forum.user.delegation.expiresAt ||
-                      currentUser.delegationExpiry) && (
+                    {delegation.expiresAt && (
                       <div className="space-y-1">
                         <span className="text-xs text-cyber-neutral">
                           Valid until
                         </span>
                         <div className="text-sm font-mono text-cyber-light">
-                          {(
-                            forum.user.delegation.expiresAt ||
-                            new Date(currentUser.delegationExpiry!)
-                          ).toLocaleDateString()}
+                          {delegation.expiresAt.toLocaleDateString()}
                         </div>
                       </div>
                     )}
@@ -559,16 +513,12 @@ export default function ProfilePage() {
                       <Badge
                         variant="outline"
                         className={
-                          forum.user.delegation.isValid ||
-                          currentUser.delegationSignature === 'valid'
+                          delegation.isValid
                             ? 'text-green-400 border-green-500/30 bg-green-500/10'
                             : 'text-red-400 border-red-500/30 bg-red-500/10'
                         }
                       >
-                        {forum.user.delegation.isValid ||
-                        currentUser.delegationSignature === 'valid'
-                          ? 'Valid'
-                          : 'Not signed'}
+                        {delegation.isValid ? 'Valid' : 'Not signed'}
                       </Badge>
                     </div>
                   </div>
@@ -580,19 +530,17 @@ export default function ProfilePage() {
                     </Label>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 font-mono text-xs bg-cyber-dark/50 border border-cyber-muted/30 px-2 py-1 rounded text-cyber-light">
-                        {forum.user.delegation.publicKey || currentUser.browserPubKey
-                          ? `${(forum.user.delegation.publicKey || currentUser.browserPubKey!).slice(0, 12)}...${(forum.user.delegation.publicKey || currentUser.browserPubKey!).slice(-8)}`
+                        {delegation.publicKey
+                          ? `${delegation.publicKey.slice(0, 12)}...${delegation.publicKey.slice(-8)}`
                           : 'Not delegated'}
                       </div>
-                      {(forum.user.delegation.publicKey ||
-                        currentUser.browserPubKey) && (
+                      {delegation.publicKey && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() =>
                             copyToClipboard(
-                              forum.user.delegation.publicKey ||
-                                currentUser.browserPubKey!,
+                              delegation.publicKey!,
                               'Public Key'
                             )
                           }
@@ -605,10 +553,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Warning for expired delegation */}
-                  {(!forum.user.delegation.isValid &&
-                    forum.user.delegation.hasDelegation) ||
-                    (!delegationInfo?.isValid &&
-                      delegationInfo?.hasDelegation && (
+                  {(!delegation.isValid && delegation.hasDelegation) && (
                         <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
                           <div className="flex items-center gap-2 text-orange-400">
                             <AlertTriangle className="w-4 h-4" />
@@ -618,7 +563,7 @@ export default function ProfilePage() {
                             </span>
                           </div>
                         </div>
-                      ))}
+                      )}
                 </CardContent>
               </Card>
             </div>

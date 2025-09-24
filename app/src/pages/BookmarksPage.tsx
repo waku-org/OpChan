@@ -16,7 +16,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useBookmarks } from '@/hooks';
 import { Bookmark, BookmarkType } from '@opchan/core';
 import {
   Trash2,
@@ -24,19 +23,12 @@ import {
   FileText,
   MessageSquare,
 } from 'lucide-react';
-import { useAuth } from '@opchan/react';
+import { useAuth, useContent } from '@/hooks';
 
 const BookmarksPage = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const {
-    bookmarks,
-    loading,
-    error,
-    removeBookmark,
-    getBookmarksByType,
-    clearAllBookmarks,
-  } = useBookmarks();
+  const { bookmarks, removeBookmark, clearAllBookmarks } = useContent();
 
   const [activeTab, setActiveTab] = useState<'all' | 'posts' | 'comments'>(
     'all'
@@ -61,8 +53,8 @@ const BookmarksPage = () => {
     );
   }
 
-  const postBookmarks = getBookmarksByType(BookmarkType.POST);
-  const commentBookmarks = getBookmarksByType(BookmarkType.COMMENT);
+  const postBookmarks = bookmarks.filter(bookmark => bookmark.type === BookmarkType.POST);
+  const commentBookmarks = bookmarks.filter(bookmark => bookmark.type === BookmarkType.COMMENT);
 
   const getFilteredBookmarks = () => {
     switch (activeTab) {
@@ -87,36 +79,6 @@ const BookmarksPage = () => {
     await clearAllBookmarks();
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-cyber-dark text-white">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyber-accent mx-auto mb-4" />
-            <p className="text-cyber-neutral">Loading bookmarks...</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col bg-cyber-dark text-white">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-400 mb-4">
-              Error Loading Bookmarks
-            </h1>
-            <p className="text-cyber-neutral mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>Try Again</Button>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="page-container">

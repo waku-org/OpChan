@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useCell, useCellPosts, usePermissions, useUserVotes, useAuth, useForumData } from '@/hooks';
-import { useForum } from '@opchan/react';
+import { usePermissions, useAuth, useContent } from '@/hooks';
+import type { Post as ForumPost, Cell as ForumCell, VoteMessage } from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,21 +31,17 @@ const PostList = () => {
   const { cellId } = useParams<{ cellId: string }>();
 
   // ✅ Use reactive hooks for data and actions
-  const cell = useCell(cellId);
-  const cellPosts = useCellPosts(cellId, { sortBy: 'relevance' });
-  const forum = useForum();
-  const { createPost, vote, moderate, refresh } = forum.content;
+  const { createPost, vote, moderate, refresh, commentsByPost, cells, posts } = useContent();
+  const cell = cells.find((c: ForumCell) => c.id === cellId);
   const isCreatingPost = false;
   const isVoting = false;
   const { canPost, canVote, canModerate } = usePermissions();
-  const userVotes = useUserVotes();
   const { currentUser } = useAuth();
-  const { commentsByPost } = useForumData();
 
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
 
-  if (!cellId || cellPosts.isLoading) {
+  if (!cellId) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
@@ -125,16 +121,26 @@ const PostList = () => {
   };
 
   const handleVotePost = async (postId: string, isUpvote: boolean) => {
-    // ✅ Permission checking handled in hook
     await vote({ targetId: postId, isUpvote });
   };
 
   const getPostVoteType = (postId: string) => {
-    return userVotes.getPostVoteType(postId);
+    if (!currentUser) return null;
+    const p = posts.find((p: ForumPost) => p.id === postId);
+    if (!p) return null;
+    const up = p.upvotes.some((v: VoteMessage) => v.author === currentUser.address);
+    const down = p.downvotes.some((v: VoteMessage) => v.author === currentUser.address);
+    return up ? 'upvote' : down ? 'downvote' : null;
   };
 
   // ✅ Posts already filtered by hook based on user permissions
-  const visiblePosts = cellPosts.posts;
+  const visiblePosts = posts
+    .filter((p: ForumPost) => p.cellId === cellId)
+    .sort((a: ForumPost, b: ForumPost) => {
+      const ar = a.relevanceScore ?? 0;
+      const br = b.relevanceScore ?? 0;
+      return br - ar || b.timestamp - a.timestamp;
+    });
 
   const handleModerate = async (postId: string) => {
     const reason =
@@ -184,12 +190,10 @@ const PostList = () => {
               variant="outline"
               size="icon"
               onClick={refresh}
-              disabled={cellPosts.isLoading}
+              disabled={false}
               title="Refresh data"
             >
-              <RefreshCw
-                className={`w-4 h-4 ${cellPosts.isLoading ? 'animate-spin' : ''}`}
-              />
+              <RefreshCw className="w-4 h-4" />
             </Button>
           </div>
           <p className="page-subtitle">{cell.description}</p>
@@ -264,7 +268,7 @@ const PostList = () => {
             </p>
           </div>
         ) : (
-          visiblePosts.map(post => (
+          visiblePosts.map((post: ForumPost) => (
             <div key={post.id} className="thread-card">
               <div className="flex gap-4">
                 <div className="flex flex-col items-center">

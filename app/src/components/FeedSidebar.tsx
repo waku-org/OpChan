@@ -4,44 +4,31 @@ import { TrendingUp, Users, Eye, CheckCircle } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useForumData, useAuth } from '@/hooks';
+import {  useAuth, useContent } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
 import { CypherImage } from '@/components/ui/CypherImage';
-import { useUserDisplay } from '@/hooks';
 
 const FeedSidebar: React.FC = () => {
   // ✅ Use reactive hooks for data
-  const forumData = useForumData();
+  const {cells, posts, comments, cellsWithStats, userVerificationStatus} = useContent();
   const { currentUser, verificationStatus } = useAuth();
 
-  // Get user display information using the hook
-  const { displayName, ensName, ordinalDetails } = useUserDisplay(
-    currentUser?.address || ''
-  );
 
-  // ✅ Get stats from filtered data
-  const {
-    filteredPosts,
-    filteredComments,
-    filteredCellsWithStats,
-    cells,
-    userVerificationStatus,
-  } = forumData;
 
   const stats = {
     totalCells: cells.length,
-    totalPosts: filteredPosts.length,
-    totalComments: filteredComments.length,
+    totalPosts: posts.length,
+    totalComments: comments.length,
     totalUsers: new Set([
-      ...filteredPosts.map(post => post.author),
-      ...filteredComments.map(comment => comment.author),
+      ...posts.map(post => post.author),
+      ...comments.map(comment => comment.author),
     ]).size,
     verifiedUsers: Object.values(userVerificationStatus).filter(
       status => status.isVerified
     ).length,
   };
   // Use filtered cells with stats for trending cells
-  const trendingCells = filteredCellsWithStats
+  const trendingCells = cellsWithStats
     .sort((a, b) => b.recentActivity - a.recentActivity)
     .slice(0, 5);
 
@@ -51,9 +38,9 @@ const FeedSidebar: React.FC = () => {
       return { text: 'Verified Owner', color: 'bg-green-500' };
     } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
       return { text: 'Verified', color: 'bg-blue-500' };
-    } else if (ensName) {
+    } else if (currentUser?.ensDetails) {
       return { text: 'ENS User', color: 'bg-purple-500' };
-    } else if (ordinalDetails) {
+    } else if (currentUser?.ordinalDetails) {
       return { text: 'Ordinal User', color: 'bg-orange-500' };
     }
     return { text: 'Unverified', color: 'bg-gray-500' };
@@ -75,7 +62,7 @@ const FeedSidebar: React.FC = () => {
                 <Users className="w-5 h-5 text-cyber-accent" />
               </div>
               <div className="flex-1">
-                <div className="font-medium text-sm">{displayName}</div>
+                <div className="font-medium text-sm">{currentUser?.displayName}</div>
                 <Badge
                   variant="secondary"
                   className={`${verificationBadge.color} text-white text-xs`}

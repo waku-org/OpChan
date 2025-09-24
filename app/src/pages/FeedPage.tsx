@@ -12,36 +12,23 @@ import {
 import PostCard from '@/components/PostCard';
 import FeedSidebar from '@/components/FeedSidebar';
 import { ModerationToggle } from '@/components/ui/moderation-toggle';
-import { useForumData, useAuth } from '@/hooks';
-import { useForum } from '@opchan/react';
+import { useAuth, useContent } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
 import { sortPosts, SortOption } from '@/utils/sorting';
 const FeedPage: React.FC = () => {
-  const forumData = useForumData();
+  const content = useContent();
   const { verificationStatus } = useAuth();
-  const { content } = useForum();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
-  const {
-    filteredPosts,
-    filteredCommentsByPost,
-    isInitialLoading,
-    isRefreshing,
-  } = forumData;
 
-  // ✅ Use pre-computed filtered data
-  const allPosts = useMemo(() => {
-    return sortPosts(filteredPosts, sortOption);
-  }, [filteredPosts, sortOption]);
+  // Build sorted posts from content slices
+  const allPosts = useMemo(() => sortPosts([...content.posts], sortOption), [content.posts, sortOption]);
 
   // ✅ Get comment count from filtered organized data
-  const getCommentCount = (postId: string) => {
-    const comments = filteredCommentsByPost[postId] || [];
-    return comments.length;
-  };
+  const getCommentCount = (postId: string) => (content.commentsByPost[postId] || []).length;
 
   // Loading skeleton
-  if (isInitialLoading) {
+  if (!content.posts.length && !content.comments.length && !content.cells.length) {
     return (
       <div className="min-h-screen bg-cyber-dark">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -137,12 +124,10 @@ const FeedPage: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={content.refresh}
-                disabled={isRefreshing}
+                disabled={false}
                 className="flex items-center space-x-2"
               >
-                <RefreshCw
-                  className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
-                />
+                <RefreshCw className="w-4 h-4" />
                 <span>Refresh</span>
               </Button>
             </div>

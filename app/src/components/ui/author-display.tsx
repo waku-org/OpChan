@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Shield, Crown, Hash } from 'lucide-react';
-import { useUserDisplay } from '@/hooks';
+import { useUserDisplay } from '@opchan/react';
 
 interface AuthorDisplayProps {
   address: string;

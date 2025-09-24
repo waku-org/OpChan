@@ -1,12 +1,12 @@
 import React from 'react';
 import { ArrowUp, ArrowDown, Clock, Shield, UserX } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Comment } from '@opchan/core';
+import type { CommentMessage } from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { BookmarkButton } from '@/components/ui/bookmark-button';
 import { AuthorDisplay } from '@/components/ui/author-display';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
-import { useForum } from '@opchan/react';
+import { useContent, useForum, usePermissions } from '@/hooks';
 import {
   Tooltip,
   TooltipContent,
@@ -15,7 +15,7 @@ import {
 import { ShareButton } from '@/components/ui/ShareButton';
 
 interface CommentCardProps {
-  comment: Comment;
+  comment: CommentMessage;
   postId: string;
   cellId?: string;
   canModerate: boolean;
@@ -48,8 +48,8 @@ const CommentCard: React.FC<CommentCardProps> = ({
   onUnmoderateComment,
   onModerateUser,
 }) => {
-  const forum = useForum();
-  const { content, permissions } = forum;
+  const content = useContent();
+  const permissions = usePermissions();
 
   // Check if bookmarked
   const isBookmarked = content.bookmarks.some(
@@ -58,18 +58,13 @@ const CommentCard: React.FC<CommentCardProps> = ({
   const [bookmarkLoading, setBookmarkLoading] = React.useState(false);
 
   // Use library pending API
-  const commentVotePending = content.pending.isVotePending(comment.id);
+  const commentVotePending = content.pending.isPending(comment.id);
 
   // Get user vote status from filtered comment data
-  const filteredComment = content.filtered.comments.find(
-    c => c.id === comment.id
-  );
-  const userUpvoted = filteredComment
-    ? (filteredComment as unknown as { userUpvoted?: boolean }).userUpvoted
-    : false;
-  const userDownvoted = filteredComment
-    ? (filteredComment as unknown as { userDownvoted?: boolean }).userDownvoted
-    : false;
+  const userUpvoted = Boolean((comment as unknown as { userUpvoted?: boolean }).userUpvoted);
+  const userDownvoted = Boolean((comment as unknown as { userDownvoted?: boolean }).userDownvoted);
+  const score = (comment as unknown as { voteScore?: number }).voteScore ?? 0;
+  const isModerated = Boolean((comment as unknown as { moderated?: boolean }).moderated);
 
   const handleVoteComment = async (isUpvote: boolean) => {
     await content.vote({ targetId: comment.id, isUpvote });
@@ -100,7 +95,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
           >
             <ArrowUp className="w-3 h-3" />
           </button>
-          <span className="text-sm font-bold">{comment.voteScore}</span>
+          <span className="text-sm font-bold">{score}</span>
           <button
             className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
               userDownvoted ? 'text-cyber-accent' : ''
@@ -161,7 +156,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {canModerate && !comment.moderated && (
+            {canModerate && !isModerated && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -178,7 +173,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-            {canModerate && comment.moderated && (
+            {canModerate && isModerated && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

@@ -14,7 +14,7 @@ import {
 } from '../../types/waku';
 import { OpchanMessage } from '../../types/forum';
 import { MessageValidator } from '../utils/MessageValidator';
-import { EVerificationStatus, User } from '../../types/identity';
+import { EDisplayPreference, EVerificationStatus, User } from '../../types/identity';
 import { DelegationInfo } from '../delegation/types';
 import { openLocalDB, STORE, StoreName } from '../database/schema';
 import { Bookmark, BookmarkCache } from '../../types/forum';
@@ -648,21 +648,17 @@ export class LocalDatabase {
     address: string,
     record: Partial<UserIdentityCache[string]> & { lastUpdated?: number }
   ): Promise<void> {
+    // Retrieve existing identity or initialize with proper defaults
     const existing: UserIdentityCache[string] =
       this.cache.userIdentities[address] ||
-      ({
+      {
         ensName: undefined,
         ordinalDetails: undefined,
         callSign: undefined,
-        displayPreference: EVerificationStatus.WALLET_UNCONNECTED
-          ? (undefined as never)
-          : (undefined as never),
-        // We'll set displayPreference when we receive a profile update; leave as
-        // WALLET_ADDRESS by default for correctness.
-        // Casting below ensures the object satisfies the interface at compile time.
+        displayPreference: EDisplayPreference.WALLET_ADDRESS, 
         lastUpdated: 0,
         verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
-      } as unknown as UserIdentityCache[string]);
+      };
 
     const merged: UserIdentityCache[string] = {
       ...existing,
@@ -671,7 +667,7 @@ export class LocalDatabase {
         existing.lastUpdated ?? 0,
         record.lastUpdated ?? Date.now()
       ),
-    } as UserIdentityCache[string];
+    };
 
     this.cache.userIdentities[address] = merged;
     this.put(STORE.USER_IDENTITIES, { address, ...merged });

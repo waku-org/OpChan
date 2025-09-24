@@ -9,7 +9,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { Bookmark, BookmarkType } from '@opchan/core';
-import { useUserDisplay } from '@/hooks';
+import { useUserDisplay } from '@opchan/react';
 import { cn } from '../../utils'
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';

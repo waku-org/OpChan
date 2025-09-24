@@ -1,5 +1,5 @@
 import { Wifi, WifiOff, CheckCircle } from 'lucide-react';
-import { useNetworkStatus } from '@opchan/react';
+import { useNetwork } from '@opchan/react';
 import { cn } from '../../utils'
 
 interface WakuHealthIndicatorProps {
@@ -13,21 +13,15 @@ export function WakuHealthIndicator({
   showText = true,
   size = 'md',
 }: WakuHealthIndicatorProps) {
-  const network = useNetworkStatus();
-  const connectionStatus = network.health.isConnected
-    ? 'connected'
-    : 'disconnected';
-  const statusColor = network.getHealthColor();
-  const statusMessage = network.getStatusMessage();
+  const {isConnected, statusMessage} = useNetwork();
 
   const getIcon = () => {
-    switch (connectionStatus) {
-      case 'connected':
-        return <CheckCircle className="text-green-500" />;
-      case 'disconnected':
-        return <WifiOff className="text-red-500" />;
-      default:
-        return <Wifi className="text-gray-500" />;
+    if (isConnected === true) {
+      return <CheckCircle className="text-green-500" />;
+    } else if (isConnected === false) {
+      return <WifiOff className="text-red-500" />;
+    } else {
+      return <Wifi className="text-gray-500" />;
     }
   };
 
@@ -49,9 +43,9 @@ export function WakuHealthIndicator({
         <span
           className={cn(
             'text-sm font-medium',
-            statusColor === 'green' && 'text-green-400',
-            statusColor === 'yellow' && 'text-yellow-400',
-            statusColor === 'red' && 'text-red-400'
+            isConnected === true && 'text-green-400',
+            isConnected === false && 'text-red-400',
+            isConnected === null && 'text-gray-400'
           )}
         >
           {statusMessage}
@@ -66,19 +60,19 @@ export function WakuHealthIndicator({
  * Useful for compact displays like headers or status bars
  */
 export function WakuHealthDot({ className }: { className?: string }) {
-  const { getHealthColor } = useNetworkStatus();
-  const statusColor = getHealthColor();
+  const { isConnected } = useNetwork();
+  const statusColor = isConnected === true ? 'green' : isConnected === false ? 'red' : 'gray';
 
   return (
     <div
       className={cn(
         'w-2 h-2 rounded-full',
-        statusColor === 'green' && 'bg-green-500',
-        statusColor === 'yellow' && 'bg-yellow-500 animate-pulse',
-        statusColor === 'red' && 'bg-red-500',
+        isConnected === true && 'bg-green-500',
+        isConnected === false && 'bg-red-500',
+        isConnected === null && 'bg-gray-500',
         className
       )}
-      title={`Waku network: ${statusColor}`}
+      title={`Waku network: ${statusColor === 'green' ? 'Connected' : statusColor === 'red' ? 'Disconnected' : 'Loading'}`}
     />
   );
 }
