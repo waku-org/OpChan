@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
-import { useAppKitAccount } from '@reown/appkit/react';
 import { OrdinalDetails, EnsDetails } from '@opchan/core';
 
 interface VerificationStepProps {
@@ -26,19 +25,7 @@ export function VerificationStep({
   isLoading,
   setIsLoading,
 }: VerificationStepProps) {
-  const { currentUser, verificationStatus, isAuthenticating, verifyOwnership } = useAuth();
-
-  // Get account info to determine wallet type
-  const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
-  const ethereumAccount = useAppKitAccount({ namespace: 'eip155' });
-
-  const isBitcoinConnected = bitcoinAccount.isConnected;
-  const isEthereumConnected = ethereumAccount.isConnected;
-  const walletType = isBitcoinConnected
-    ? 'bitcoin'
-    : isEthereumConnected
-      ? 'ethereum'
-      : undefined;
+  const { currentUser, verifyOwnership } = useAuth();
 
   const [verificationResult, setVerificationResult] = React.useState<{
     success: boolean;
@@ -52,24 +39,17 @@ export function VerificationStep({
       verificationResult?.success &&
       verificationResult.message.includes('Checking ownership')
     ) {
-      // Check if actual ownership was verified
-      // Treat centralized verification status as source of truth
-      const isOwnerVerified =
-        verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
-      const hasOwnership =
-        walletType === 'bitcoin'
-          ? isOwnerVerified && !!currentUser?.ordinalDetails
-          : isOwnerVerified && !!currentUser?.ensDetails;
+      const hasOwnership = currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
 
       if (hasOwnership) {
         setVerificationResult({
           success: true,
           message:
-            walletType === 'bitcoin'
+            currentUser?.walletType === 'bitcoin'
               ? 'Ordinal ownership verified successfully!'
               : 'ENS ownership verified successfully!',
           details:
-            walletType === 'bitcoin'
+            currentUser?.walletType === 'bitcoin'
               ? currentUser?.ordinalDetails
               : currentUser?.ensDetails,
         });
@@ -77,13 +57,13 @@ export function VerificationStep({
         setVerificationResult({
           success: false,
           message:
-            walletType === 'bitcoin'
+            currentUser?.walletType === 'bitcoin'
               ? 'No Ordinal ownership found. You can still participate in the forum with your connected wallet!'
               : 'No ENS ownership found. You can still participate in the forum with your connected wallet!',
         });
       }
     }
-  }, [currentUser, verificationResult, walletType, verificationStatus]);
+  }, [currentUser, verificationResult]);
 
   const handleVerify = async () => {
     console.log('🔘 Verify button clicked, currentUser:', currentUser);
@@ -98,17 +78,15 @@ export function VerificationStep({
 
     try {
       console.log('📞 Calling verifyWallet()...');
-      const success = await verifyOwnership();
-      console.log('📊 verifyWallet returned:', success);
-
-      if (success) {
+      await verifyOwnership();
+      if (currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
         // For now, just show success - the actual ownership check will be done
         // by the useEffect when the user state updates
         console.log('✅ Verification successful, setting result');
         setVerificationResult({
           success: true,
           message:
-            walletType === 'bitcoin'
+            currentUser?.walletType === 'bitcoin'
               ? 'Verification process completed. Checking ownership...'
               : 'Verification process completed. Checking ownership...',
           details: undefined,
@@ -118,7 +96,7 @@ export function VerificationStep({
         setVerificationResult({
           success: false,
           message:
-            walletType === 'bitcoin'
+            currentUser?.walletType === 'bitcoin'
               ? 'No Ordinal ownership found. You can still participate in the forum with your connected wallet!'
               : 'No ENS ownership found. You can still participate in the forum with your connected wallet!',
         });
@@ -140,19 +118,19 @@ export function VerificationStep({
   };
 
   const getVerificationType = () => {
-    return walletType === 'bitcoin' ? 'Bitcoin Ordinal' : 'Ethereum ENS';
+    return currentUser?.walletType === 'bitcoin' ? 'Bitcoin Ordinal' : 'Ethereum ENS';
   };
 
   const getVerificationIcon = () => {
-    return walletType === 'bitcoin' ? Bitcoin : Coins;
+    return currentUser?.walletType === 'bitcoin' ? Bitcoin : Coins;
   };
 
   const getVerificationColor = () => {
-    return walletType === 'bitcoin' ? 'text-orange-500' : 'text-blue-500';
+    return currentUser?.walletType === 'bitcoin' ? 'text-orange-500' : 'text-blue-500';
   };
 
   const getVerificationDescription = () => {
-    if (walletType === 'bitcoin') {
+    if (currentUser?.walletType === 'bitcoin') {
       return "Verify your Bitcoin Ordinal ownership to unlock premium features. If you don't own any Ordinals, you can still participate in the forum with your connected wallet.";
     } else {
       return "Verify your Ethereum ENS ownership to unlock premium features. If you don't own any ENS, you can still participate in the forum with your connected wallet.";
@@ -194,7 +172,7 @@ export function VerificationStep({
             </p>
             {verificationResult.details && (
               <div className="text-xs text-neutral-400">
-                {walletType === 'bitcoin' ? (
+                {currentUser?.walletType === 'bitcoin' ? (
                   <p>
                     Ordinal ID:{' '}
                     {typeof verificationResult.details === 'object' &&
@@ -231,7 +209,7 @@ export function VerificationStep({
   }
 
   // Show verification status
-  if (verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
+  if (currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 space-y-4">
@@ -247,8 +225,8 @@ export function VerificationStep({
             </p>
             {currentUser && (
               <div className="text-xs text-neutral-400">
-                {walletType === 'bitcoin' && <p>Ordinal ID: Verified</p>}
-                {walletType === 'ethereum' && <p>ENS Name: Verified</p>}
+                {currentUser?.walletType === 'bitcoin' && <p>Ordinal ID: Verified</p>}
+                {currentUser?.walletType === 'ethereum' && <p>ENS Name: Verified</p>}
               </div>
             )}
           </div>
@@ -294,7 +272,7 @@ export function VerificationStep({
             </span>
           </div>
           <ul className="text-xs text-neutral-400 space-y-1">
-            {walletType === 'bitcoin' ? (
+            {currentUser?.walletType === 'bitcoin' ? (
               <>
                 <li>• We'll check your wallet for Bitcoin Ordinal ownership</li>
                 <li>• If found, you'll get full posting and voting access</li>
@@ -319,10 +297,10 @@ export function VerificationStep({
       <div className="mt-auto space-y-3">
         <Button
           onClick={handleVerify}
-          disabled={isLoading || isAuthenticating}
+          disabled={isLoading}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white"
         >
-          {isLoading || isAuthenticating ? (
+          {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Verifying...
@@ -336,7 +314,7 @@ export function VerificationStep({
           onClick={onBack}
           variant="outline"
           className="w-full border-neutral-600 text-neutral-400 hover:bg-neutral-800"
-          disabled={isLoading || isAuthenticating}
+          disabled={isLoading}
         >
           Back
         </Button>

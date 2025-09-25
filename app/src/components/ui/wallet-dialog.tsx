@@ -194,7 +194,7 @@ export function WalletConnectionDialog({
                 </p>
                 <p className="text-sm text-neutral-300 mb-2">Address:</p>
                 <p className="text-xs font-mono text-neutral-400 break-all">
-                  {activeAddress}
+                  {activeAddress ? `${activeAddress.slice(0, 6)}...${activeAddress.slice(-4)}` : ''}
                 </p>
               </div>
 

@@ -1,14 +1,9 @@
 import React from 'react';
 import { useClient } from '../context/ClientContext';
 import { EDisplayPreference, EVerificationStatus } from '@opchan/core';
+import { UserIdentity } from '@opchan/core/dist/lib/services/UserIdentityService';
 
-export interface UserDisplayInfo {
-  displayName: string;
-  callSign: string | null;
-  ensName: string | null;
-  ordinalDetails: string | null;
-  verificationLevel: EVerificationStatus;
-  displayPreference: EDisplayPreference | null;
+export interface UserDisplayInfo extends UserIdentity {
   isLoading: boolean;
   error: string | null;
 }
@@ -21,19 +16,17 @@ export function useUserDisplay(address: string): UserDisplayInfo {
   const client = useClient();
   
   const [displayInfo, setDisplayInfo] = React.useState<UserDisplayInfo>({
+    address,
     displayName: `${address.slice(0, 6)}...${address.slice(-4)}`,
-    callSign: null,
-    ensName: null,
-    ordinalDetails: null,
-    verificationLevel: EVerificationStatus.WALLET_UNCONNECTED,
-    displayPreference: null,
+    lastUpdated: 0,
+    callSign: undefined,
+    ensName: undefined,
+    ordinalDetails: undefined,
+    verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
+    displayPreference: EDisplayPreference.WALLET_ADDRESS,
     isLoading: true,
     error: null,
   });
-
-  const getDisplayName = React.useCallback((addr: string) => {
-    return client.userIdentityService.getDisplayName(addr);
-  }, [client]);
 
   // Initial load and refresh listener
   React.useEffect(() => {
@@ -43,28 +36,16 @@ export function useUserDisplay(address: string): UserDisplayInfo {
 
     const loadUserDisplay = async () => {
       try {
-        const identity = await client.userIdentityService.getUserIdentity(address);
+        const identity = await client.userIdentityService.getIdentity(address);
         
         if (cancelled) return;
 
         if (identity) {
           setDisplayInfo({
-            displayName: getDisplayName(address),
-            callSign: identity.callSign || null,
-            ensName: identity.ensName || null,
-            ordinalDetails: identity.ordinalDetails?.ordinalDetails || null,
-            verificationLevel: identity.verificationStatus,
-            displayPreference: identity.displayPreference || null,
+            ...identity,
             isLoading: false,
             error: null,
           });
-        } else {
-          setDisplayInfo(prev => ({
-            ...prev,
-            displayName: getDisplayName(address),
-            isLoading: false,
-            error: null,
-          }));
         }
       } catch (error) {
         if (cancelled) return;
@@ -80,21 +61,16 @@ export function useUserDisplay(address: string): UserDisplayInfo {
     loadUserDisplay();
 
     // Subscribe to identity service refresh events
-    const unsubscribe = client.userIdentityService.addRefreshListener(async (changedAddress) => {
+    const unsubscribe = client.userIdentityService.subscribe(async (changedAddress) => {
       if (changedAddress !== address || cancelled) return;
       
       try {
-        const identity = await client.userIdentityService.getUserIdentity(address);
+        const identity = await client.userIdentityService.getIdentity(address);
         if (!identity || cancelled) return;
 
         setDisplayInfo(prev => ({
           ...prev,
-          displayName: getDisplayName(address),
-          callSign: identity.callSign || null,
-          ensName: identity.ensName || null,
-          ordinalDetails: identity.ordinalDetails?.ordinalDetails || null,
-          verificationLevel: identity.verificationStatus,
-          displayPreference: identity.displayPreference || null,
+          ...identity,
           isLoading: false,
           error: null,
         }));
@@ -117,7 +93,7 @@ export function useUserDisplay(address: string): UserDisplayInfo {
         // Ignore unsubscribe errors
       }
     };
-  }, [address, client, getDisplayName]);
+  }, [address, client]);
 
   return displayInfo;
 }

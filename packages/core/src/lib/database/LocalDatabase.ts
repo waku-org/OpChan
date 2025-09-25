@@ -235,8 +235,7 @@ export class LocalDatabase {
             displayPreference,
             lastUpdated: timestamp,
             verificationStatus:
-              existing?.verificationStatus ??
-              EVerificationStatus.WALLET_UNCONNECTED,
+              existing?.verificationStatus 
           } as UserIdentityCache[string];
 
           this.cache.userIdentities[author] = nextRecord;
@@ -658,6 +657,7 @@ export class LocalDatabase {
         displayPreference: EDisplayPreference.WALLET_ADDRESS, 
         lastUpdated: 0,
         verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
+        displayName: address.slice(0, 6) + '...' + address.slice(-4),
       };
 
     const merged: UserIdentityCache[string] = {

@@ -24,6 +24,8 @@ export class MessageService implements MessageServiceInterface {
     this.delegationManager = delegationManager;
   }
 
+  // ===== PUBLIC METHODS =====
+
   /**
    * Sign and send a message to the Waku network
    */

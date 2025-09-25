@@ -19,18 +19,7 @@ export class MessageService {
     this.setupMessageHandling();
   }
 
-  private setupMessageHandling(): void {
-    if (this.reliableMessaging) {
-      this.reliableMessaging.onMessage(async message => {
-        localDatabase.setSyncing(true);
-        const isNew = await localDatabase.updateCache(message);
-        // Defensive: clear pending on inbound message to avoid stuck state
-        localDatabase.clearPending(message.id);
-        localDatabase.setSyncing(false);
-        if (isNew) this.messageReceivedCallbacks.forEach(cb => cb(message));
-      });
-    }
-  }
+  // ===== PUBLIC METHODS =====
 
   public async sendMessage(
     message: OpchanMessage,
@@ -94,12 +83,23 @@ export class MessageService {
     this.setupMessageHandling();
   }
 
-  public get messageCache() {
-    return localDatabase.cache;
-  }
-
   public cleanup(): void {
     this.messageReceivedCallbacks.clear();
     this.reliableMessaging?.cleanup();
+  }
+
+  // ===== PRIVATE METHODS =====
+
+  private setupMessageHandling(): void {
+    if (this.reliableMessaging) {
+      this.reliableMessaging.onMessage(async message => {
+        localDatabase.setSyncing(true);
+        const isNew = await localDatabase.updateCache(message);
+        // Defensive: clear pending on inbound message to avoid stuck state
+        localDatabase.clearPending(message.id);
+        localDatabase.setSyncing(false);
+        if (isNew) this.messageReceivedCallbacks.forEach(cb => cb(message));
+      });
+    }
   }
 }

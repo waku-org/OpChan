@@ -2,7 +2,7 @@ import React from 'react';
 import { useClient } from '../context/ClientContext';
 import { setOpchanState, getOpchanState } from '../store/opchanStore';
 import type { OpchanMessage, User } from '@opchan/core';
-import { EVerificationStatus, EDisplayPreference } from '@opchan/core';
+import { EVerificationStatus } from '@opchan/core';
 
 export const StoreWiring: React.FC = () => {
   const client = useClient();
@@ -23,9 +23,9 @@ export const StoreWiring: React.FC = () => {
           ...prev,
           content: {
             ...prev.content,
-              cells: Object.values(cache.cells),
-              posts: Object.values(cache.posts),
-              comments: Object.values(cache.comments),
+            cells: Object.values(cache.cells),
+            posts: Object.values(cache.posts),
+            comments: Object.values(cache.comments),
             bookmarks: Object.values(cache.bookmarks),
             lastSync: client.database.getSyncState().lastSync,
             pendingIds: new Set<string>(),
@@ -41,35 +41,12 @@ export const StoreWiring: React.FC = () => {
             loadedUser?.walletType,
           );
 
-          // If we have a loaded user, enrich it with latest identity for display fields
-          let enrichedUser: User | null = loadedUser ?? null;
-          if (loadedUser) {
-            try {
-              const identity = await client.userIdentityService.getUserIdentity(loadedUser.address);
-              if (identity) {
-                const displayName = identity.displayPreference === EDisplayPreference.CALL_SIGN
-                  ? (identity.callSign || loadedUser.displayName)
-                  : (identity.ensName || loadedUser.displayName);
-                enrichedUser = {
-                  ...loadedUser,
-                  callSign: identity.callSign ?? loadedUser.callSign,
-                  displayPreference: identity.displayPreference ?? loadedUser.displayPreference,
-                  displayName,
-                  ensDetails: identity.ensName ? { ensName: identity.ensName } : loadedUser.ensDetails,
-                  ordinalDetails: identity.ordinalDetails ?? loadedUser.ordinalDetails,
-                  verificationStatus: identity.verificationStatus ?? loadedUser.verificationStatus,
-                };
-                try { await client.database.storeUser(enrichedUser); } catch { /* ignore persist error */ }
-              }
-            } catch { /* ignore identity enrich error */ }
-          }
-
           setOpchanState(prev => ({
             ...prev,
             session: {
-              currentUser: enrichedUser,
+              currentUser: loadedUser,
               verificationStatus:
-                enrichedUser?.verificationStatus ?? EVerificationStatus.WALLET_UNCONNECTED,
+                loadedUser?.verificationStatus ?? EVerificationStatus.WALLET_UNCONNECTED,
               delegation: delegationStatus ?? null,
             },
           }));
@@ -118,30 +95,29 @@ export const StoreWiring: React.FC = () => {
       });
 
       // Reactively update session.currentUser when identity refreshes for the active user
-      unsubIdentity = client.userIdentityService.addRefreshListener(async (address: string) => {
+      unsubIdentity = client.userIdentityService.subscribe(async (address: string) => {
         try {
           const { session } = getOpchanState();
           const active = session.currentUser;
-          if (!active || active.address !== address) return;
+          if (!active || active.address !== address) {
+            return;
+          }
 
-          const identity = await client.userIdentityService.getUserIdentity(address);
-          if (!identity) return;
-
-          const displayName = identity.displayPreference === EDisplayPreference.CALL_SIGN
-            ? (identity.callSign || active.displayName)
-            : (identity.ensName || active.displayName);
+          const identity = await client.userIdentityService.getIdentity(address);
+          if (!identity) {
+            return;
+          }
 
           const updated: User = {
             ...active,
-            callSign: identity.callSign ?? active.callSign,
-            displayPreference: identity.displayPreference ?? active.displayPreference,
-            displayName,
-            ensDetails: identity.ensName ? { ensName: identity.ensName } : active.ensDetails,
-            ordinalDetails: identity.ordinalDetails ?? active.ordinalDetails,
-            verificationStatus: identity.verificationStatus ?? active.verificationStatus,
+            ...identity,
           };
 
-          try { await client.database.storeUser(updated); } catch { /* ignore persist error */ }
+          try { 
+            await client.database.storeUser(updated); 
+          } catch (persistErr) { 
+            console.warn('[StoreWiring] Failed to persist updated user after identity refresh:', persistErr);
+          }
 
           setOpchanState(prev => ({
             ...prev,
@@ -157,7 +133,9 @@ export const StoreWiring: React.FC = () => {
       });
     };
 
-    hydrate().then(wire);
+    hydrate().then(() => {
+      wire();
+    });
 
     return () => {
       unsubHealth?.();
@@ -168,5 +146,3 @@ export const StoreWiring: React.FC = () => {
 
   return null;
 };
-
-

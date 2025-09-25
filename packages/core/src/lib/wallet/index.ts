@@ -39,6 +39,8 @@ export class WalletManager {
     }
   }
 
+  // ===== PUBLIC STATIC METHODS =====
+
   /**
    * Create or get the singleton instance
    */
@@ -53,6 +55,7 @@ export class WalletManager {
       bitcoinAccount,
       ethereumAccount
     );
+    
     return WalletManager.instance;
   }
 
@@ -65,6 +68,9 @@ export class WalletManager {
         'WalletManager not initialized. Call WalletManager.create() first.'
       );
     }
+    
+   
+    
     return WalletManager.instance;
   }
 
@@ -110,6 +116,48 @@ export class WalletManager {
       return null;
     }
   }
+
+  /**
+   * Verify a message signature against a wallet address
+   * @param message - The original message that was signed
+   * @param signature - The signature to verify
+   * @param walletAddress - The expected signer's address
+   * @param walletType - The type of wallet (bitcoin/ethereum)
+   * @returns Promise<boolean> - True if signature is valid
+   */
+  static async verifySignature(
+    message: string,
+    signature: string,
+    walletAddress: string,
+    walletType: 'bitcoin' | 'ethereum'
+  ): Promise<boolean> {
+    try {
+      if (walletType === 'ethereum') {
+        return await verifyEthereumMessage(config, {
+          address: walletAddress as `0x${string}`,
+          message,
+          signature: signature as `0x${string}`,
+        });
+      } else if (walletType === 'bitcoin') {
+        //TODO: implement bitcoin signature verification
+        return true;
+      }
+
+      console.error(
+        'WalletManager.verifySignature - unknown wallet type:',
+        walletType
+      );
+      return false;
+    } catch (error) {
+      console.error(
+        'WalletManager.verifySignature - error verifying signature:',
+        error
+      );
+      return false;
+    }
+  }
+
+  // ===== PUBLIC INSTANCE METHODS =====
 
   /**
    * Get the currently active wallet
@@ -182,46 +230,6 @@ export class WalletManager {
       throw new Error(
         `Failed to sign message with ${this.activeWalletType} wallet: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
-    }
-  }
-
-  /**
-   * Verify a message signature against a wallet address
-   * @param message - The original message that was signed
-   * @param signature - The signature to verify
-   * @param walletAddress - The expected signer's address
-   * @param walletType - The type of wallet (bitcoin/ethereum)
-   * @returns Promise<boolean> - True if signature is valid
-   */
-  static async verifySignature(
-    message: string,
-    signature: string,
-    walletAddress: string,
-    walletType: 'bitcoin' | 'ethereum'
-  ): Promise<boolean> {
-    try {
-      if (walletType === 'ethereum') {
-        return await verifyEthereumMessage(config, {
-          address: walletAddress as `0x${string}`,
-          message,
-          signature: signature as `0x${string}`,
-        });
-      } else if (walletType === 'bitcoin') {
-        //TODO: implement bitcoin signature verification
-        return true;
-      }
-
-      console.error(
-        'WalletManager.verifySignature - unknown wallet type:',
-        walletType
-      );
-      return false;
-    } catch (error) {
-      console.error(
-        'WalletManager.verifySignature - error verifying signature:',
-        error
-      );
-      return false;
     }
   }
 

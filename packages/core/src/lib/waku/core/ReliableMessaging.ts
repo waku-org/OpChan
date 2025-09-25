@@ -27,6 +27,44 @@ export class ReliableMessaging {
     this.initializeChannel(node);
   }
 
+  // ===== PUBLIC METHODS =====
+
+  public async sendMessage(
+    message: OpchanMessage,
+    statusCallback?: MessageStatusCallback
+  ) {
+    if (!this.channel) {
+      throw new Error('Reliable channel not initialized');
+    }
+
+    const encodedMessage = this.codecManager.encodeMessage(message);
+    const messageId = ReliableChannel.getMessageId(encodedMessage);
+
+    if (statusCallback) {
+      this.messageCallbacks.set(messageId, statusCallback);
+    }
+
+    try {
+      return this.channel.send(encodedMessage);
+    } catch (error) {
+      this.messageCallbacks.delete(messageId);
+      throw error;
+    }
+  }
+
+  public onMessage(callback: IncomingMessageCallback): () => void {
+    this.incomingMessageCallbacks.add(callback);
+    return () => this.incomingMessageCallbacks.delete(callback);
+  }
+
+  public cleanup(): void {
+    this.messageCallbacks.clear();
+    this.incomingMessageCallbacks.clear();
+    this.channel = null;
+  }
+
+  // ===== PRIVATE METHODS =====
+
   private async initializeChannel(node: LightNode): Promise<void> {
     const encoder = this.codecManager.getEncoder();
     const decoder = this.codecManager.getDecoder();
@@ -53,7 +91,6 @@ export class ReliableMessaging {
   ): void {
     channel.addEventListener("message-received", event => {
       try {
-        console.log("received a message, processing...", event.detail);
         const wakuMessage = event.detail;
         if (wakuMessage.payload) {
           const opchanMessage = this.codecManager.decodeMessage(
@@ -95,39 +132,5 @@ export class ReliableMessaging {
         this.messageCallbacks.delete(messageId);
       }
     );
-  }
-
-  public async sendMessage(
-    message: OpchanMessage,
-    statusCallback?: MessageStatusCallback
-  ) {
-    if (!this.channel) {
-      throw new Error('Reliable channel not initialized');
-    }
-
-    const encodedMessage = this.codecManager.encodeMessage(message);
-    const messageId = ReliableChannel.getMessageId(encodedMessage);
-
-    if (statusCallback) {
-      this.messageCallbacks.set(messageId, statusCallback);
-    }
-
-    try {
-      return this.channel.send(encodedMessage);
-    } catch (error) {
-      this.messageCallbacks.delete(messageId);
-      throw error;
-    }
-  }
-
-  public onMessage(callback: IncomingMessageCallback): () => void {
-    this.incomingMessageCallbacks.add(callback);
-    return () => this.incomingMessageCallbacks.delete(callback);
-  }
-
-  public cleanup(): void {
-    this.messageCallbacks.clear();
-    this.incomingMessageCallbacks.clear();
-    this.channel = null;
   }
 }

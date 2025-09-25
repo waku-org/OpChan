@@ -11,6 +11,8 @@ class Ordinals {
     this.ordiscan = ordiscan;
   }
 
+  // ===== PUBLIC STATIC METHODS =====
+
   static getInstance(): Ordinals {
     if (!Ordinals.instance) {
       const apiKey = environment.ordiscanApiKey;
@@ -21,6 +23,8 @@ class Ordinals {
     }
     return Ordinals.instance;
   }
+
+  // ===== PUBLIC INSTANCE METHODS =====
 
   /**
    * Get Ordinal details for a Bitcoin address

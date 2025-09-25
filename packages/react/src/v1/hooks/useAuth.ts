@@ -21,11 +21,12 @@ export function useAuth() {
   const verificationStatus = useOpchanStore(s => s.session.verificationStatus);
   const delegation = useOpchanStore(s => s.session.delegation);
 
+
   const connect = React.useCallback(async (input: ConnectInput): Promise<boolean> => {
     const baseUser: User = {
       address: input.address,
       walletType: input.walletType,
-      displayName: input.address,
+      displayName: input.address.slice(0, 6) + '...' + input.address.slice(-4),
       displayPreference:  EDisplayPreference.WALLET_ADDRESS,
       verificationStatus: EVerificationStatus.WALLET_CONNECTED,
       lastChecked: Date.now(),
@@ -34,15 +35,16 @@ export function useAuth() {
     try {
       await client.database.storeUser(baseUser);
       // Prime identity service so display name/ens are cached
-      await client.userIdentityService.getUserIdentity(baseUser.address);
-
+      const identity = await client.userIdentityService.getIdentity(baseUser.address);
+      if (!identity) return false;
       setOpchanState(prev => ({
         ...prev,
         session: {
           ...prev.session,
-          currentUser: baseUser,
-          verificationStatus: baseUser.verificationStatus,
-          delegation: prev.session.delegation,
+          currentUser: {
+            ...baseUser,
+            ...identity,
+          },
         },
       }));
       return true;
@@ -68,33 +70,37 @@ export function useAuth() {
   }, [client]);
 
   const verifyOwnership = React.useCallback(async (): Promise<boolean> => {
+    console.log('verifyOwnership')
     const user = currentUser;
     if (!user) return false;
     try {
-      const identity = await client.userIdentityService.getUserIdentityFresh(user.address);
-      const nextStatus = identity?.verificationStatus ?? EVerificationStatus.WALLET_CONNECTED;
+      const identity = await client.userIdentityService.getIdentity(user.address, { fresh: true });
+      if (!identity) {
+        console.error('verifyOwnership failed', 'identity not found');
+        return false;
+      }
+
+      console.log({user, identity})
 
       const updated: User = {
         ...user,
-        verificationStatus: nextStatus,
-        displayName: identity?.displayPreference === EDisplayPreference.CALL_SIGN ? identity.callSign! : identity!.ensName!,
-        ensDetails: identity?.ensName ? { ensName: identity.ensName } : undefined,
-        ordinalDetails: identity?.ordinalDetails,
+        ...identity,  
       };
 
       await client.database.storeUser(updated);
       await client.database.upsertUserIdentity(user.address, {
+        displayName: identity.displayName,
         ensName: identity?.ensName || undefined,
         ordinalDetails: identity?.ordinalDetails,
-        verificationStatus: nextStatus,
+        verificationStatus: identity.verificationStatus,  
         lastUpdated: Date.now(),
       });
 
       setOpchanState(prev => ({
         ...prev,
-        session: { ...prev.session, currentUser: updated, verificationStatus: nextStatus },
+        session: { ...prev.session, currentUser: updated, verificationStatus: identity.verificationStatus },
       }));
-      return nextStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
+      return identity.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
     } catch (e) {
       console.error('verifyOwnership failed', e);
       return false;
@@ -151,19 +157,19 @@ export function useAuth() {
     const user = currentUser;
     if (!user) return false;
     try {
-      const ok = await client.userIdentityService.updateUserProfile(
+      const res = await client.userIdentityService.updateProfile(
         user.address,
-        updates.callSign,
-        updates.displayPreference ?? user.displayPreference,
+        {
+          callSign: updates.callSign,
+          displayPreference: updates.displayPreference ?? user.displayPreference,
+        }
       );
-      if (!ok) return false;
+      if (!res.ok) return false;
 
-      await client.userIdentityService.refreshUserIdentity(user.address);
-      const fresh = await client.userIdentityService.getUserIdentity(user.address);
+      const identity = res.identity;
       const updated: User = {
         ...user,
-        callSign: fresh?.callSign ?? user.callSign,
-        displayPreference: fresh?.displayPreference ?? user.displayPreference,
+        ...identity,
       };
       await client.database.storeUser(updated);
       setOpchanState(prev => ({ ...prev, session: { ...prev.session, currentUser: updated } }));

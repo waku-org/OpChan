@@ -11,17 +11,63 @@ export type { HealthChangeCallback, MessageStatusCallback };
 
 class MessageManager {
   private nodeManager: WakuNodeManager | null = null;
-  // LocalDatabase eliminates the need for CacheService
   private messageService: MessageService | null = null;
   private reliableMessaging: ReliableMessaging | null = null;
 
   constructor() {}
+
+  // ===== PUBLIC STATIC METHODS =====
 
   public static async create(): Promise<MessageManager> {
     const manager = new MessageManager();
     await manager.initialize();
     return manager;
   }
+
+  // ===== PUBLIC INSTANCE METHODS =====
+
+  public async stop(): Promise<void> {
+    this.cleanupReliableMessaging();
+    this.messageService?.cleanup();
+    await this.nodeManager?.stop();
+  }
+
+  public get isReady(): boolean {
+    return this.nodeManager?.isReady ?? false;
+  }
+
+  public get currentHealth(): HealthStatus {
+    return this.nodeManager?.currentHealth ?? HealthStatus.Unhealthy;
+  }
+
+  public onHealthChange(callback: HealthChangeCallback): () => void {
+    if (!this.nodeManager) {
+      throw new Error('Node manager not initialized');
+    }
+    return this.nodeManager.onHealthChange(callback);
+  }
+
+  //TODO: return event handlers?
+  public async sendMessage(
+    message: OpchanMessage,
+    statusCallback?: MessageStatusCallback
+  ): Promise<void> {
+    if (!this.messageService) {
+      throw new Error('MessageManager not fully initialized');
+    }
+    this.messageService.sendMessage(message, statusCallback);
+  }
+
+  public onMessageReceived(
+    callback: (message: OpchanMessage) => void
+  ): () => void {
+    if (!this.messageService) {
+      throw new Error('MessageManager not fully initialized');
+    }
+    return this.messageService.onMessageReceived(callback);
+  }
+
+  // ===== PRIVATE METHODS =====
 
   private async initialize(): Promise<void> {
     try {
@@ -72,54 +118,6 @@ class MessageManager {
       this.messageService?.updateReliableMessaging(null);
     }
   }
-
-  public async stop(): Promise<void> {
-    this.cleanupReliableMessaging();
-    this.messageService?.cleanup();
-    await this.nodeManager?.stop();
-  }
-
-  public get isReady(): boolean {
-    return this.nodeManager?.isReady ?? false;
-  }
-
-  public get currentHealth(): HealthStatus {
-    return this.nodeManager?.currentHealth ?? HealthStatus.Unhealthy;
-  }
-
-  public onHealthChange(callback: HealthChangeCallback): () => void {
-    if (!this.nodeManager) {
-      throw new Error('Node manager not initialized');
-    }
-    return this.nodeManager.onHealthChange(callback);
-  }
-
-  //TODO: return event handlers?
-  public async sendMessage(
-    message: OpchanMessage,
-    statusCallback?: MessageStatusCallback
-  ): Promise<void> {
-    if (!this.messageService) {
-      throw new Error('MessageManager not fully initialized');
-    }
-    this.messageService.sendMessage(message, statusCallback);
-  }
-
-  public onMessageReceived(
-    callback: (message: OpchanMessage) => void
-  ): () => void {
-    if (!this.messageService) {
-      throw new Error('MessageManager not fully initialized');
-    }
-    return this.messageService.onMessageReceived(callback);
-  }
-
-  public get messageCache() {
-    if (!this.messageService) {
-      throw new Error('MessageManager not fully initialized');
-    }
-    return this.messageService.messageCache;
-  }
 }
 
 // Create a default instance that can be used synchronously but initialized asynchronously
@@ -128,6 +126,8 @@ export class DefaultMessageManager {
   private _initPromise: Promise<MessageManager> | null = null;
   private _pendingHealthSubscriptions: HealthChangeCallback[] = [];
   private _pendingMessageSubscriptions: ((message: any) => void)[] = [];
+
+  // ===== PUBLIC METHODS =====
 
   // Initialize the manager asynchronously
   async initialize(): Promise<void> {
@@ -147,23 +147,6 @@ export class DefaultMessageManager {
       this._instance!.onMessageReceived(callback);
     });
     this._pendingMessageSubscriptions = [];
-  }
-
-  // Get the messageCache (most common usage)
-  get messageCache() {
-    if (!this._instance) {
-      // Return empty cache structure for compatibility during initialization
-      return {
-        cells: {},
-        posts: {},
-        comments: {},
-        votes: {},
-        moderations: {},
-        userIdentities: {},
-        bookmarks: {},
-      };
-    }
-    return this._instance.messageCache;
   }
 
   // Proxy other common methods

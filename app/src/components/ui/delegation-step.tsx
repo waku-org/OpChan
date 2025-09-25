@@ -194,7 +194,7 @@ export function DelegationStep({
           {/* User Address */}
           {currentUser && (
             <div className="text-xs text-neutral-400">
-              <div className="font-mono break-all">{currentUser.address}</div>
+              <div className="font-mono break-all">{currentUser.displayName}</div>
             </div>
           )}
 

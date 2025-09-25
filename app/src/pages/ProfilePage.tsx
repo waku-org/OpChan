@@ -41,20 +41,7 @@ export default function ProfilePage() {
 
   // Get current user from auth context for the address
   const { currentUser, delegationInfo } = useAuth();
-  const address = currentUser?.address;
 
-  // Debug current user ENS info
-  console.log('📋 Profile page debug:', {
-    address,
-    currentUser: currentUser
-      ? {
-          address: currentUser.address,
-          callSign: currentUser.callSign,
-          ensDetails: currentUser.ensDetails,
-          verificationStatus: currentUser.verificationStatus,
-        }
-      : null
-  });
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

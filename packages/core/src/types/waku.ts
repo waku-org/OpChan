@@ -177,5 +177,6 @@ export interface UserIdentityCache {
     displayPreference: EDisplayPreference;
     lastUpdated: number;
     verificationStatus: EVerificationStatus;
+    displayName: string;
   };
 }

@@ -61,22 +61,9 @@ const Header = () => {
 
   const isConnected = bitcoinAccount.isConnected || ethereumAccount.isConnected;
 
-
-
-  // Use currentUser address (which has ENS details) instead of raw AppKit address
-  const address = currentUser?.address || (isConnected
-    ? bitcoinAccount.isConnected
-      ? bitcoinAccount.address
-      : ethereumAccount.address
-    : undefined);
-
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    console.log({currentUser})
-    
-  }, [currentUser])
 
   // Use LocalDatabase to persist wizard state across navigation
   const getHasShownWizard = async (): Promise<boolean> => {
@@ -141,6 +128,11 @@ const Header = () => {
       });
     }
   };
+
+
+  useEffect(() => {
+    console.log('currentUser', currentUser)
+  }, [currentUser])
 
   const getStatusIcon = () => {
     if (!isConnected) return <CircleSlash className="w-4 h-4" />;
@@ -251,15 +243,6 @@ const Header = () => {
                       align="end"
                       className="w-56 bg-black/95 border-cyber-muted/30"
                     >
-                      <div className="px-3 py-2 border-b border-cyber-muted/30">
-                        <div className="text-sm font-medium text-white">
-                          {currentUser?.displayName}
-                        </div>
-                        <div className="text-xs text-cyber-neutral">
-                          {address?.slice(0, 8)}...{address?.slice(-4)}
-                        </div>
-                      </div>
-
                       <DropdownMenuItem asChild>
                         <Link
                           to="/profile"

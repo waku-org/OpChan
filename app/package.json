@@ -15,11 +15,11 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@opchan/react": "file:../packages/react",
-    "@opchan/core": "file:../packages/core",
     "@hookform/resolvers": "^3.9.0",
     "@noble/ed25519": "^2.2.3",
     "@noble/hashes": "^1.8.0",
+    "@opchan/core": "file:../packages/core",
+    "@opchan/react": "file:../packages/react",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
@@ -91,7 +91,7 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/uuid": "^10.0.0",
-    "@vitejs/plugin-react-swc": "^3.5.0",
+    "@vitejs/plugin-react-swc": "^3.11.0",
     "@vitest/ui": "^3.2.4",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.9.0",
