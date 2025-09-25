@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "build": "npm run clean && npm run build:esm && npm run build:types",
-    "build:esm": "tsc -p tsconfig.build.json && cp dist/index.js dist/index.esm.js",
+    "build:esm": "tsc -b --force tsconfig.build.json && cp dist/index.js dist/index.esm.js",
     "build:types": "tsc -p tsconfig.types.json",
     "clean": "rm -rf dist",
     "dev": "tsc -w -p tsconfig.build.json",

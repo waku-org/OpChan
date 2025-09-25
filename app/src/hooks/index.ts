@@ -6,5 +6,6 @@ export {
   usePermissions,
   useContent,
   useUIState,
+  useUserDisplay,
 } from '@opchan/react';
 

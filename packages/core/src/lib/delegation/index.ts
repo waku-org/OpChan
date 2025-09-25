@@ -286,8 +286,8 @@ export class DelegationManager {
       !proof?.walletAddress ||
       !proof?.authMessage ||
       proof?.expiryTimestamp === undefined ||
-      proof.walletAddress !== expectedWalletAddress ||
-      Date.now() >= proof.expiryTimestamp
+      proof.walletAddress !== expectedWalletAddress 
+      // Date.now() >= proof.expiryTimestamp
     ) {
       return false;
     }
@@ -329,9 +329,9 @@ export class DelegationManager {
     if (proof.walletAddress !== expectedWalletAddress) {
       reasons.push('Delegation wallet address does not match author');
     }
-    if (Date.now() >= proof.expiryTimestamp) {
-      reasons.push('Delegation has expired');
-    }
+    // if (Date.now() >= proof.expiryTimestamp) {
+    //   reasons.push('Delegation has expired');
+    // }
     if (
       !proof.authMessage.includes(expectedWalletAddress) ||
       !proof.authMessage.includes(expectedBrowserKey) ||

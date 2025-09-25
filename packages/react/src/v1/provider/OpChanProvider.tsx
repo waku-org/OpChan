@@ -41,7 +41,7 @@ export const OpChanProvider: React.FC<NewOpChanProviderProps> = ({ config, walle
           walletType: account.walletType,
           displayPreference: 'wallet-address' as EDisplayPreference,
           verificationStatus: EVerificationStatus.WALLET_CONNECTED,
-          displayName: account.address,
+          displayName: account.address.slice(0, 6) + '...' + account.address.slice(-4),
           lastChecked: Date.now(),
         };
         try {

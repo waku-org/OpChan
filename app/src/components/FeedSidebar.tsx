@@ -9,7 +9,6 @@ import { EVerificationStatus } from '@opchan/core';
 import { CypherImage } from '@/components/ui/CypherImage';
 
 const FeedSidebar: React.FC = () => {
-  // ✅ Use reactive hooks for data
   const {cells, posts, comments, cellsWithStats, userVerificationStatus} = useContent();
   const { currentUser, verificationStatus } = useAuth();
 

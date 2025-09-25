@@ -41,6 +41,7 @@ export class UserIdentityService {
     address: string,
     opts?: { fresh?: boolean }
   ): Promise<UserIdentity | null> {
+    console.log('getIdentity', address, opts);
     if (opts?.fresh) {
       return this.getUserIdentityFresh(address);
     }
@@ -187,9 +188,6 @@ export class UserIdentityService {
    */
   getDisplayName(address: string): string {
     const identity = localDatabase.cache.userIdentities[address];
-    if (!identity) {
-      return `${address.slice(0, 6)}...${address.slice(-4)}`;
-    }
 
     if (
       identity.displayPreference === EDisplayPreference.CALL_SIGN &&
@@ -211,7 +209,7 @@ export class UserIdentityService {
    * Internal method to get user identity without debouncing
    */
   private async getUserIdentityInternal(address: string): Promise<UserIdentity | null> {
-    const record = this.getCachedRecord(address);
+    const record = localDatabase.cache.userIdentities[address];
     if (record) {
       let identity = this.buildUserIdentityFromRecord(address, record);
       identity = await this.ensureEnsEnriched(address, identity);
@@ -237,6 +235,7 @@ export class UserIdentityService {
     address: string
   ): Promise<UserIdentity | null> {
     try {
+      console.log('resolveUserIdentity', address);
       const [ensName, ordinalDetails] = await Promise.all([
         this.resolveENSName(address),
         this.resolveOrdinalDetails(address),
@@ -343,16 +342,6 @@ export class UserIdentityService {
       lastUpdated: record.lastUpdated,
       verificationStatus: this.mapVerificationStatus(record.verificationStatus),
     };
-  }
-
-  /**
-   * Retrieve a cached identity record from memory, LocalDatabase, or Waku cache
-   * and hydrate in-memory cache for subsequent accesses.
-   */
-  private getCachedRecord(
-    address: string
-  ): UserIdentityCache[string] | null {
-    return localDatabase.cache.userIdentities[address] || null;
   }
 
   /**

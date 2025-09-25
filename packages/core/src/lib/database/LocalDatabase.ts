@@ -654,10 +654,9 @@ export class LocalDatabase {
         ensName: undefined,
         ordinalDetails: undefined,
         callSign: undefined,
-        displayPreference: EDisplayPreference.WALLET_ADDRESS, 
+        displayPreference: EDisplayPreference.WALLET_ADDRESS,
         lastUpdated: 0,
         verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
-        displayName: address.slice(0, 6) + '...' + address.slice(-4),
       };
 
     const merged: UserIdentityCache[string] = {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth, useForum, useNetwork } from '@/hooks';
+import { useAuth, useForum, useNetwork, useUIState } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
 import { localDatabase } from '@opchan/core';
 import { Button } from '@/components/ui/button';
@@ -64,36 +64,16 @@ const Header = () => {
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-
-  // Use LocalDatabase to persist wizard state across navigation
-  const getHasShownWizard = async (): Promise<boolean> => {
-    try {
-      const value = await localDatabase.loadUIState('hasShownWalletWizard');
-      return value === true;
-    } catch {
-      return false;
-    }
-  };
-
-  const setHasShownWizard = async (value: boolean): Promise<void> => {
-    try {
-      await localDatabase.storeUIState('hasShownWalletWizard', value);
-    } catch (e) {
-      console.error('Failed to store wizard state', e);
-    }
-  };
+  // Use centralized UI state instead of direct LocalDatabase access
+  const [hasShownWizard, setHasShownWizard] = useUIState('hasShownWalletWizard', false);
 
   // Auto-open wizard when wallet connects for the first time
   React.useEffect(() => {
-    if (isConnected) {
-      getHasShownWizard().then(hasShown => {
-        if (!hasShown) {
-          setWalletWizardOpen(true);
-          setHasShownWizard(true).catch(console.error);
-        }
-      });
+    if (isConnected && !hasShownWizard) {
+      setWalletWizardOpen(true);
+      setHasShownWizard(true);
     }
-  }, [isConnected]);
+  }, [isConnected, hasShownWizard, setHasShownWizard]);
 
   const handleConnect = async () => {
     setWalletWizardOpen(true);
@@ -105,7 +85,7 @@ const Header = () => {
 
   const handleDisconnect = async () => {
     await disconnect();
-    await setHasShownWizard(false); // Reset so wizard can show again on next connection
+    setHasShownWizard(false); // Reset so wizard can show again on next connection
     toast({
       title: 'Wallet Disconnected',
       description: 'Your wallet has been disconnected successfully.',

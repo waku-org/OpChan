@@ -29,7 +29,7 @@ export * from './lib/forum/transformers';
 // Export services
 export { BookmarkService } from './lib/services/BookmarkService';
 export { MessageService } from './lib/services/MessageService';
-export { UserIdentityService } from './lib/services/UserIdentityService';
+export { UserIdentityService, UserIdentity } from './lib/services/UserIdentityService';
 export { ordinals } from './lib/services/Ordinals';
 
 // Export utilities
@@ -48,3 +48,4 @@ export * from './lib/wallet/types';
 
 // Primary client API
 export { OpChanClient, type OpChanClientConfig } from './client/OpChanClient';
+

@@ -7,12 +7,10 @@ import {
   ModerateMessage,
   EModerationAction,
 } from '../../types/waku';
-import messageManager from '../waku';
 import { localDatabase } from '../database/LocalDatabase';
 import { RelevanceCalculator } from './RelevanceCalculator';
 import { UserVerificationStatus } from '../../types/forum';
-// Validation is enforced at ingestion time by LocalDatabase. Transformers assume
-// cache contains only valid, verified messages.
+import { EVerificationStatus } from '../../types/identity';
 
 export const transformCell = async (
   cellMessage: CellMessage,
@@ -287,10 +285,20 @@ export const transformVote = async (
 
 export const getDataFromCache = async (
   _verifyMessage?: unknown, // Deprecated parameter, kept for compatibility
-  userVerificationStatus?: UserVerificationStatus
 ): Promise<{ cells: Cell[]; posts: Post[]; comments: Comment[] }> => {
-  // Use LocalDatabase cache for immediate hydration, avoiding messageManager race conditions
-  // All validation is now handled internally by the transform functions
+  const userIdentities = localDatabase.cache.userIdentities;
+  const userVerificationStatus: UserVerificationStatus = {};
+
+  for (const [address, rec] of Object.entries(userIdentities)) {
+    userVerificationStatus[address] = {
+      isVerified: rec.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED,
+      hasENS: Boolean(rec.ensName),
+      hasOrdinal: Boolean(rec.ordinalDetails),
+      ensName: rec.ensName,
+      verificationStatus: rec.verificationStatus,
+    };
+  }
+
   const posts = await Promise.all(
     Object.values(localDatabase.cache.posts)
       .filter((post): post is PostMessage => post !== null)

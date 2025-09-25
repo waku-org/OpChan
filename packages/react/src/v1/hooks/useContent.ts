@@ -2,32 +2,34 @@ import React from 'react';
 import { useClient } from '../context/ClientContext';
 import { useOpchanStore, setOpchanState } from '../store/opchanStore';
 import {
-  PostMessage,
-  CommentMessage,
   Post,
   Comment,
   Cell,
   EVerificationStatus,
   UserVerificationStatus,
   BookmarkType,
+  getDataFromCache,
 } from '@opchan/core';
 import { BookmarkService } from '@opchan/core';
 
 function reflectCache(client: ReturnType<typeof useClient>): void {
-  const cache = client.database.cache;
-  setOpchanState(prev => ({
-    ...prev,
-    content: {
-      ...prev.content,
-      cells: Object.values(cache.cells),
-      posts: Object.values(cache.posts),
-      comments: Object.values(cache.comments),
-      bookmarks: Object.values(cache.bookmarks),
-      lastSync: client.database.getSyncState().lastSync,
-      pendingIds: prev.content.pendingIds,
-      pendingVotes: prev.content.pendingVotes,
-    },
-  }));
+  getDataFromCache().then(({ cells, posts, comments }) => {
+    setOpchanState(prev => ({
+      ...prev,
+      content: {
+        ...prev.content,
+        cells,
+        posts,
+        comments,
+        bookmarks: Object.values(client.database.cache.bookmarks),
+        lastSync: client.database.getSyncState().lastSync,
+        pendingIds: prev.content.pendingIds,
+        pendingVotes: prev.content.pendingVotes,
+      },
+    }));
+  }).catch(err => {
+    console.error('reflectCache failed', err);
+  });
 }
 
 export function useContent() {
@@ -52,7 +54,7 @@ export function useContent() {
 
   // Derived maps
   const postsByCell = React.useMemo(() => {
-    const map: Record<string, PostMessage[]> = {};
+    const map: Record<string, Post[]> = {};
     for (const p of content.posts) {
       (map[p.cellId] ||= []).push(p);
     }
@@ -60,9 +62,12 @@ export function useContent() {
   }, [content.posts]);
 
   const commentsByPost = React.useMemo(() => {
-    const map: Record<string, CommentMessage[]> = {};
+    const map: Record<string, Comment[]> = {};
     for (const c of content.comments) {
       (map[c.postId] ||= []).push(c);
+    }
+    for (const postId in map) {
+      map[postId].sort((a, b) => a.timestamp - b.timestamp);
     }
     return map;
   }, [content.comments]);
@@ -230,19 +235,19 @@ export function useContent() {
     },
   }), [client, session.currentUser, content.cells]);
 
-  const togglePostBookmark = React.useCallback(async (post: Post | PostMessage, cellId?: string): Promise<boolean> => {
+  const togglePostBookmark = React.useCallback(async (post: Post, cellId?: string): Promise<boolean> => {
     const address = session.currentUser?.address;
     if (!address) return false;
-    const added = await BookmarkService.togglePostBookmark(post as Post, address, cellId);
+    const added = await BookmarkService.togglePostBookmark(post, address, cellId);
     const updated = await client.database.getUserBookmarks(address);
     setOpchanState(prev => ({ ...prev, content: { ...prev.content, bookmarks: updated } }));
     return added;
   }, [client, session.currentUser?.address]);
 
-  const toggleCommentBookmark = React.useCallback(async (comment: Comment | CommentMessage, postId?: string): Promise<boolean> => {
+  const toggleCommentBookmark = React.useCallback(async (comment: Comment, postId?: string): Promise<boolean> => {
     const address = session.currentUser?.address;
     if (!address) return false;
-    const added = await BookmarkService.toggleCommentBookmark(comment as Comment, address, postId);
+    const added = await BookmarkService.toggleCommentBookmark(comment, address, postId);
     const updated = await client.database.getUserBookmarks(address);
     setOpchanState(prev => ({ ...prev, content: { ...prev.content, bookmarks: updated } }));
     return added;

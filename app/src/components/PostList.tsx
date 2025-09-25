@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LinkRenderer } from '@/components/ui/link-renderer';
+import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
 import { ShareButton } from '@/components/ui/ShareButton';
 import {
   ArrowLeft,
@@ -322,6 +323,17 @@ const PostList = () => {
                         <MessageSquare className="inline w-3 h-3 mr-1" />
                         {commentsByPost[post.id]?.length || 0} comments
                       </span>
+                      {typeof post.relevanceScore === 'number' && (
+                        <>
+                          <span>•</span>
+                          <RelevanceIndicator
+                            score={post.relevanceScore}
+                            details={post.relevanceDetails}
+                            type="post"
+                            showTooltip={true}
+                          />
+                        </>
+                      )}
                       <ShareButton
                         url={`${window.location.origin}/post/${post.id}`}
                         title={post.title}

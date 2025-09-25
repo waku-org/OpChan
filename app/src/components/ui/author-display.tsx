@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Shield, Crown, Hash } from 'lucide-react';
 import { useUserDisplay } from '@opchan/react';
+import { useEffect } from 'react';
 
 interface AuthorDisplayProps {
   address: string;
@@ -13,8 +14,11 @@ export function AuthorDisplay({
   className = '',
   showBadge = true,
 }: AuthorDisplayProps) {
-  const { displayName, callSign, ensName, ordinalDetails } =
-    useUserDisplay(address);
+  const { ensName, ordinalDetails, callSign, displayName } = useUserDisplay(address);
+
+  useEffect(()=> {
+    console.log({ensName, ordinalDetails, callSign, displayName, address})
+  }, [address, ensName, ordinalDetails, callSign, displayName])
 
   // Only show a badge if the author has ENS, Ordinal, or Call Sign
   const shouldShowBadge = showBadge && (ensName || ordinalDetails || callSign);
