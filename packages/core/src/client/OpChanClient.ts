@@ -1,0 +1,42 @@
+import { environment, type EnvironmentConfig } from '../lib/utils/environment';
+import messageManager, { DefaultMessageManager } from '../lib/waku';
+import { LocalDatabase, localDatabase } from '../lib/database/LocalDatabase';
+import { ForumActions } from '../lib/forum/ForumActions';
+import { RelevanceCalculator } from '../lib/forum/RelevanceCalculator';
+import { UserIdentityService } from '../lib/services/UserIdentityService';
+import { DelegationManager, delegationManager } from '../lib/delegation';
+import { walletManager } from '../lib/wallet';
+import { MessageService } from '../lib/services/MessageService';
+
+export interface OpChanClientConfig {
+  ordiscanApiKey: string;
+}
+
+export class OpChanClient {
+  readonly config: OpChanClientConfig;
+
+  readonly messageManager: DefaultMessageManager = messageManager;
+  readonly database: LocalDatabase = localDatabase;
+  readonly forumActions = new ForumActions();
+  readonly relevance = new RelevanceCalculator();
+  readonly messageService: MessageService;
+  readonly userIdentityService: UserIdentityService;
+  readonly delegation: DelegationManager = delegationManager;
+  readonly wallet = walletManager;
+
+  constructor(config: OpChanClientConfig) {
+    this.config = config;
+
+    const env: EnvironmentConfig = {
+      
+      apiKeys: {
+        ordiscan: config.ordiscanApiKey,
+      },
+    };
+
+    environment.configure(env);
+
+    this.messageService = new MessageService(this.delegation);
+    this.userIdentityService = new UserIdentityService(this.messageService);
+  }
+}

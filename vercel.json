@@ -1,3 +1,8 @@
 {
+  "version": 2,
+  "installCommand": "npm ci --workspaces",
+  "buildCommand": "npm run -w packages/core build && npm run -w packages/react build && npm run -w app build",
+  "outputDirectory": "app/dist",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
+

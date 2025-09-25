@@ -1,35 +1,24 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ],
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    /* Enhanced Type Checking */
-    "strict": true,
-    "noImplicitAny": true,
-    "noUnusedParameters": true,
-    "noUnusedLocals": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
-    "strictPropertyInitialization": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "allowUnusedLabels": false,
-    "allowUnreachableCode": false,
-
-    /* Module Resolution */
-    "skipLibCheck": true,
-    "allowJs": true,
-    "forceConsistentCasingInFileNames": true,
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
-  }
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "jsx": "react-jsx",
+    "removeComments": true,
+    "noEmitOnError": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo"
+  },
+  "include": ["packages/*/src/**/*", "app/utils/urlLoads.test.ts", "app/utils/urlLoads.ts"],
+  "exclude": ["node_modules", "**/dist", "**/*.test.ts", "**/*.spec.ts"]
 }
