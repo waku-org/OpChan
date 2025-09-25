@@ -80,8 +80,6 @@ export function useAuth() {
         return false;
       }
 
-      console.log({user, identity})
-
       const updated: User = {
         ...user,
         ...identity,  

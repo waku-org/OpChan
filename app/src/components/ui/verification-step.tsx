@@ -78,11 +78,8 @@ export function VerificationStep({
 
     try {
       console.log('📞 Calling verifyWallet()...');
-      await verifyOwnership();
-      if (currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
-        // For now, just show success - the actual ownership check will be done
-        // by the useEffect when the user state updates
-        console.log('✅ Verification successful, setting result');
+      const ok = await verifyOwnership();
+      if (ok) {
         setVerificationResult({
           success: true,
           message:
