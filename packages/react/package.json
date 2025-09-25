@@ -1,6 +1,6 @@
 {
   "name": "@opchan/react",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": false,
   "description": "React contexts and hooks for OpChan built on @opchan/core",
   "main": "dist/index.js",
@@ -33,7 +33,7 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "@opchan/core": "^1.0.0"
+    "@opchan/core": "file:../core"
   },
   "devDependencies": {
     "typescript": "^5.5.3",
@@ -41,5 +41,3 @@
     "@types/react-dom": "^18.2.22"
   }
 }
-
-
