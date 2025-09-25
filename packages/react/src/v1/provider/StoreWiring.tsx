@@ -34,26 +34,16 @@ export const StoreWiring: React.FC = () => {
           },
         }));
 
-        // Hydrate identity cache from LocalDatabase
-        const identityCache = client.database.cache.userIdentities;
+        // Hydrate identity cache from LocalDatabase using UserIdentityService
+        const allIdentities = client.userIdentityService.getAll();
         const identityUpdates: Record<string, UserIdentity> = {};
         const displayNameUpdates: Record<string, string> = {};
         const lastUpdatedMap: Record<string, number> = {};
 
-        for (const address of Object.keys(identityCache)) {
-          const identity = identityCache[address]!;
-          identityUpdates[address] = {
-            address,
-            ensName: identity.ensName,
-            ordinalDetails: identity.ordinalDetails,
-            callSign: identity.callSign,
-            displayPreference: identity.displayPreference,
-            displayName: client.userIdentityService.getDisplayName(address),
-            lastUpdated: identity.lastUpdated,
-            verificationStatus: identity.verificationStatus as EVerificationStatus,
-          };
-          displayNameUpdates[address] = client.userIdentityService.getDisplayName(address);
-          lastUpdatedMap[address] = identity.lastUpdated;
+        for (const identity of allIdentities) {
+          identityUpdates[identity.address] = identity;
+          displayNameUpdates[identity.address] = identity.displayName;
+          lastUpdatedMap[identity.address] = identity.lastUpdated;
         }
 
         setOpchanState(prev => ({

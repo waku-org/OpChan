@@ -81,12 +81,7 @@ export class UserIdentityService {
   getAll(): UserIdentity[] {
     return Object.entries(localDatabase.cache.userIdentities).map(([address, cached]) => ({
       address,
-      ensName: cached.ensName,
-      ordinalDetails: cached.ordinalDetails,
-      callSign: cached.callSign,
-      displayPreference: cached.displayPreference,
-      displayName: this.getDisplayName(address),
-      lastUpdated: cached.lastUpdated,
+      ...cached,
       verificationStatus: this.mapVerificationStatus(cached.verificationStatus),
     }));
   }
@@ -186,18 +181,17 @@ export class UserIdentityService {
   /**
    * Get display name for user based on their preferences
    */
-  getDisplayName(address: string): string {
-    const identity = localDatabase.cache.userIdentities[address];
-
+  getDisplayName({address, ensName, displayPreference}: {address: string, ensName?: string | null, displayPreference?: EDisplayPreference}): string {
+    const storedIdentity = localDatabase.cache.userIdentities[address];
     if (
-      identity.displayPreference === EDisplayPreference.CALL_SIGN &&
-      identity.callSign
+      storedIdentity?.callSign &&
+      displayPreference === EDisplayPreference.CALL_SIGN 
     ) {
-      return identity.callSign;
+      return storedIdentity.callSign;
     }
 
-    if (identity.ensName) {
-      return identity.ensName;
+    if (ensName) {
+      return ensName;
     }
 
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -241,10 +235,6 @@ export class UserIdentityService {
         this.resolveOrdinalDetails(address),
       ]);
 
-      // Default to wallet address display preference
-      const defaultDisplayPreference: EDisplayPreference =
-        EDisplayPreference.WALLET_ADDRESS;
-
       const isWalletConnected = WalletManager.hasInstance()
         ? walletManager.getInstance().isConnected()
         : false;
@@ -255,14 +245,16 @@ export class UserIdentityService {
         verificationStatus = isWalletConnected ? EVerificationStatus.WALLET_CONNECTED : EVerificationStatus.WALLET_UNCONNECTED;
       }
 
+      const displayPreference = localDatabase.cache.userIdentities[address]?.displayPreference ?? EDisplayPreference.WALLET_ADDRESS;
+
 
       return {
         address,
         ensName: ensName || undefined,
         ordinalDetails: ordinalDetails || undefined,
         callSign: undefined, // Will be populated from Waku messages
-        displayPreference: defaultDisplayPreference,
-        displayName: this.getDisplayName(address),
+        displayPreference: displayPreference,
+        displayName: this.getDisplayName({address, ensName, displayPreference}),
         lastUpdated: Date.now(),
         verificationStatus,
       };
@@ -338,7 +330,7 @@ export class UserIdentityService {
       ordinalDetails: record.ordinalDetails,
       callSign: record.callSign,
       displayPreference: record.displayPreference,
-      displayName: this.getDisplayName(address),
+      displayName: this.getDisplayName({address, ensName: record.ensName, displayPreference: record.displayPreference}),
       lastUpdated: record.lastUpdated,
       verificationStatus: this.mapVerificationStatus(record.verificationStatus),
     };
