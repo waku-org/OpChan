@@ -1,71 +1,82 @@
 # Opchan
 
-A TypeScript browser library workspace.
-
-## Structure
-
-This is an npm workspace containing:
-
-- `@opchan/core` - Core browser library package
-
-## Development
-
-### Installation
-
-```bash
-npm install
-```
-
-### Building
-
-Build all packages:
-```bash
-npm run build
-```
-
-Build specific package:
-```bash
-npm run build --workspace=@opchan/core
-```
-
-### Development Mode
-
-Watch mode for development:
-```bash
-npm run dev --workspace=@opchan/core
-```
-
-### Testing
-
-```bash
-npm test
-```
-
-### Linting
-
-```bash
-npm run lint
-```
-
-## Usage
-
-```typescript
-import { Opchan } from '@opchan/core';
-
-const opchan = new Opchan({
-  debug: true,
-  version: '1.0.0'
-});
-
-console.log(opchan.getVersion()); // "1.0.0"
-opchan.log('Hello from Opchan!'); // [Opchan] Hello from Opchan!
-```
+TypeScript libraries for building decentralized, Waku-powered forums.
 
 ## Packages
 
-### @opchan/core
+- `@opchan/core` – Core browser library: Waku messaging, local database, identity/ENS & Ordinals resolution, delegation, and forum actions.
+- `@opchan/react` – React provider and hooks on top of `@opchan/core`.
 
-The core browser library providing the main functionality.
+## Install
+
+```bash
+# core only
+npm i @opchan/core
+
+# react integration
+npm i @opchan/react @opchan/core react react-dom
+```
+
+## Quickstart
+
+### React
+
+```tsx
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { OpChanProvider, useForum } from '@opchan/react';
+
+const config = { ordiscanApiKey: 'YOUR_ORDISCAN_API_KEY' };
+
+function NewPostButton({ cellId }: { cellId: string }) {
+  const { content, permissions } = useForum();
+  return (
+    <button
+      disabled={!permissions.canPost}
+      onClick={() => content.createPost({ cellId, title: 'Hello', content: 'World' })}
+    >
+      New post
+    </button>
+  );
+}
+
+function App() {
+  return (
+    <OpChanProvider config={config}>
+      <NewPostButton cellId="general" />
+    </OpChanProvider>
+  );
+}
+
+createRoot(document.getElementById('root')!).render(<App />);
+```
+
+More details:
+- React API docs: `packages/react/README.md`
+
+## Development
+
+This is an npm workspace. From the repo root:
+
+```bash
+# install all deps
+npm install
+
+# build all packages
+npm run build
+
+# build a specific package
+npm run build --workspace=@opchan/core
+npm run build --workspace=@opchan/react
+
+# watch mode during development
+npm run dev --workspace=@opchan/core
+npm run dev --workspace=@opchan/react
+
+# test & lint
+npm test
+npm run lint
+```
 
 ## License
 
