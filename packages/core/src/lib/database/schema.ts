@@ -1,5 +1,5 @@
 export const DB_NAME = 'opchan-local';
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export const STORE = {
   CELLS: 'cells',

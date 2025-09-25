@@ -10,15 +10,16 @@ npm i @opchan/react @opchan/core react react-dom
 
 ### Quickstart
 
+#### Basic Usage
+
 ```tsx
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { OpChanProvider } from '@opchan/react';
+import type { OpChanClientConfig } from '@opchan/core';
 
-const config = {
-  // See @opchan/core for full options
-  waku: { bootstrapPeers: [], pubsubTopic: 'opchan-v1' },
-  database: { name: 'opchan' },
+const config: OpChanClientConfig = {
+  ordiscanApiKey: 'YOUR_ORDISCAN_API_KEY',
 };
 
 // Optional: bridge your wallet to OpChan
@@ -38,6 +39,37 @@ function App() {
     <OpChanProvider config={config} walletAdapter={walletAdapter}>
       {/* your app */}
     </OpChanProvider>
+  );
+}
+
+createRoot(document.getElementById('root')!).render(<App />);
+```
+
+#### (Suggested) With Reown AppKit Integration
+
+Using Reown AppKit for wallet management:
+
+```tsx
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { WagmiProvider } from 'wagmi';
+import { AppKitProvider } from '@reown/appkit/react';
+import { OpchanWithAppKit } from './providers/OpchanWithAppKit';
+
+// Define your own config for networks, or use our by default (supports Bitcoin and Ethereum)
+import { config, appkitConfig } from '@opchan/core';
+
+const opchanConfig = { ordiscanApiKey: 'YOUR_ORDISCAN_API_KEY' };
+
+function App() {
+  return (
+    <WagmiProvider config={config}>
+      <AppKitProvider {...appkitConfig}>
+        <OpchanWithAppKit config={opchanConfig}>
+          {/* your app */}
+        </OpchanWithAppKit>
+      </AppKitProvider>
+    </WagmiProvider>
   );
 }
 
@@ -107,6 +139,12 @@ export function Connect() {
       - `WalletAdapter`:
         - `getAccount(): WalletAdapterAccount | null`
         - `onChange(cb: (a: WalletAdapterAccount | null) => void): () => void`
+  - **`OpchanWithAppKit`**: Convenience wrapper around `OpChanProvider` that integrates with Reown AppKit.
+    - Props:
+      - `config: OpChanClientConfig` — core client configuration.
+      - `children: React.ReactNode`.
+    - Automatically bridges AppKit wallet connections to OpChan's wallet adapter interface.
+    - Requires `WagmiProvider` and `AppKitProvider` from Reown AppKit as parent providers.
   - **`ClientProvider`**: Low-level provider if you construct `OpChanClient` yourself.
     - Props: `{ client: OpChanClient; children: React.ReactNode }`.
 
