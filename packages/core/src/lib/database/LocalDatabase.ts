@@ -24,7 +24,11 @@ export interface LocalDatabaseCache {
   posts: PostCache;
   comments: CommentCache;
   votes: VoteCache;
-  moderations: { [targetId: string]: ModerateMessage };
+  // Moderations keyed by composite key:
+  //  - post:    'post:<postId>'
+  //  - comment: 'comment:<commentId>'
+  //  - user:    '<cellId>:user:<address>'
+  moderations: { [key: string]: (ModerateMessage & { key?: string }) };
   userIdentities: UserIdentityCache;
   bookmarks: BookmarkCache;
 }
@@ -212,13 +216,20 @@ export class LocalDatabase {
       }
       case MessageType.MODERATE: {
         const modMsg = message as ModerateMessage;
-        if (
-          !this.cache.moderations[modMsg.targetId] ||
-          this.cache.moderations[modMsg.targetId]?.timestamp !==
-            modMsg.timestamp
-        ) {
-          this.cache.moderations[modMsg.targetId] = modMsg;
-          this.put(STORE.MODERATIONS, modMsg);
+        // Compose key:
+        // - post: `post:${postId}`
+        // - comment: `comment:${commentId}`
+        // - user: `${cellId}:user:${address}` (per-cell user moderation)
+        const key =
+          modMsg.targetType === 'user'
+            ? `${modMsg.cellId}:user:${modMsg.targetId}`
+            : `${modMsg.targetType}:${modMsg.targetId}`;
+
+        const existing = this.cache.moderations[key];
+        if (!existing || modMsg.timestamp > existing.timestamp) {
+          // Store in cache and persist with computed key
+          this.cache.moderations[key] = { ...(modMsg as ModerateMessage), key };
+          this.put(STORE.MODERATIONS, { ...(modMsg as ModerateMessage), key });
         }
         break;
       }
@@ -267,7 +278,7 @@ export class LocalDatabase {
       PostMessage[],
       CommentMessage[],
       (VoteMessage & { key: string })[],
-      ModerateMessage[],
+      (ModerateMessage & { key: string })[],
       ({ address: string } & UserIdentityCache[string])[],
       Bookmark[],
     ] = await Promise.all([
@@ -275,7 +286,7 @@ export class LocalDatabase {
       this.getAllFromStore<PostMessage>(STORE.POSTS),
       this.getAllFromStore<CommentMessage>(STORE.COMMENTS),
       this.getAllFromStore<VoteMessage & { key: string }>(STORE.VOTES),
-      this.getAllFromStore<ModerateMessage>(STORE.MODERATIONS),
+      this.getAllFromStore<ModerateMessage & { key: string }>(STORE.MODERATIONS),
       this.getAllFromStore<{ address: string } & UserIdentityCache[string]>(
         STORE.USER_IDENTITIES
       ),
@@ -293,7 +304,7 @@ export class LocalDatabase {
       })
     );
     this.cache.moderations = Object.fromEntries(
-      moderations.map(m => [m.targetId, m])
+      moderations.map(m => [m.key, m])
     );
     this.cache.userIdentities = Object.fromEntries(
       identities.map(u => {

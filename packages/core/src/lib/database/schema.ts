@@ -1,5 +1,5 @@
 export const DB_NAME = 'opchan-local';
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 export const STORE = {
   CELLS: 'cells',
@@ -49,10 +49,12 @@ export function openLocalDB(): Promise<IDBDatabase> {
         // Votes are keyed by composite key `${targetId}:${author}`
         db.createObjectStore(STORE.VOTES, { keyPath: 'key' });
       }
-      if (!db.objectStoreNames.contains(STORE.MODERATIONS)) {
-        // Moderations keyed by targetId
-        db.createObjectStore(STORE.MODERATIONS, { keyPath: 'targetId' });
+      // Moderations store: recreate with composite key support
+      if (db.objectStoreNames.contains(STORE.MODERATIONS)) {
+        db.deleteObjectStore(STORE.MODERATIONS);
       }
+      // Moderations keyed by computed 'key' (e.g., 'post:postId', 'comment:commentId', 'cellId:user:userAddress')
+      db.createObjectStore(STORE.MODERATIONS, { keyPath: 'key' });
       if (!db.objectStoreNames.contains(STORE.USER_IDENTITIES)) {
         // User identities keyed by address
         db.createObjectStore(STORE.USER_IDENTITIES, { keyPath: 'address' });

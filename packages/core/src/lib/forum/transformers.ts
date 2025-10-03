@@ -18,27 +18,11 @@ export const transformCell = async (
   userVerificationStatus?: UserVerificationStatus,
   posts?: Post[]
 ): Promise<Cell | null> => {
-  // Message validity already enforced upstream
-
-  const transformedCell: Cell = {
-    id: cellMessage.id,
-    type: cellMessage.type,
-    author: cellMessage.author,
-    name: cellMessage.name,
-    description: cellMessage.description,
-    icon: cellMessage.icon || '',
-    timestamp: cellMessage.timestamp,
-    signature: cellMessage.signature,
-    browserPubKey: cellMessage.browserPubKey,
-    delegationProof: cellMessage.delegationProof,
-  };
-
-  // Calculate relevance score if user verification status and posts are provided
   if (userVerificationStatus && posts) {
     const relevanceCalculator = new RelevanceCalculator();
 
     const relevanceResult = relevanceCalculator.calculateCellScore(
-      transformedCell,
+      cellMessage,
       posts
     );
 
@@ -50,14 +34,14 @@ export const transformCell = async (
     });
 
     return {
-      ...transformedCell,
+      ...cellMessage,
       relevanceScore: relevanceResult.score,
       activeMemberCount: activeMembers.size,
       relevanceDetails: relevanceResult.details,
     };
   }
 
-  return transformedCell;
+  return cellMessage;
 };
 
 export const transformPost = async (
@@ -97,17 +81,8 @@ export const transformPost = async (
     !!userModMsg && userModMsg.action === EModerationAction.MODERATE;
 
   const transformedPost: Post = {
-    id: postMessage.id,
-    type: postMessage.type,
-    author: postMessage.author,
-    cellId: postMessage.cellId,
     authorAddress: postMessage.author,
-    title: postMessage.title,
-    content: postMessage.content,
-    timestamp: postMessage.timestamp,
-    signature: postMessage.signature,
-    browserPubKey: postMessage.browserPubKey,
-    delegationProof: postMessage.delegationProof,
+    ...postMessage,
     upvotes,
     downvotes,
     moderated: isPostModerated || isUserModerated,
@@ -223,16 +198,8 @@ export const transformComment = async (
     !!userModMsg && userModMsg.action === EModerationAction.MODERATE;
 
   const transformedComment: Comment = {
-    id: commentMessage.id,
-    type: commentMessage.type,
-    author: commentMessage.author,
-    postId: commentMessage.postId,
+    ...commentMessage,
     authorAddress: commentMessage.author,
-    content: commentMessage.content,
-    timestamp: commentMessage.timestamp,
-    signature: commentMessage.signature,
-    browserPubKey: commentMessage.browserPubKey,
-    delegationProof: commentMessage.delegationProof,
     upvotes,
     downvotes,
     moderated: isCommentModerated || isUserModerated,

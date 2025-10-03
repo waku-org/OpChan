@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUp, ArrowDown, Clock, Shield, UserX } from 'lucide-react';
+import { ArrowUp, ArrowDown, Clock, MessageSquareX, UserX } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { Comment } from '@opchan/core';
 import { Button } from '@/components/ui/button';
@@ -174,7 +174,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                     className="h-6 w-6 text-cyber-neutral hover:text-orange-500"
                     onClick={() => onModerateComment(comment.id)}
                   >
-                    <Shield className="h-3 w-3" />
+                    <MessageSquareX className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>

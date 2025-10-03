@@ -193,8 +193,9 @@ export function useContent() {
       const currentUser = session.currentUser;
       const isAuthenticated = Boolean(currentUser);
       const cell = content.cells.find(c => c.id === cellId);
+      const comment = content.comments.find(c => c.id === commentId);
       const res = await client.forumActions.moderateComment(
-        { cellId, commentId, reason, currentUser, isAuthenticated, cellOwner: cell?.author ?? '' },
+        { cellId, commentId, reason, currentUser, isAuthenticated, cellOwner: cell?.author ?? '', commentAuthor: comment?.author ?? '' },
         () => reflectCache(client)
       );
       reflectCache(client);
@@ -204,8 +205,9 @@ export function useContent() {
       const currentUser = session.currentUser;
       const isAuthenticated = Boolean(currentUser);
       const cell = content.cells.find(c => c.id === cellId);
+      const comment = content.comments.find(c => c.id === commentId);
       const res = await client.forumActions.unmoderateComment(
-        { cellId, commentId, reason, currentUser, isAuthenticated, cellOwner: cell?.author ?? '' },
+        { cellId, commentId, reason, currentUser, isAuthenticated, cellOwner: cell?.author ?? '', commentAuthor: comment?.author ?? '' },
         () => reflectCache(client)
       );
       reflectCache(client);

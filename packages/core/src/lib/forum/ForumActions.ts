@@ -431,6 +431,7 @@ export class ForumActions {
       currentUser,
       isAuthenticated,
       cellOwner,
+      commentAuthor,
     } = params;
 
     if (!isAuthenticated || !currentUser) {
@@ -444,6 +445,12 @@ export class ForumActions {
       return {
         success: false,
         error: 'Not authorized. Only the cell admin can moderate comments.',
+      };
+    }
+    if (currentUser.address === commentAuthor) {
+      return {
+        success: false,
+        error: 'You cannot moderate your own comments.',
       };
     }
 
@@ -518,6 +525,12 @@ export class ForumActions {
       return {
         success: false,
         error: 'Not authorized. Only the cell admin can moderate users.',
+      };
+    }
+    if (currentUser.address === userAddress) {
+      return {
+        success: false,
+        error: 'You cannot moderate yourself.',
       };
     }
 
@@ -647,6 +660,7 @@ export class ForumActions {
       currentUser,
       isAuthenticated,
       cellOwner,
+      commentAuthor,
     } = params;
 
     if (!isAuthenticated || !currentUser) {
@@ -660,6 +674,12 @@ export class ForumActions {
       return {
         success: false,
         error: 'Not authorized. Only the cell admin can unmoderate comments.',
+      };
+    }
+    if (currentUser.address === commentAuthor) {
+      return {
+        success: false,
+        error: 'You cannot unmoderate your own comments.',
       };
     }
 
@@ -734,6 +754,12 @@ export class ForumActions {
       return {
         success: false,
         error: 'Not authorized. Only the cell admin can unmoderate users.',
+      };
+    }
+    if (currentUser.address === userAddress) {
+      return {
+        success: false,
+        error: 'You cannot unmoderate yourself.',
       };
     }
 
@@ -826,6 +852,7 @@ interface CommentModerationParams extends BaseActionParams {
   commentId: string;
   reason?: string;
   cellOwner: string;
+  commentAuthor: string;
 }
 
 interface UserModerationParams extends BaseActionParams {
