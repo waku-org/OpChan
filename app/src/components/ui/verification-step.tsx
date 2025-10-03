@@ -39,7 +39,9 @@ export function VerificationStep({
       verificationResult?.success &&
       verificationResult.message.includes('Checking ownership')
     ) {
-      const hasOwnership = currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
+      const hasOwnership =
+        currentUser?.verificationStatus ===
+        EVerificationStatus.ENS_ORDINAL_VERIFIED;
 
       if (hasOwnership) {
         setVerificationResult({
@@ -115,7 +117,9 @@ export function VerificationStep({
   };
 
   const getVerificationType = () => {
-    return currentUser?.walletType === 'bitcoin' ? 'Bitcoin Ordinal' : 'Ethereum ENS';
+    return currentUser?.walletType === 'bitcoin'
+      ? 'Bitcoin Ordinal'
+      : 'Ethereum ENS';
   };
 
   const getVerificationIcon = () => {
@@ -123,7 +127,9 @@ export function VerificationStep({
   };
 
   const getVerificationColor = () => {
-    return currentUser?.walletType === 'bitcoin' ? 'text-orange-500' : 'text-blue-500';
+    return currentUser?.walletType === 'bitcoin'
+      ? 'text-orange-500'
+      : 'text-blue-500';
   };
 
   const getVerificationDescription = () => {
@@ -206,7 +212,9 @@ export function VerificationStep({
   }
 
   // Show verification status
-  if (currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
+  if (
+    currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
+  ) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex-1 space-y-4">
@@ -222,8 +230,12 @@ export function VerificationStep({
             </p>
             {currentUser && (
               <div className="text-xs text-neutral-400">
-                {currentUser?.walletType === 'bitcoin' && <p>Ordinal ID: Verified</p>}
-                {currentUser?.walletType === 'ethereum' && <p>ENS Name: Verified</p>}
+                {currentUser?.walletType === 'bitcoin' && (
+                  <p>Ordinal ID: Verified</p>
+                )}
+                {currentUser?.walletType === 'ethereum' && (
+                  <p>ENS Name: Verified</p>
+                )}
               </div>
             )}
           </div>

@@ -14,7 +14,9 @@ if (!(window as Window & typeof globalThis).Buffer) {
 createRoot(document.getElementById('root')!).render(
   <WagmiProvider config={config}>
     <AppKitProvider {...appkitConfig}>
-      <OpchanWithAppKit config={{ ordiscanApiKey: '6bb07766-d98c-4ddd-93fb-6a0e94d629dd' }}>
+      <OpchanWithAppKit
+        config={{ ordiscanApiKey: '6bb07766-d98c-4ddd-93fb-6a0e94d629dd' }}
+      >
         <App />
       </OpchanWithAppKit>
     </AppKitProvider>

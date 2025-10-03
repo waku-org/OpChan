@@ -8,8 +8,14 @@ export function ModerationToggle() {
   const { canModerate } = usePermissions();
   const { cellsWithStats } = useContent();
 
-  const [showModerated, setShowModerated] = useUIState<boolean>('showModerated', false);
-  const toggleShowModerated = React.useCallback((value: boolean) => setShowModerated(value), [setShowModerated]);
+  const [showModerated, setShowModerated] = useUIState<boolean>(
+    'showModerated',
+    false
+  );
+  const toggleShowModerated = React.useCallback(
+    (value: boolean) => setShowModerated(value),
+    [setShowModerated]
+  );
 
   // Check if user is admin of any cell
   const isAdminOfAnyCell = cellsWithStats.some(cell => canModerate(cell.id));

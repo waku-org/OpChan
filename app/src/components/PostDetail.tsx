@@ -17,7 +17,7 @@ import { AuthorDisplay } from './ui/author-display';
 import { BookmarkButton } from './ui/bookmark-button';
 import { MarkdownRenderer } from './ui/markdown-renderer';
 import CommentCard from './CommentCard';
-import { useContent, usePermissions } from '@/hooks';
+import { useAuth, useContent, usePermissions } from '@/hooks';
 import type { Cell as ForumCell } from '@opchan/core';
 import { ShareButton } from './ui/ShareButton';
 
@@ -28,17 +28,19 @@ const PostDetail = () => {
   // Use aggregated forum API
   const content = useContent();
   const permissions = usePermissions();
-
+  const { currentUser } = useAuth();
   // Get post and comments using focused hooks
-  const post = content.posts.find((p) => p.id === postId);
-  const visibleComments = postId ? content.commentsByPost[postId] ?? [] : [];
+  const post = content.posts.find(p => p.id === postId);
+  const visibleComments = postId ? (content.commentsByPost[postId] ?? []) : [];
 
   // Use library pending API
   const postPending = content.pending.isPending(post?.id);
   const postVotePending = content.pending.isPending(post?.id);
 
   // Check if bookmarked
-  const isBookmarked = content.bookmarks.some((b) => b.targetId === post?.id && b.type === 'post');
+  const isBookmarked = content.bookmarks.some(
+    b => b.targetId === post?.id && b.type === 'post'
+  );
   const [bookmarkLoading, setBookmarkLoading] = React.useState(false);
 
   const [newComment, setNewComment] = useState('');
@@ -115,11 +117,13 @@ const PostDetail = () => {
     }
   };
 
-  // Get vote status from post data (enhanced posts only)
-  const enhanced = post as unknown as { userUpvoted?: boolean; userDownvoted?: boolean; voteScore?: number };
-  const isPostUpvoted = Boolean(enhanced.userUpvoted);
-  const isPostDownvoted = Boolean(enhanced.userDownvoted);
-  const score = typeof enhanced.voteScore === 'number' ? enhanced.voteScore : 0;
+  const score = post.upvotes.length - post.downvotes.length;
+  const isPostUpvoted = Boolean(
+    post.upvotes.some(v => v.author === currentUser?.address)
+  );
+  const isPostDownvoted = Boolean(
+    post.downvotes.some(v => v.author === currentUser?.address)
+  );
 
   const handleModerateComment = async (commentId: string) => {
     const reason =
@@ -160,7 +164,9 @@ const PostDetail = () => {
             <div className="flex flex-col items-center">
               <button
                 className={`p-1 rounded-sm hover:bg-muted/50 ${
-                  isPostUpvoted ? 'text-primary' : ''
+                  isPostUpvoted
+                    ? 'text-cyber-accent'
+                    : 'text-cyber-neutral hover:text-cyber-accent'
                 }`}
                 onClick={() => handleVotePost(true)}
                 disabled={!permissions.canVote}
@@ -173,7 +179,9 @@ const PostDetail = () => {
               <span className="text-sm font-bold">{score}</span>
               <button
                 className={`p-1 rounded-sm hover:bg-muted/50 ${
-                  isPostDownvoted ? 'text-primary' : ''
+                  isPostDownvoted
+                    ? 'text-cyber-accent'
+                    : 'text-cyber-neutral hover:text-cyber-accent'
                 }`}
                 onClick={() => handleVotePost(false)}
                 disabled={!permissions.canVote}
@@ -194,9 +202,17 @@ const PostDetail = () => {
 
             <div className="flex-1">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                <span className="font-medium text-primary">
+                <Link
+                  to={cell?.id ? `/cell/${cell.id}` : "#"}
+                  className="font-medium text-primary hover:underline focus:underline"
+                  tabIndex={0}
+                  onClick={e => {
+                    if (!cell?.id) e.preventDefault();
+                  }}
+                  title={cell?.name ? `Go to /${cell.name}` : undefined}
+                >
                   r/{cell?.name || 'unknown'}
-                </span>
+                </Link>
                 <span>•</span>
                 <span>Posted by u/</span>
                 <AuthorDisplay
@@ -279,9 +295,7 @@ const PostDetail = () => {
 
       {!permissions.canComment && (
         <div className="mb-6 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 text-center">
-          <p className="text-sm mb-3">
-            Connect your wallet to comment
-          </p>
+          <p className="text-sm mb-3">Connect your wallet to comment</p>
           <Button asChild size="sm">
             <Link to="/">Connect Wallet</Link>
           </Button>
@@ -306,7 +320,7 @@ const PostDetail = () => {
             </p>
           </div>
         ) : (
-          visibleComments.map((comment) => (
+          visibleComments.map(comment => (
             <CommentCard
               key={comment.id}
               comment={comment}

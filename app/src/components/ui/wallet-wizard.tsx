@@ -29,8 +29,13 @@ export function WalletWizard({
 }: WalletWizardProps) {
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1);
   const [isLoading, setIsLoading] = React.useState(false);
-  const [delegationStatus, setDelegationStatus] = React.useState<boolean>(false);
-  const { isAuthenticated, verificationStatus, delegationStatus: getDelegationStatus } = useAuth();
+  const [delegationStatus, setDelegationStatus] =
+    React.useState<boolean>(false);
+  const {
+    isAuthenticated,
+    verificationStatus,
+    delegationStatus: getDelegationStatus,
+  } = useAuth();
 
   // Reset wizard when opened - always start at step 1 for simplicity
   React.useEffect(() => {
@@ -43,9 +48,11 @@ export function WalletWizard({
   // Load delegation status when component mounts or when user changes
   React.useEffect(() => {
     if (isAuthenticated) {
-      getDelegationStatus().then(status => {
-        setDelegationStatus(status.isValid);
-      }).catch(console.error);
+      getDelegationStatus()
+        .then(status => {
+          setDelegationStatus(status.isValid);
+        })
+        .catch(console.error);
     } else {
       setDelegationStatus(false);
     }

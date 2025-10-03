@@ -1,5 +1,5 @@
-import React from 'react';
-import { useForumData } from '@/hooks';
+import React, { useMemo } from 'react';
+import { useForum } from '@/hooks';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,54 +35,48 @@ interface CommentFeedItem extends FeedItemBase {
 type FeedItem = PostFeedItem | CommentFeedItem;
 
 const ActivityFeed: React.FC = () => {
-  // ✅ Use reactive hooks for data
-  const forumData = useForumData();
+  const { content, network } = useForum();
 
-  const {
-    postsWithVoteStatus,
-    commentsWithVoteStatus,
-    cellsWithStats,
-    isInitialLoading,
-  } = forumData;
+  const { posts, comments, cells, commentsByPost } = content;
+  const { isConnected } = network;
 
-  // ✅ Use pre-computed data with vote scores
-  const combinedFeed: FeedItem[] = [
-    ...postsWithVoteStatus.map(
-      (post): PostFeedItem => ({
-        id: post.id,
-        type: 'post',
-        timestamp: post.timestamp,
-        ownerAddress: post.author,
-        title: post.title,
-        cellId: post.cellId,
-        postId: post.id,
-        commentCount: forumData.commentsByPost[post.id]?.length || 0,
-        voteCount: post.voteScore,
-      })
-    ),
-    ...commentsWithVoteStatus
-      .map((comment): CommentFeedItem | null => {
-        const parentPost = postsWithVoteStatus.find(
-          p => p.id === comment.postId
-        );
-        if (!parentPost) return null;
-        return {
-          id: comment.id,
-          type: 'comment',
-          timestamp: comment.timestamp,
-          ownerAddress: comment.author,
-          content: comment.content,
-          postId: comment.postId,
-          cellId: parentPost.cellId,
-          voteCount: comment.voteScore,
-        };
-      })
-      .filter((item): item is CommentFeedItem => item !== null),
-  ].sort((a, b) => b.timestamp - a.timestamp);
+
+  const combinedFeed: FeedItem[] = useMemo(() => {
+    return [
+      ...posts.map(
+        (post): PostFeedItem => ({
+          ...post,
+          type: 'post',
+          ownerAddress: post.authorAddress,
+          cellId: post.cellId,
+          postId: post.id,
+          title: post.title,
+          commentCount: commentsByPost[post.id]?.length || 0,
+          voteCount: post.upvotes.length - post.downvotes.length,
+        })
+      ),
+      ...comments
+        .map((comment): CommentFeedItem | null => {
+          const parentPost = posts.find(p => p.id === comment.postId);
+          if (!parentPost) return null;
+          return {
+            id: comment.id,
+            type: 'comment',
+            timestamp: comment.timestamp,
+            ownerAddress: comment.author,
+            content: comment.content,
+            postId: comment.postId,
+            cellId: parentPost.cellId,
+            voteCount: comment.upvotes.length - comment.downvotes.length,
+          };
+        })
+        .filter((item): item is CommentFeedItem => item !== null),
+    ].sort((a, b) => b.timestamp - a.timestamp);
+  }, [posts, comments, commentsByPost]);
 
   const renderFeedItem = (item: FeedItem) => {
     const cell = item.cellId
-      ? cellsWithStats.find(c => c.id === item.cellId)
+      ? cells.find(c => c.id === item.cellId)
       : undefined;
     const timeAgo = formatDistanceToNow(new Date(item.timestamp), {
       addSuffix: true,
@@ -150,7 +144,7 @@ const ActivityFeed: React.FC = () => {
     );
   };
 
-  if (isInitialLoading) {
+  if (!isConnected) {
     return (
       <div className="space-y-3">
         {[...Array(5)].map((_, i) => (

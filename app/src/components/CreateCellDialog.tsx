@@ -79,7 +79,8 @@ export function CreateCellDialog({
     if (!canCreateCell) {
       toast({
         title: 'Permission Denied',
-        description: 'Only verified ENS or Logos Ordinal owners can create cells.',
+        description:
+          'Only verified ENS or Logos Ordinal owners can create cells.',
         variant: 'destructive',
       });
       return;

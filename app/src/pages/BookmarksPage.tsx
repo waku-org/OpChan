@@ -53,8 +53,12 @@ const BookmarksPage = () => {
     );
   }
 
-  const postBookmarks = bookmarks.filter(bookmark => bookmark.type === BookmarkType.POST);
-  const commentBookmarks = bookmarks.filter(bookmark => bookmark.type === BookmarkType.COMMENT);
+  const postBookmarks = bookmarks.filter(
+    bookmark => bookmark.type === BookmarkType.POST
+  );
+  const commentBookmarks = bookmarks.filter(
+    bookmark => bookmark.type === BookmarkType.COMMENT
+  );
 
   const getFilteredBookmarks = () => {
     switch (activeTab) {
@@ -78,7 +82,6 @@ const BookmarksPage = () => {
   const handleClearAll = async () => {
     await clearAllBookmarks();
   };
-
 
   return (
     <div className="page-container">

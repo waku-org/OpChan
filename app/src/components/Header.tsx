@@ -49,9 +49,9 @@ import { WakuHealthDot } from '@/components/ui/waku-health-indicator';
 
 const Header = () => {
   const { currentUser, delegationInfo } = useAuth();
-  const {statusMessage} = useNetwork();
+  const { statusMessage } = useNetwork();
 
-  const location = useLocation()
+  const location = useLocation();
   const { toast } = useToast();
   const { content } = useForum();
 
@@ -65,7 +65,10 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Use centralized UI state instead of direct LocalDatabase access
-  const [hasShownWizard, setHasShownWizard] = useUIState('hasShownWalletWizard', false);
+  const [hasShownWizard, setHasShownWizard] = useUIState(
+    'hasShownWalletWizard',
+    false
+  );
 
   // Auto-open wizard when wallet connects for the first time
   React.useEffect(() => {
@@ -109,23 +112,26 @@ const Header = () => {
     }
   };
 
-
   useEffect(() => {
-    console.log('currentUser', currentUser)
-  }, [currentUser])
+    console.log('currentUser', currentUser);
+  }, [currentUser]);
 
   const getStatusIcon = () => {
     if (!isConnected) return <CircleSlash className="w-4 h-4" />;
 
     if (
-      currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED &&
+      currentUser?.verificationStatus ===
+        EVerificationStatus.ENS_ORDINAL_VERIFIED &&
       delegationInfo?.isValid
     ) {
       return <CheckCircle className="w-4 h-4" />;
-    } else if (currentUser?.verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
+    } else if (
+      currentUser?.verificationStatus === EVerificationStatus.WALLET_CONNECTED
+    ) {
       return <AlertTriangle className="w-4 h-4" />;
     } else if (
-      currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
+      currentUser?.verificationStatus ===
+      EVerificationStatus.ENS_ORDINAL_VERIFIED
     ) {
       return <Key className="w-4 h-4" />;
     } else {
@@ -197,11 +203,13 @@ const Header = () => {
                   >
                     {getStatusIcon()}
                     <span className="ml-1">
-                      {currentUser?.verificationStatus === EVerificationStatus.WALLET_UNCONNECTED
+                      {currentUser?.verificationStatus ===
+                      EVerificationStatus.WALLET_UNCONNECTED
                         ? 'CONNECT'
                         : delegationInfo?.isValid
                           ? 'READY'
-                          : currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
+                          : currentUser?.verificationStatus ===
+                              EVerificationStatus.ENS_ORDINAL_VERIFIED
                             ? 'EXPIRED'
                             : 'DELEGATE'}
                     </span>
@@ -215,7 +223,9 @@ const Header = () => {
                         size="sm"
                         className="flex items-center space-x-2 text-white hover:bg-cyber-muted/30"
                       >
-                        <div className="text-sm font-mono">{currentUser?.displayName}</div>
+                        <div className="text-sm font-mono">
+                          {currentUser?.displayName}
+                        </div>
                         <Settings className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>

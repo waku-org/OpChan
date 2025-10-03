@@ -14,11 +14,12 @@ export function AuthorDisplay({
   className = '',
   showBadge = true,
 }: AuthorDisplayProps) {
-  const { ensName, ordinalDetails, callSign, displayName } = useUserDisplay(address);
+  const { ensName, ordinalDetails, callSign, displayName } =
+    useUserDisplay(address);
 
-  useEffect(()=> {
-    console.log({ensName, ordinalDetails, callSign, displayName, address})
-  }, [address, ensName, ordinalDetails, callSign, displayName])
+  useEffect(() => {
+    console.log({ ensName, ordinalDetails, callSign, displayName, address });
+  }, [address, ensName, ordinalDetails, callSign, displayName]);
 
   // Only show a badge if the author has ENS, Ordinal, or Call Sign
   const shouldShowBadge = showBadge && (ensName || ordinalDetails || callSign);

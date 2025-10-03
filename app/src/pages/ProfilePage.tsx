@@ -1,4 +1,4 @@
-import { useState} from 'react';
+import { useState } from 'react';
 import { useForum } from '@opchan/react';
 import { useAuth } from '@opchan/react';
 import { Button } from '@/components/ui/button';
@@ -27,8 +27,7 @@ import {
   Globe,
   Edit3,
   Save,
-  X,  
-
+  X,
 } from 'lucide-react';
 import { EDisplayPreference, EVerificationStatus } from '@opchan/core';
 import { useToast } from '@/hooks/use-toast';
@@ -41,7 +40,6 @@ export default function ProfilePage() {
 
   // Get current user from auth context for the address
   const { currentUser, delegationInfo } = useAuth();
-
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -253,35 +251,30 @@ export default function ProfilePage() {
                         </div>
                         <div className="text-sm text-cyber-neutral">
                           {/* Show ENS name if available */}
-                          {(currentUser.ensDetails?.ensName ) && (
-                            <div>
-                              ENS:{' '}
-                              {currentUser.ensDetails?.ensName}
-                            </div>
+                          {currentUser.ensDetails?.ensName && (
+                            <div>ENS: {currentUser.ensDetails?.ensName}</div>
                           )}
                           {/* Show Ordinal details if available */}
-                          {(currentUser.ordinalDetails ) && (
+                          {currentUser.ordinalDetails && (
                             <div>
                               Ordinal:{' '}
                               {currentUser.ordinalDetails.ordinalDetails}
                             </div>
                           )}
                           {/* Show fallback if neither ENS nor Ordinal */}
-                          {!(
-                            currentUser.ensDetails?.ensName
-                          ) &&
-                            !(
-                              currentUser.ordinalDetails?.ordinalDetails
-                            ) && <div>No ENS or Ordinal verification</div>}
-                        <div className="flex items-center gap-2 mt-2">
-                          {getVerificationIcon()}
-                          <Badge className={getVerificationColor()}>
-                            {getVerificationText()}
-                          </Badge>
+                          {!currentUser.ensDetails?.ensName &&
+                            !currentUser.ordinalDetails?.ordinalDetails && (
+                              <div>No ENS or Ordinal verification</div>
+                            )}
+                          <div className="flex items-center gap-2 mt-2">
+                            {getVerificationIcon()}
+                            <Badge className={getVerificationColor()}>
+                              {getVerificationText()}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
                   </div>
 
                   {/* Wallet Section */}
@@ -469,7 +462,9 @@ export default function ProfilePage() {
                         Delegation
                       </span>
                       <Badge
-                        variant={delegationInfo.isValid ? 'default' : 'secondary'}
+                        variant={
+                          delegationInfo.isValid ? 'default' : 'secondary'
+                        }
                         className={
                           delegationInfo.isValid
                             ? 'bg-green-500/20 text-green-400 border-green-500/30'
@@ -540,17 +535,17 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Warning for expired delegation */}
-                  {(!delegationInfo.isValid && delegationInfo.hasDelegation) && (
-                        <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
-                          <div className="flex items-center gap-2 text-orange-400">
-                            <AlertTriangle className="w-4 h-4" />
-                            <span className="text-xs font-medium">
-                              Delegation expired. Renew to continue using your
-                              browser key.
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                  {!delegationInfo.isValid && delegationInfo.hasDelegation && (
+                    <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
+                      <div className="flex items-center gap-2 text-orange-400">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span className="text-xs font-medium">
+                          Delegation expired. Renew to continue using your
+                          browser key.
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

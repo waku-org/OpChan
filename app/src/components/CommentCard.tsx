@@ -61,10 +61,14 @@ const CommentCard: React.FC<CommentCardProps> = ({
   // Use library pending API
   const commentVotePending = content.pending.isPending(comment.id);
 
-  const score = comment.voteScore ?? 0;
+  const score = comment.upvotes.length - comment.downvotes.length;
   const isModerated = Boolean(comment.moderated);
-  const userDownvoted = Boolean(comment.downvotes.some(v => v.author === currentUser?.address));
-  const userUpvoted = Boolean(comment.upvotes.some(v => v.author === currentUser?.address));  
+  const userDownvoted = Boolean(
+    comment.downvotes.some(v => v.author === currentUser?.address)
+  );
+  const userUpvoted = Boolean(
+    comment.upvotes.some(v => v.author === currentUser?.address)
+  );
   const isOwnComment = currentUser?.address === comment.author;
 
   const handleVoteComment = async (isUpvote: boolean) => {
@@ -86,7 +90,9 @@ const CommentCard: React.FC<CommentCardProps> = ({
         <div className="flex flex-col items-center">
           <button
             className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
-              userUpvoted ? 'text-cyber-accent' : 'text-cyber-neutral hover:text-cyber-accent'
+              userUpvoted
+                ? 'text-cyber-accent'
+                : 'text-cyber-neutral hover:text-cyber-accent'
             }`}
             onClick={() => handleVoteComment(true)}
             disabled={!permissions.canVote}
@@ -99,7 +105,9 @@ const CommentCard: React.FC<CommentCardProps> = ({
           <span className="text-sm font-bold">{score}</span>
           <button
             className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
-              userDownvoted ? 'text-cyber-accent' : 'text-cyber-neutral hover:text-cyber-accent'
+              userDownvoted
+                ? 'text-cyber-accent'
+                : 'text-cyber-neutral hover:text-cyber-accent'
             }`}
             onClick={() => handleVoteComment(false)}
             disabled={!permissions.canVote}

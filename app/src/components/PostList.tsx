@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { usePermissions, useAuth, useContent } from '@/hooks';
-import type { Post as ForumPost, Cell as ForumCell, VoteMessage } from '@opchan/core';
+import type {
+  Post as ForumPost,
+  Cell as ForumCell,
+  VoteMessage,
+} from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,8 +35,8 @@ import {
 const PostList = () => {
   const { cellId } = useParams<{ cellId: string }>();
 
-  // ✅ Use reactive hooks for data and actions
-  const { createPost, vote, moderate, refresh, commentsByPost, cells, posts } = useContent();
+  const { createPost, vote, moderate, refresh, commentsByPost, cells, posts } =
+    useContent();
   const cell = cells.find((c: ForumCell) => c.id === cellId);
   const isCreatingPost = false;
   const isVoting = false;
@@ -101,7 +105,11 @@ const PostList = () => {
     if (!newPostContent.trim()) return;
 
     // ✅ All validation handled in hook
-    const post = await createPost({ cellId, title: newPostTitle, content: newPostContent });
+    const post = await createPost({
+      cellId,
+      title: newPostTitle,
+      content: newPostContent,
+    });
     if (post) {
       setNewPostTitle('');
       setNewPostContent('');
@@ -129,8 +137,12 @@ const PostList = () => {
     if (!currentUser) return null;
     const p = posts.find((p: ForumPost) => p.id === postId);
     if (!p) return null;
-    const up = p.upvotes.some((v: VoteMessage) => v.author === currentUser.address);
-    const down = p.downvotes.some((v: VoteMessage) => v.author === currentUser.address);
+    const up = p.upvotes.some(
+      (v: VoteMessage) => v.author === currentUser.address
+    );
+    const down = p.downvotes.some(
+      (v: VoteMessage) => v.author === currentUser.address
+    );
     return up ? 'upvote' : down ? 'downvote' : null;
   };
 
@@ -248,9 +260,7 @@ const PostList = () => {
 
       {!canPost && !currentUser && (
         <div className="section-spacing content-card-sm text-center">
-          <p className="text-sm mb-3">
-            Connect your wallet to post
-          </p>
+          <p className="text-sm mb-3">Connect your wallet to post</p>
           <Button asChild size="sm">
             <Link to="/">Connect Wallet</Link>
           </Button>
@@ -277,9 +287,7 @@ const PostList = () => {
                     className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${getPostVoteType(post.id) === 'upvote' ? 'text-cyber-accent' : ''}`}
                     onClick={() => handleVotePost(post.id, true)}
                     disabled={!canVote || isVoting}
-                    title={
-                      canVote ? 'Upvote' : 'Connect your wallet to vote'
-                    }
+                    title={canVote ? 'Upvote' : 'Connect your wallet to vote'}
                   >
                     <ArrowUp className="w-4 h-4" />
                   </button>
@@ -290,9 +298,7 @@ const PostList = () => {
                     className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${getPostVoteType(post.id) === 'downvote' ? 'text-cyber-accent' : ''}`}
                     onClick={() => handleVotePost(post.id, false)}
                     disabled={!canVote || isVoting}
-                    title={
-                      canVote ? 'Downvote' : 'Connect your wallet to vote'
-                    }
+                    title={canVote ? 'Downvote' : 'Connect your wallet to vote'}
                   >
                     <ArrowDown className="w-4 h-4" />
                   </button>

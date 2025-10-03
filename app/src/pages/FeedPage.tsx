@@ -20,15 +20,17 @@ const FeedPage: React.FC = () => {
   const { verificationStatus } = useAuth();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
-
-  // Build sorted posts from content slices
-  const allPosts = useMemo(() => sortPosts([...content.posts], sortOption), [content.posts, sortOption]);
-
-  // ✅ Get comment count from filtered organized data
-  const getCommentCount = (postId: string) => (content.commentsByPost[postId] || []).length;
+  const allPosts = useMemo(
+    () => sortPosts([...content.posts], sortOption),
+    [content.posts, sortOption]
+  );
 
   // Loading skeleton
-  if (!content.posts.length && !content.comments.length && !content.cells.length) {
+  if (
+    !content.posts.length &&
+    !content.comments.length &&
+    !content.cells.length
+  ) {
     return (
       <div className="min-h-screen bg-cyber-dark">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -151,20 +153,13 @@ const FeedPage: React.FC = () => {
                     {verificationStatus !==
                       EVerificationStatus.ENS_ORDINAL_VERIFIED && (
                       <p className="text-sm text-cyber-neutral/80">
-                        Connect your wallet to
-                        start posting
+                        Connect your wallet to start posting
                       </p>
                     )}
                   </div>
                 </div>
               ) : (
-                allPosts.map(post => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    commentCount={getCommentCount(post.id)}
-                  />
-                ))
+                allPosts.map(post => <PostCard key={post.id} post={post} />)
               )}
             </div>
           </div>

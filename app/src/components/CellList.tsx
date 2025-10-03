@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import {  useContent, usePermissions } from '@/hooks';
+import { useContent, usePermissions } from '@/hooks';
 import {
   Layout,
   MessageSquare,
@@ -226,9 +226,7 @@ const CellList = () => {
                 title="Refresh data"
                 className="px-3 border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30"
               >
-                <RefreshCw
-                  className="w-4 h-4"
-                />
+                <RefreshCw className="w-4 h-4" />
               </Button>
 
               {canCreateCell && <CreateCellDialog />}

@@ -1,6 +1,6 @@
 import { Wifi, WifiOff, CheckCircle } from 'lucide-react';
 import { useNetwork } from '@opchan/react';
-import { cn } from '../../utils'
+import { cn } from '../../utils';
 
 interface WakuHealthIndicatorProps {
   className?: string;
@@ -13,7 +13,7 @@ export function WakuHealthIndicator({
   showText = true,
   size = 'md',
 }: WakuHealthIndicatorProps) {
-  const {isConnected, statusMessage} = useNetwork();
+  const { isConnected, statusMessage } = useNetwork();
 
   const getIcon = () => {
     if (isConnected === true) {
@@ -61,7 +61,8 @@ export function WakuHealthIndicator({
  */
 export function WakuHealthDot({ className }: { className?: string }) {
   const { isConnected } = useNetwork();
-  const statusColor = isConnected === true ? 'green' : isConnected === false ? 'red' : 'gray';
+  const statusColor =
+    isConnected === true ? 'green' : isConnected === false ? 'red' : 'gray';
 
   return (
     <div

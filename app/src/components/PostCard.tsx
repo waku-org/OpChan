@@ -2,59 +2,52 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUp, ArrowDown, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import type { Post, PostMessage } from '@opchan/core';
+import type { Post } from '@opchan/core';
 import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
 import { AuthorDisplay } from '@/components/ui/author-display';
 import { BookmarkButton } from '@/components/ui/bookmark-button';
 import { LinkRenderer } from '@/components/ui/link-renderer';
-import { useContent, usePermissions } from '@/hooks';
+import { useAuth, useContent, usePermissions } from '@/hooks';
 import { ShareButton } from '@/components/ui/ShareButton';
 
 interface PostCardProps {
-  post: Post | PostMessage;
-  commentCount?: number;
+  post: Post;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
-  const content = useContent();
+const PostCard: React.FC<PostCardProps> = ({ post }) => {
+  const {
+    bookmarks,
+    pending,
+    vote,
+    togglePostBookmark,
+    cells,
+    commentsByPost,
+  } = useContent();
   const permissions = usePermissions();
+  const { currentUser } = useAuth();
 
-  // Get cell data from content
-  const cell = content.cells.find((c) => c.id === post.cellId);
-  const cellName = cell?.name || 'unknown';
+  const cellName = cells.find(c => c.id === post.cellId)?.name || 'unknown';
+  const commentCount = commentsByPost[post.id]?.length || 0;
 
-  // Use pre-computed vote data or safely compute from arrays when available
-  const computedVoteScore =
-    'voteScore' in post && typeof (post as Post).voteScore === 'number'
-      ? (post as Post).voteScore
-      : undefined;
-  const upvoteCount =
-    'upvotes' in post && Array.isArray((post as Post).upvotes)
-      ? (post as Post).upvotes.length
-      : 0;
-  const downvoteCount =
-    'downvotes' in post && Array.isArray((post as Post).downvotes)
-      ? (post as Post).downvotes.length
-      : 0;
-  const score = computedVoteScore ?? upvoteCount - downvoteCount;
+  const isPending = pending.isPending(post.id);
 
-  // Use library pending API
-  const isPending = content.pending.isPending(post.id);
-
-  // Get user vote status from post data
-  const userUpvoted =
-    (post as unknown as { userUpvoted?: boolean }).userUpvoted || false;
-  const userDownvoted =
-    (post as unknown as { userDownvoted?: boolean }).userDownvoted || false;
-
-  // Check if bookmarked
-  const isBookmarked = content.bookmarks.some((b) => b.targetId === post.id && b.type === 'post');
+  const isBookmarked = bookmarks.some(
+    b => b.targetId === post.id && b.type === 'post'
+  );
   const [bookmarkLoading, setBookmarkLoading] = React.useState(false);
 
-  // Remove duplicate vote status logic
+  const score = post.upvotes.length - post.downvotes.length;
+  const userUpvoted = Boolean(
+    post.upvotes.some(v => v.author === currentUser?.address)
+  );
+  const userDownvoted = Boolean(
+    post.downvotes.some(v => v.author === currentUser?.address)
+  );
 
-  // ✅ Content truncation (simple presentation logic is OK)
-  const contentText = typeof post.content === 'string' ? post.content : String(post.content ?? '');
+  const contentText =
+    typeof post.content === 'string'
+      ? post.content
+      : String(post.content ?? '');
   const contentPreview =
     contentText.length > 200
       ? contentText.substring(0, 200) + '...'
@@ -62,7 +55,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
 
   const handleVote = async (e: React.MouseEvent, isUpvote: boolean) => {
     e.preventDefault();
-    await content.vote({ targetId: post.id, isUpvote });
+    await vote({ targetId: post.id, isUpvote });
   };
 
   const handleBookmark = async (e?: React.MouseEvent) => {
@@ -72,7 +65,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
     }
     setBookmarkLoading(true);
     try {
-      await content.togglePostBookmark(post, post.cellId);
+      await togglePostBookmark(post, post.cellId);
     } finally {
       setBookmarkLoading(false);
     }
@@ -97,13 +90,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
           </button>
 
           <span
-            className={`text-sm font-medium px-1 ${
-              score > 0
-                ? 'text-cyber-accent'
-                : score < 0
-                  ? 'text-blue-400'
-                  : 'text-cyber-neutral'
-            }`}
+            className={`text-sm font-medium px-1`}
           >
             {score}
           </span>
@@ -130,9 +117,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
           <div className="block hover:opacity-80">
             {/* Post metadata */}
             <div className="flex items-center text-xs text-cyber-neutral mb-2 space-x-2">
-              <span className="font-medium text-cyber-accent">
-                r/{cellName}
-              </span>
+              <Link
+                to={cellName ? `/cell/${post.cellId}` : "#"}
+                className="font-medium text-cyber-accent hover:underline focus:underline"
+                tabIndex={0}
+                onClick={e => {
+                  if (!cellName) e.preventDefault();
+                }}
+                title={cellName ? `Go to /${cellName}` : undefined}
+              >
+                r/{cellName || 'unknown'}
+              </Link>
               <span>•</span>
               <span>Posted by u/</span>
               <AuthorDisplay
@@ -146,18 +141,23 @@ const PostCard: React.FC<PostCardProps> = ({ post, commentCount = 0 }) => {
                   addSuffix: true,
                 })}
               </span>
-              {('relevanceScore' in post) && typeof (post as Post).relevanceScore === 'number' && (
-                <>
-                  <span>•</span>
-                  <RelevanceIndicator
-                    score={(post as Post).relevanceScore as number}
-                    details={('relevanceDetails' in post ? (post as Post).relevanceDetails : undefined)}
-                    type="post"
-                    className="text-xs"
-                    showTooltip={true}
-                  />
-                </>
-              )}
+              {'relevanceScore' in post &&
+                typeof (post as Post).relevanceScore === 'number' && (
+                  <>
+                    <span>•</span>
+                    <RelevanceIndicator
+                      score={(post as Post).relevanceScore as number}
+                      details={
+                        'relevanceDetails' in post
+                          ? (post as Post).relevanceDetails
+                          : undefined
+                      }
+                      type="post"
+                      className="text-xs"
+                      showTooltip={true}
+                    />
+                  </>
+                )}
             </div>
 
             {/* Post title and content - clickable to navigate to post */}

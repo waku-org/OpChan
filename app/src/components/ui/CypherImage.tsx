@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { cn } from '../../utils'
+import { cn } from '../../utils';
 
 type CypherImageProps = {
   src?: string;

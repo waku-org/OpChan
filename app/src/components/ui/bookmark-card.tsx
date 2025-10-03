@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Bookmark, BookmarkType } from '@opchan/core';
 import { useUserDisplay } from '@opchan/react';
-import { cn } from '../../utils'
+import { cn } from '../../utils';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 

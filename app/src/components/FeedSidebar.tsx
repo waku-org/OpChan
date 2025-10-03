@@ -4,15 +4,14 @@ import { TrendingUp, Users, Eye, CheckCircle } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {  useAuth, useContent } from '@/hooks';
+import { useAuth, useContent } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
 import { CypherImage } from '@/components/ui/CypherImage';
 
 const FeedSidebar: React.FC = () => {
-  const {cells, posts, comments, cellsWithStats, userVerificationStatus} = useContent();
+  const { cells, posts, comments, cellsWithStats, userVerificationStatus } =
+    useContent();
   const { currentUser, verificationStatus } = useAuth();
-
-
 
   const stats = {
     totalCells: cells.length,
@@ -61,7 +60,9 @@ const FeedSidebar: React.FC = () => {
                 <Users className="w-5 h-5 text-cyber-accent" />
               </div>
               <div className="flex-1">
-                <div className="font-medium text-sm">{currentUser?.displayName}</div>
+                <div className="font-medium text-sm">
+                  {currentUser?.displayName}
+                </div>
                 <Badge
                   variant="secondary"
                   className={`${verificationBadge.color} text-white text-xs`}

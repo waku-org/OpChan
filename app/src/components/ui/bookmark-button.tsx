@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
-import { cn } from '../../utils'
+import { cn } from '../../utils';
 
 interface BookmarkButtonProps {
   isBookmarked: boolean;
