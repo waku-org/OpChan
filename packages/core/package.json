@@ -20,10 +20,10 @@
     "access": "public"
   },
   "scripts": {
-    "build": "npm run clean && npm run build:cjs && cp dist/cjs/index.js dist/index.js && npm run build:esm && npm run build:types",
+    "build": "npm run clean && npm run build:cjs && cp dist/cjs/index.js dist/index.js && cp dist/cjs/index.js.map dist/index.js.map && npm run build:esm && npm run build:types",
     "build:cjs": "tsc --module commonjs --outDir dist/cjs",
-    "build:esm": "tsc --module esnext --outDir dist/esm && cp dist/esm/index.js dist/index.esm.js && cp -r dist/esm/types dist/ && cp -r dist/esm/lib dist/ && cp -r dist/esm/client dist/",
-    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist && cp dist/cjs/index.d.ts dist/index.d.ts",
+    "build:esm": "tsc --module esnext --outDir dist/esm && cp dist/esm/index.js dist/index.esm.js && cp dist/esm/index.js.map dist/index.esm.js.map && cp -r dist/esm/types dist/ && cp -r dist/esm/lib dist/ && cp -r dist/esm/client dist/",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist && cp dist/cjs/index.d.ts dist/index.d.ts && cp dist/cjs/index.d.ts.map dist/index.d.ts.map",
     "dev": "tsc --watch",
     "test": "vitest",
     "lint": "eslint src --ext .ts",
