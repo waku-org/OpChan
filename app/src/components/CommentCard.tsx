@@ -1,12 +1,12 @@
 import React from 'react';
 import { ArrowUp, ArrowDown, Clock, Shield, UserX } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import type { CommentMessage } from '@opchan/core';
+import type { Comment } from '@opchan/core';
 import { Button } from '@/components/ui/button';
 import { BookmarkButton } from '@/components/ui/bookmark-button';
 import { AuthorDisplay } from '@/components/ui/author-display';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
-import { useContent, useForum, usePermissions } from '@/hooks';
+import { useContent, useForum, usePermissions, useAuth } from '@/hooks';
 import {
   Tooltip,
   TooltipContent,
@@ -15,7 +15,7 @@ import {
 import { ShareButton } from '@/components/ui/ShareButton';
 
 interface CommentCardProps {
-  comment: CommentMessage;
+  comment: Comment;
   postId: string;
   cellId?: string;
   canModerate: boolean;
@@ -50,6 +50,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
 }) => {
   const content = useContent();
   const permissions = usePermissions();
+  const { currentUser } = useAuth();
 
   // Check if bookmarked
   const isBookmarked = content.bookmarks.some(
@@ -60,11 +61,11 @@ const CommentCard: React.FC<CommentCardProps> = ({
   // Use library pending API
   const commentVotePending = content.pending.isPending(comment.id);
 
-  // Get user vote status from filtered comment data
-  const userUpvoted = Boolean((comment as unknown as { userUpvoted?: boolean }).userUpvoted);
-  const userDownvoted = Boolean((comment as unknown as { userDownvoted?: boolean }).userDownvoted);
-  const score = (comment as unknown as { voteScore?: number }).voteScore ?? 0;
-  const isModerated = Boolean((comment as unknown as { moderated?: boolean }).moderated);
+  const score = comment.voteScore ?? 0;
+  const isModerated = Boolean(comment.moderated);
+  const userDownvoted = Boolean(comment.downvotes.some(v => v.author === currentUser?.address));
+  const userUpvoted = Boolean(comment.upvotes.some(v => v.author === currentUser?.address));  
+  const isOwnComment = currentUser?.address === comment.author;
 
   const handleVoteComment = async (isUpvote: boolean) => {
     await content.vote({ targetId: comment.id, isUpvote });
@@ -85,7 +86,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
         <div className="flex flex-col items-center">
           <button
             className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
-              userUpvoted ? 'text-cyber-accent' : ''
+              userUpvoted ? 'text-cyber-accent' : 'text-cyber-neutral hover:text-cyber-accent'
             }`}
             onClick={() => handleVoteComment(true)}
             disabled={!permissions.canVote}
@@ -98,7 +99,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
           <span className="text-sm font-bold">{score}</span>
           <button
             className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${
-              userDownvoted ? 'text-cyber-accent' : ''
+              userDownvoted ? 'text-cyber-accent' : 'text-cyber-neutral hover:text-cyber-accent'
             }`}
             onClick={() => handleVoteComment(false)}
             disabled={!permissions.canVote}
@@ -156,7 +157,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {canModerate && !isModerated && (
+            {canModerate && !isModerated && !isOwnComment && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -173,7 +174,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-            {canModerate && isModerated && (
+            {canModerate && isModerated && !isOwnComment && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -190,7 +191,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-            {cellId && canModerate && (
+            {cellId && canModerate && !isOwnComment && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
