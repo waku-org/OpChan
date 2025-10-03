@@ -40,7 +40,6 @@ export function useUserDisplay(address: string): UserDisplayInfo {
         }
 
         const identity = await client.userIdentityService.getIdentity(address, {fresh: true});
-        console.log({identity})
         
         if (cancelled) return;
 
@@ -71,7 +70,6 @@ export function useUserDisplay(address: string): UserDisplayInfo {
 
   const displayInfo: UserDisplayInfo = React.useMemo(() => {
     if (storeIdentity) {
-      console.log({storeIdentity})
       return {
         ...storeIdentity,
         isLoading,

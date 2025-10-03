@@ -20,7 +20,7 @@ import {
   ArrowUp,
   ArrowDown,
   RefreshCw,
-  Shield,
+  MessageSquareX,
   UserX,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -360,7 +360,7 @@ const PostList = () => {
                           className="h-6 w-6 text-cyber-neutral hover:text-orange-500"
                           onClick={() => handleModerate(post.id)}
                         >
-                          <Shield className="h-3 w-3" />
+                          <MessageSquareX className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
