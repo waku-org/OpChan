@@ -9,42 +9,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bitcoin, Coins } from 'lucide-react';
-import {
-  useAppKit,
-  useAppKitAccount,
-  useDisconnect,
-  useAppKitState,
-} from '@reown/appkit/react';
+import { useAuth, useAppKitWallet } from '@opchan/react';
 
 interface WalletDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConnect: () => void;
 }
 
 export function WalletConnectionDialog({
   open,
   onOpenChange,
-  onConnect,
 }: WalletDialogProps) {
-  // Always call hooks to follow React rules
-  const { initialized } = useAppKitState();
-  const appKit = useAppKit();
-  const { disconnect } = useDisconnect();
-
-  // Get account info for different chains
-  const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
-  const ethereumAccount = useAppKitAccount({ namespace: 'eip155' });
-
-  // Determine which account is connected
-  const isBitcoinConnected = bitcoinAccount.isConnected;
-  const isEthereumConnected = ethereumAccount.isConnected;
-  const isConnected = isBitcoinConnected || isEthereumConnected;
-
-  // Get the active account info
-  const activeAccount = isBitcoinConnected ? bitcoinAccount : ethereumAccount;
-  const activeAddress = activeAccount.address;
-  const activeChain = isBitcoinConnected ? 'Bitcoin' : 'Ethereum';
+  const { connect, disconnect } = useAuth();
+  const wallet = useAppKitWallet();
 
   const handleDisconnect = async () => {
     await disconnect();
@@ -52,35 +29,23 @@ export function WalletConnectionDialog({
   };
 
   const handleBitcoinConnect = () => {
-    if (!initialized || !appKit) {
-      console.error('AppKit not initialized');
+    if (!wallet.isInitialized) {
+      console.error('Wallet not initialized');
       return;
     }
-
-    appKit.open({
-      view: 'Connect',
-      namespace: 'bip122',
-    });
-    onConnect();
-    onOpenChange(false);
+    connect('bitcoin');
   };
 
   const handleEthereumConnect = () => {
-    if (!initialized || !appKit) {
-      console.error('AppKit not initialized');
+    if (!wallet.isInitialized) {
+      console.error('Wallet not initialized');
       return;
     }
-
-    appKit.open({
-      view: 'Connect',
-      namespace: 'eip155',
-    });
-    onConnect();
-    onOpenChange(false);
+    connect('ethereum');
   };
 
-  // Show loading state if AppKit is not initialized
-  if (!initialized) {
+  // Show loading state if wallet is not initialized
+  if (!wallet.isInitialized) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md border-neutral-800 bg-black text-white">
@@ -97,6 +62,10 @@ export function WalletConnectionDialog({
       </Dialog>
     );
   }
+
+  const isConnected = wallet.isConnected;
+  const activeChain = wallet.walletType === 'bitcoin' ? 'Bitcoin' : 'Ethereum';
+  const activeAddress = wallet.address;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
