@@ -7,7 +7,8 @@ import {
 } from '../../types/waku';
 import { MessageService } from './MessageService';
 import { localDatabase } from '../database/LocalDatabase';
-import { walletManager, WalletManager } from '../wallet';
+import { WalletManager } from '../wallet';
+import { getWalletAdapter } from '../wallet/adapter';
 
 export interface UserIdentity {
   address: string;
@@ -235,9 +236,9 @@ export class UserIdentityService {
         this.resolveOrdinalDetails(address),
       ]);
 
-      const isWalletConnected = WalletManager.hasInstance()
-        ? walletManager.getInstance().isConnected()
-        : false;
+      const isWalletConnected = (getWalletAdapter()?.isConnected?.() ?? (WalletManager.hasInstance()
+        ? WalletManager.getInstance().isConnected()
+        : false));
       let verificationStatus: EVerificationStatus;
       if (ensName || ordinalDetails) {
         verificationStatus = EVerificationStatus.ENS_ORDINAL_VERIFIED;

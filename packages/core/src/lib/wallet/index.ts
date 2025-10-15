@@ -267,15 +267,7 @@ export class WalletManager {
   }
 }
 
-// Convenience exports for singleton access
-export const walletManager = {
-  create: WalletManager.create,
-  getInstance: WalletManager.getInstance,
-  hasInstance: WalletManager.hasInstance,
-  clear: WalletManager.clear,
-  resolveENS: WalletManager.resolveENS,
-  verifySignature: WalletManager.verifySignature,
-};
+export default WalletManager;
 
 export * from './types';
 export * from './config';

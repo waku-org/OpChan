@@ -1,13 +1,13 @@
 import React from 'react';
 import { useClient } from '../context/ClientContext';
-import { useAppKitWallet } from '../context/AppKitWalletContext';
+import { useAppKitWallet } from '../hooks/useAppKitWallet';
 import { useOpchanStore, setOpchanState } from '../store/opchanStore';
 import {
   User,
   EVerificationStatus,
   DelegationDuration,
   EDisplayPreference,
-  walletManager,
+  WalletManager,
 } from '@opchan/core';
 import type { DelegationFullStatus } from '@opchan/core';
 
@@ -132,7 +132,7 @@ export function useAuth() {
     const user = currentUser;
     if (!user) return false;
     try {
-      const signer = ((message: string) => walletManager.getInstance().signMessage(message));
+      const signer = ((message: string) => WalletManager.getInstance().signMessage(message));
       const ok = await client.delegation.delegate(
         user.address,
         user.walletType,

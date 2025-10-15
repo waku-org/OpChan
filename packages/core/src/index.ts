@@ -42,9 +42,10 @@ export { default as messageManager } from './lib/waku';
 export * from './lib/waku/network';
 
 // Export wallet functionality
-export { WalletManager, walletManager } from './lib/wallet';
+export { WalletManager } from './lib/wallet';
 export * from './lib/wallet/config';
 export * from './lib/wallet/types';
+export { type WalletAdapter, setWalletAdapter, getWalletAdapter } from './lib/wallet/adapter';
 
 // Primary client API
 export { OpChanClient, type OpChanClientConfig } from './client/OpChanClient';

@@ -5,15 +5,7 @@ export {
   useClient,
 } from './v1/context/ClientContext';
 
-export {
-  AppKitWalletProvider,
-  useAppKitWallet,
-} from './v1/context/AppKitWalletContext';
-export type {
-  AppKitWalletState,
-  AppKitWalletControls,
-  AppKitWalletContextValue,
-} from './v1/context/AppKitWalletContext';
+export { useAppKitWallet } from './v1/hooks/useAppKitWallet';
 
 export { OpChanProvider } from './v1/provider/OpChanProvider';
 export type { OpChanProviderProps } from './v1/provider/OpChanProvider';
