@@ -7,6 +7,7 @@ import {
 import { CodecManager } from '../CodecManager';
 import { generateStringId } from '../../utils';
 import { OpchanMessage } from '../../../types/forum';
+import { WakuConfig } from '../../../types';
 
 export interface MessageStatusCallback {
   onSent?: (messageId: string) => void;
@@ -22,9 +23,9 @@ export class ReliableMessaging {
   private incomingMessageCallbacks: Set<IncomingMessageCallback> = new Set();
   private codecManager: CodecManager;
 
-  constructor(node: LightNode) {
-    this.codecManager = new CodecManager(node);
-    this.initializeChannel(node);
+  constructor(node: LightNode, config: WakuConfig) {
+    this.codecManager = new CodecManager(node, config);
+    this.initializeChannel(node, config);
   }
 
   // ===== PUBLIC METHODS =====
@@ -65,11 +66,11 @@ export class ReliableMessaging {
 
   // ===== PRIVATE METHODS =====
 
-  private async initializeChannel(node: LightNode): Promise<void> {
+  private async initializeChannel(node: LightNode, config: WakuConfig): Promise<void> {
     const encoder = this.codecManager.getEncoder();
     const decoder = this.codecManager.getDecoder();
     const senderId = generateStringId();
-    const channelId = 'opchan-messages';
+    const channelId = config.reliableChannelId || 'opchan-messages';
 
     try {
       this.channel = await ReliableChannel.create(

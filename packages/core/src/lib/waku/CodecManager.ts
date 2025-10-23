@@ -9,14 +9,15 @@ import {
 } from '../../types/waku';
 import { CONTENT_TOPIC } from './constants';
 import { OpchanMessage } from '../../types/forum';
+import { WakuConfig } from '../../types';
 
 export class CodecManager {
   private encoder: IEncoder;
   private decoder: IDecoder<IDecodedMessage>;
 
-  constructor(private node: LightNode) {
-    this.encoder = this.node.createEncoder({ contentTopic: CONTENT_TOPIC });
-    this.decoder = this.node.createDecoder({ contentTopic: CONTENT_TOPIC });
+  constructor(private node: LightNode, config: WakuConfig) {
+    this.encoder = this.node.createEncoder({ contentTopic: config.contentTopic || CONTENT_TOPIC });
+    this.decoder = this.node.createDecoder({ contentTopic: config.contentTopic || CONTENT_TOPIC });
   }
 
   /**

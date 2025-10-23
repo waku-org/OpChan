@@ -7,9 +7,11 @@ import { UserIdentityService } from '../lib/services/UserIdentityService';
 import { DelegationManager, delegationManager } from '../lib/delegation';
 import WalletManager from '../lib/wallet';
 import { MessageService } from '../lib/services/MessageService';
+import { WakuConfig } from '../types';
 
 export interface OpChanClientConfig {
   ordiscanApiKey: string;
+  wakuConfig: WakuConfig;
 }
 
 export class OpChanClient {
@@ -35,6 +37,10 @@ export class OpChanClient {
 
     environment.configure(env);
     
+    // Initialize message manager with WakuConfig
+    this.messageManager.initialize(config.wakuConfig).catch(error => {
+      console.error('Failed to initialize message manager:', error);
+    });
 
     this.messageService = new MessageService(this.delegation);
     this.userIdentityService = new UserIdentityService(this.messageService);

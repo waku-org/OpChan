@@ -6,6 +6,7 @@ import {
   MessageStatusCallback,
 } from './services/MessageService';
 import { ReliableMessaging } from './core/ReliableMessaging';
+import { WakuConfig } from '../../types';
 
 export type { HealthChangeCallback, MessageStatusCallback };
 
@@ -13,13 +14,16 @@ class MessageManager {
   private nodeManager: WakuNodeManager | null = null;
   private messageService: MessageService | null = null;
   private reliableMessaging: ReliableMessaging | null = null;
+  private wakuConfig: WakuConfig;
 
-  constructor() {}
+  constructor(wakuConfig: WakuConfig) {
+    this.wakuConfig = wakuConfig;
+  }
 
   // ===== PUBLIC STATIC METHODS =====
 
-  public static async create(): Promise<MessageManager> {
-    const manager = new MessageManager();
+  public static async create(wakuConfig: WakuConfig): Promise<MessageManager> {
+    const manager = new MessageManager(wakuConfig);
     await manager.initialize();
     return manager;
   }
@@ -101,7 +105,8 @@ class MessageManager {
     try {
       console.log('Initializing reliable messaging...');
       this.reliableMessaging = new ReliableMessaging(
-        this.nodeManager.getNode()
+        this.nodeManager.getNode(),
+        this.wakuConfig
       );
       this.messageService?.updateReliableMessaging(this.reliableMessaging);
       console.log('Reliable messaging initialized successfully');
@@ -126,13 +131,18 @@ export class DefaultMessageManager {
   private _initPromise: Promise<MessageManager> | null = null;
   private _pendingHealthSubscriptions: HealthChangeCallback[] = [];
   private _pendingMessageSubscriptions: ((message: any) => void)[] = [];
+  private _wakuConfig: WakuConfig | null = null;
 
   // ===== PUBLIC METHODS =====
 
   // Initialize the manager asynchronously
-  async initialize(): Promise<void> {
-    if (!this._initPromise) {
-      this._initPromise = MessageManager.create();
+  async initialize(wakuConfig?: WakuConfig): Promise<void> {
+    if (wakuConfig) {
+      this._wakuConfig = wakuConfig;
+    }
+    
+    if (!this._initPromise && this._wakuConfig) {
+      this._initPromise = MessageManager.create(this._wakuConfig);
     }
     this._instance = await this._initPromise;
     
@@ -160,6 +170,9 @@ export class DefaultMessageManager {
 
   async sendMessage(message: any, callback?: any): Promise<void> {
     if (!this._instance) {
+      if (!this._wakuConfig) {
+        throw new Error('WakuConfig must be provided before sending messages');
+      }
       await this.initialize();
     }
     return this._instance!.sendMessage(message, callback);
@@ -199,10 +212,5 @@ export class DefaultMessageManager {
 }
 
 const messageManager = new DefaultMessageManager();
-
-// Initialize in the background
-messageManager.initialize().catch(error => {
-  console.error('Failed to initialize default MessageManager:', error);
-});
 
 export default messageManager;
