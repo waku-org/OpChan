@@ -77,8 +77,7 @@ export class ReliableMessaging {
         channelId,
         senderId,
         encoder,
-        decoder,
-        { initialQueryLookbackMs: 30 * 24 * 60 * 60 * 1000 }
+        decoder
       );
       this.setupChannelListeners(this.channel);
     } catch (error) {
