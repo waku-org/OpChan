@@ -112,10 +112,6 @@ const Header = () => {
     }
   };
 
-  useEffect(() => {
-    console.log('currentUser', currentUser);
-  }, [currentUser]);
-
   const getStatusIcon = () => {
     if (!isConnected) return <CircleSlash className="w-4 h-4" />;
 

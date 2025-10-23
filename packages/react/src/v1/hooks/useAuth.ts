@@ -80,7 +80,7 @@ export function useAuth() {
     };
 
     syncWallet();
-  }, [wallet.isConnected, wallet.address, wallet.walletType, client, currentUser]);
+  }, [wallet.isConnected, wallet.address, wallet.walletType, client]);
 
   const connect = React.useCallback((walletType: 'bitcoin' | 'ethereum'): void => {
     wallet.connect(walletType);
