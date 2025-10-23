@@ -1,73 +1,94 @@
 import React from 'react';
 import { useClient } from '../context/ClientContext';
+import { useAppKitWallet } from '../hooks/useAppKitWallet';
 import { useOpchanStore, setOpchanState } from '../store/opchanStore';
 import {
   User,
   EVerificationStatus,
   DelegationDuration,
   EDisplayPreference,
-  walletManager,
+  WalletManager,
 } from '@opchan/core';
 import type { DelegationFullStatus } from '@opchan/core';
 
-export interface ConnectInput {
-  address: string;
-  walletType: 'bitcoin' | 'ethereum';
-}
-
 export function useAuth() {
   const client = useClient();
+  const wallet = useAppKitWallet();
   const currentUser = useOpchanStore(s => s.session.currentUser);
   const verificationStatus = useOpchanStore(s => s.session.verificationStatus);
   const delegation = useOpchanStore(s => s.session.delegation);
 
+  // Sync AppKit wallet state to OpChan session
+  React.useEffect(() => {
+    const syncWallet = async () => {
+      if (wallet.isConnected && wallet.address && wallet.walletType) {
+        // Wallet connected - create/update user session
+        const baseUser: User = {
+          address: wallet.address,
+          walletType: wallet.walletType,
+          displayName: wallet.address.slice(0, 6) + '...' + wallet.address.slice(-4),
+          displayPreference: EDisplayPreference.WALLET_ADDRESS,
+          verificationStatus: EVerificationStatus.WALLET_CONNECTED,
+          lastChecked: Date.now(),
+        };
 
-  const connect = React.useCallback(async (input: ConnectInput): Promise<boolean> => {
-    const baseUser: User = {
-      address: input.address,
-      walletType: input.walletType,
-      displayName: input.address.slice(0, 6) + '...' + input.address.slice(-4),
-      displayPreference:  EDisplayPreference.WALLET_ADDRESS,
-      verificationStatus: EVerificationStatus.WALLET_CONNECTED,
-      lastChecked: Date.now(),
+        try {
+          await client.database.storeUser(baseUser);
+          // Prime identity service so display name/ens are cached
+          const identity = await client.userIdentityService.getIdentity(baseUser.address);
+          if (identity) {
+            setOpchanState(prev => ({
+              ...prev,
+              session: {
+                ...prev.session,
+                currentUser: {
+                  ...baseUser,
+                  ...identity,
+                },
+                verificationStatus: identity.verificationStatus,
+              },
+            }));
+          } else {
+            setOpchanState(prev => ({
+              ...prev,
+              session: {
+                ...prev.session,
+                currentUser: baseUser,
+                verificationStatus: baseUser.verificationStatus,
+              },
+            }));
+          }
+        } catch (e) {
+          console.error('Failed to sync wallet to session', e);
+        }
+      } else if (!wallet.isConnected && currentUser) {
+        // Wallet disconnected - clear session
+        try {
+          await client.database.clearUser();
+        } catch (e) {
+          console.error('Failed to clear user on disconnect', e);
+        }
+        setOpchanState(prev => ({
+          ...prev,
+          session: {
+            currentUser: null,
+            verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
+            delegation: null,
+          },
+        }));
+      }
     };
 
-    try {
-      await client.database.storeUser(baseUser);
-      // Prime identity service so display name/ens are cached
-      const identity = await client.userIdentityService.getIdentity(baseUser.address);
-      if (!identity) return false;
-      setOpchanState(prev => ({
-        ...prev,
-        session: {
-          ...prev.session,
-          currentUser: {
-            ...baseUser,
-            ...identity,
-          },
-        },
-      }));
-      return true;
-    } catch (e) {
-      console.error('connect failed', e);
-      return false;
-    }
-  }, [client]);
+    syncWallet();
+  }, [wallet.isConnected, wallet.address, wallet.walletType, client, currentUser]);
+
+  const connect = React.useCallback((walletType: 'bitcoin' | 'ethereum'): void => {
+    wallet.connect(walletType);
+  }, [wallet]);
 
   const disconnect = React.useCallback(async (): Promise<void> => {
-    try {
-      await client.database.clearUser();
-    } finally {
-      setOpchanState(prev => ({
-        ...prev,
-        session: {
-          currentUser: null,
-          verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
-          delegation: null,
-        },
-      }));
-    }
-  }, [client]);
+    await wallet.disconnect();
+  }, [wallet]);
 
   const verifyOwnership = React.useCallback(async (): Promise<boolean> => {
     console.log('verifyOwnership')
@@ -111,7 +132,7 @@ export function useAuth() {
     const user = currentUser;
     if (!user) return false;
     try {
-      const signer = ((message: string) => walletManager.getInstance().signMessage(message));
+      const signer = ((message: string) => WalletManager.getInstance().signMessage(message));
       const ok = await client.delegation.delegate(
         user.address,
         user.walletType,

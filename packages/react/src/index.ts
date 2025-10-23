@@ -5,8 +5,10 @@ export {
   useClient,
 } from './v1/context/ClientContext';
 
+export { useAppKitWallet } from './v1/hooks/useAppKitWallet';
+
 export { OpChanProvider } from './v1/provider/OpChanProvider';
-export type { WalletAdapter, WalletAdapterAccount } from './v1/provider/OpChanProvider';
+export type { OpChanProviderProps } from './v1/provider/OpChanProvider';
 
 export { useAuth  } from './v1/hooks/useAuth';
 export { useContent } from './v1/hooks/useContent';

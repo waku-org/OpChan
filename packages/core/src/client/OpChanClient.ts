@@ -5,7 +5,7 @@ import { ForumActions } from '../lib/forum/ForumActions';
 import { RelevanceCalculator } from '../lib/forum/RelevanceCalculator';
 import { UserIdentityService } from '../lib/services/UserIdentityService';
 import { DelegationManager, delegationManager } from '../lib/delegation';
-import { walletManager } from '../lib/wallet';
+import WalletManager from '../lib/wallet';
 import { MessageService } from '../lib/services/MessageService';
 
 export interface OpChanClientConfig {
@@ -22,19 +22,19 @@ export class OpChanClient {
   readonly messageService: MessageService;
   readonly userIdentityService: UserIdentityService;
   readonly delegation: DelegationManager = delegationManager;
-  readonly wallet = walletManager;
+  readonly wallet = WalletManager
 
   constructor(config: OpChanClientConfig) {
     this.config = config;
 
     const env: EnvironmentConfig = {
-      
       apiKeys: {
         ordiscan: config.ordiscanApiKey,
       },
     };
 
     environment.configure(env);
+    
 
     this.messageService = new MessageService(this.delegation);
     this.userIdentityService = new UserIdentityService(this.messageService);

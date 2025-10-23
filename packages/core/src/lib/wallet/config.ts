@@ -25,7 +25,7 @@ export const wagmiAdapter = new WagmiAdapter({
 // Export the Wagmi config for the provider
 export const config = wagmiAdapter.wagmiConfig;
 
-const bitcoinAdapter = new BitcoinAdapter({
+export const bitcoinAdapter = new BitcoinAdapter({
   projectId,
 });
 

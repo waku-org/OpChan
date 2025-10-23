@@ -6,8 +6,8 @@ import {
   verifyMessage as verifyEthereumMessage,
 } from '@wagmi/core';
 import { ChainNamespace } from '@reown/appkit-common';
-import { config } from './config';
-import { Provider } from '@reown/appkit-controllers';
+import { config, wagmiAdapter, bitcoinAdapter } from './config';
+import { Provider, ProviderController } from '@reown/appkit-controllers';
 import { WalletInfo, ActiveWallet } from './types';
 import { Inscription } from 'ordiscan';
 export class WalletManager {
@@ -196,15 +196,15 @@ export class WalletManager {
    */
   async signMessage(message: string): Promise<string> {
     try {
-      // Access the adapter through the appKit instance
-      const adapter = this.appKit.chainAdapters?.[this.namespace];
+      // Select adapter based on active namespace using configured instances
+      const adapter = this.namespace === 'eip155' ? wagmiAdapter : this.namespace === 'bip122' ? bitcoinAdapter : undefined;
 
       if (!adapter) {
-        throw new Error(`No adapter found for namespace: ${this.namespace}`);
+        throw new Error(`No adapter instance configured for namespace: ${this.namespace}`);
       }
 
-      // Get the provider for the current connection
-      const provider = this.appKit.getProvider(this.namespace);
+      // Get the provider for the current connection via ProviderController
+      const provider = ProviderController.getProvider(this.namespace);
 
       if (!provider) {
         throw new Error(`No provider found for namespace: ${this.namespace}`);
@@ -218,7 +218,7 @@ export class WalletManager {
       const result = await adapter.signMessage({
         message,
         address: this.activeAccount.address,
-        provider: provider as Provider,
+        provider: provider as unknown as Provider,
       });
 
       return result.signature;
@@ -267,15 +267,7 @@ export class WalletManager {
   }
 }
 
-// Convenience exports for singleton access
-export const walletManager = {
-  create: WalletManager.create,
-  getInstance: WalletManager.getInstance,
-  hasInstance: WalletManager.hasInstance,
-  clear: WalletManager.clear,
-  resolveENS: WalletManager.resolveENS,
-  verifySignature: WalletManager.verifySignature,
-};
+export default WalletManager;
 
 export * from './types';
 export * from './config';
