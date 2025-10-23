@@ -38,7 +38,7 @@ const ActivityFeed: React.FC = () => {
   const { content, network } = useForum();
 
   const { posts, comments, cells, commentsByPost } = content;
-  const { isConnected } = network;
+  const { isHydrated } = network;
 
 
   const combinedFeed: FeedItem[] = useMemo(() => {
@@ -144,7 +144,8 @@ const ActivityFeed: React.FC = () => {
     );
   };
 
-  if (!isConnected) {
+  // Show loading skeleton only while store is hydrating
+  if (!isHydrated) {
     return (
       <div className="space-y-3">
         {[...Array(5)].map((_, i) => (

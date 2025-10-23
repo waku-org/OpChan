@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth, useForum, useNetwork, useUIState } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';

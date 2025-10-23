@@ -135,7 +135,7 @@ export function Connect() {
     - Functions: `canModerate(cellId)`, `check(action, cellId?) → { allowed, reason }`, `reasons`.
 
   - **`useNetwork()`** → connection state
-    - Data: `isConnected`, `statusMessage`, `issues`, `canRefresh`.
+    - Data: `isConnected`, `statusMessage`, `issues`, `isHydrated`, `canRefresh`.
     - Actions: `refresh()` — triggers a light data refresh via core.
 
   - **`useUIState(key, defaultValue, category?)`** → persisted UI state

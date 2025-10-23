@@ -19,6 +19,7 @@ export function useNetwork() {
     isConnected: network.isConnected,
     statusMessage: network.statusMessage,
     issues: network.issues,
+    isHydrated: network.isHydrated,
     canRefresh: true,
     refresh,
   } as const;

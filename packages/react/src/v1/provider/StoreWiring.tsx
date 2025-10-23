@@ -78,6 +78,16 @@ export const StoreWiring: React.FC = () => {
         }
       } catch (e) {
         console.error('Initial hydrate failed', e);
+      } finally {
+        // Mark hydration as complete regardless of success or failure
+        // This allows forum actions even when no content is loaded
+        setOpchanState(prev => ({
+          ...prev,
+          network: {
+            ...prev.network,
+            isHydrated: true,
+          },
+        }));
       }
     };
 

@@ -46,6 +46,7 @@ export interface NetworkSlice {
   isConnected: boolean;
   statusMessage: string;
   issues: string[];
+  isHydrated: boolean;
 }
 
 export interface OpchanState {
@@ -85,6 +86,7 @@ const defaultState: OpchanState = {
     isConnected: false,
     statusMessage: 'connecting…',
     issues: [],
+    isHydrated: false,
   },
 };
 

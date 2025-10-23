@@ -12,12 +12,13 @@ import {
 import PostCard from '@/components/PostCard';
 import FeedSidebar from '@/components/FeedSidebar';
 import { ModerationToggle } from '@/components/ui/moderation-toggle';
-import { useAuth, useContent } from '@/hooks';
+import { useAuth, useContent, useNetwork } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
 import { sortPosts, SortOption } from '@/utils/sorting';
 const FeedPage: React.FC = () => {
   const content = useContent();
   const { verificationStatus } = useAuth();
+  const { isHydrated } = useNetwork();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
   const allPosts = useMemo(
@@ -25,8 +26,9 @@ const FeedPage: React.FC = () => {
     [content.posts, sortOption]
   );
 
-  // Loading skeleton
+  // Loading skeleton - only show if store is not yet hydrated
   if (
+    !isHydrated &&
     !content.posts.length &&
     !content.comments.length &&
     !content.cells.length

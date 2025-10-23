@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useContent, usePermissions } from '@/hooks';
+import { useContent, usePermissions, useNetwork } from '@/hooks';
 import {
   Layout,
   MessageSquare,
@@ -143,6 +143,7 @@ const CellList = () => {
   const { cellsWithStats } = useContent();
   const content = useContent();
   const { canCreateCell } = usePermissions();
+  const { isHydrated } = useNetwork();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
 
   // Apply sorting to cells
@@ -150,7 +151,8 @@ const CellList = () => {
     return sortCells(cellsWithStats, sortOption);
   }, [cellsWithStats, sortOption]);
 
-  if (!cellsWithStats.length) {
+  // Only show loading if store is not yet hydrated
+  if (!isHydrated && !cellsWithStats.length) {
     return (
       <div className="container mx-auto px-4 pt-24 pb-16 text-center">
         <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-primary" />
