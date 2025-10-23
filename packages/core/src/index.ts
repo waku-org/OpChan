@@ -29,7 +29,7 @@ export * from './lib/forum/transformers';
 // Export services
 export { BookmarkService } from './lib/services/BookmarkService';
 export { MessageService } from './lib/services/MessageService';
-export { UserIdentityService, UserIdentity } from './lib/services/UserIdentityService';
+export { UserIdentityService, type UserIdentity } from './lib/services/UserIdentityService';
 export { ordinals } from './lib/services/Ordinals';
 
 // Export utilities

@@ -36,8 +36,12 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@opchan/core": ["../packages/core/src/index.ts"],
+      "@opchan/core/*": ["../packages/core/src/*"],
+      "@opchan/react": ["../packages/react/src/index.ts"],
+      "@opchan/react/*": ["../packages/react/src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../packages/core/src", "../packages/react/src"]
 }
