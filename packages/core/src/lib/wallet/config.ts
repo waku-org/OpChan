@@ -3,15 +3,18 @@ import { BitcoinAdapter } from '@reown/appkit-adapter-bitcoin';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { createStorage } from 'wagmi';
 import { mainnet, bitcoin, AppKitNetwork } from '@reown/appkit/networks';
+import { environment } from '../utils/environment';
 
 const networks: [AppKitNetwork, ...AppKitNetwork[]] = [mainnet, bitcoin];
 
 const projectId =
-  process.env.VITE_REOWN_SECRET || '2ead96ea166a03e5ab50e5c190532e72';
+  environment.reownProjectId || 
+  process.env.VITE_REOWN_SECRET || 
+  '2ead96ea166a03e5ab50e5c190532e72';
 
 if (!projectId) {
   throw new Error(
-    'VITE_REOWN_SECRET is not defined. Please set it in your .env file'
+    'Reown project ID is not defined. Please set it via config.reownProjectId, VITE_REOWN_SECRET environment variable, or use the default.'
   );
 }
 

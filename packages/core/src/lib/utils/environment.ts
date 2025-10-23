@@ -7,6 +7,7 @@ export interface EnvironmentConfig {
   apiKeys?: {
     ordiscan?: string;
   };
+  reownProjectId?: string;
 }
 
 class Environment { 
@@ -19,6 +20,10 @@ class Environment {
 
   public get ordiscanApiKey(): string | undefined {
     return this.config.apiKeys?.ordiscan;
+  }
+
+  public get reownProjectId(): string | undefined {
+    return this.config.reownProjectId;
   }
 }
 

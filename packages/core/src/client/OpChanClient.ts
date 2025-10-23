@@ -12,6 +12,7 @@ import { WakuConfig } from '../types';
 export interface OpChanClientConfig {
   ordiscanApiKey: string;
   wakuConfig: WakuConfig;
+  reownProjectId?: string;
 }
 
 export class OpChanClient {
@@ -33,6 +34,7 @@ export class OpChanClient {
       apiKeys: {
         ordiscan: config.ordiscanApiKey,
       },
+      reownProjectId: config.reownProjectId,
     };
 
     environment.configure(env);
