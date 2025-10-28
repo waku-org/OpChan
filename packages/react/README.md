@@ -12,27 +12,19 @@ npm i @opchan/react @opchan/core react react-dom
 
 #### With Reown AppKit (Recommended)
 
-OpChan integrates with Reown AppKit for wallet management. The provider must be nested inside `WagmiProvider` and `AppKitProvider`:
+OpChan integrates with Reown AppKit for wallet management. The OpChanProvider already wraps WagmiProvider and AppKitProvider internally, so you can mount it directly:
 
 ```tsx
 import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { WagmiProvider } from 'wagmi';
-import { AppKitProvider } from '@reown/appkit/react';
 import { OpChanProvider } from '@opchan/react';
-import { config, appkitConfig } from '@opchan/core';
 
 const opchanConfig = { ordiscanApiKey: 'YOUR_ORDISCAN_API_KEY' };
 
 function App() {
   return (
-    <WagmiProvider config={config}>
-      <AppKitProvider {...appkitConfig}>
-        <OpChanProvider config={opchanConfig}>
-          {/* your app */}
-        </OpChanProvider>
-      </AppKitProvider>
-    </WagmiProvider>
+    <OpChanProvider config={opchanConfig}>
+      {/* your app */}
+    </OpChanProvider>
   );
 }
 
@@ -97,7 +89,7 @@ export function Connect() {
     - Props:
       - `config: OpChanClientConfig` — core client configuration.
       - `children: React.ReactNode`.
-    - Requirements: Must be nested inside `WagmiProvider` and `AppKitProvider` from Reown AppKit.
+    - Requirements: None — this provider already wraps `WagmiProvider` and `AppKitProvider` internally.
     - Internally provides `AppKitWalletProvider` for wallet state management.
   
   - **`AppKitWalletProvider`**: Wallet context provider (automatically included in `OpChanProvider`).
@@ -153,6 +145,18 @@ export function Connect() {
 - Identity resolution, verification states, and display preferences are centralized and cached;
   `useUserDisplay` and `useAuth.verifyOwnership()` will keep store and local DB in sync.
 - This package is UI-agnostic; pair with your component library of choice.
+
+### Runtime requirements
+
+- Browser Buffer polyfill (for some crypto/wallet libs):
+  ```ts
+  import { Buffer } from 'buffer'
+  if (!(window as any).Buffer) (window as any).Buffer = Buffer
+  ```
+- Config values you likely need to pass to `OpChanProvider`:
+  - `ordiscanApiKey` (optional for dev)
+  - `wakuConfig` with `contentTopic` and `reliableChannelId`
+  - `reownProjectId` (e.g., from `import.meta.env.VITE_REOWN_SECRET`)
 
 ### License
 

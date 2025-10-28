@@ -12,24 +12,17 @@ The examples assume you install and use the `@opchan/react` and `@opchan/core` p
 npm i @opchan/react @opchan/core
 ```
 
-Create an app-level provider using `OpChanProvider`. You must pass a minimal client config (e.g., Ordiscan API key if you have one). OpChanProvider must be nested inside `WagmiProvider` and `AppKitProvider` from Reown AppKit.
+Create an app-level provider using `OpChanProvider`. You must pass a minimal client config (e.g., Ordiscan API key if you have one). OpChanProvider already wraps `WagmiProvider` and `AppKitProvider` from Reown AppKit internally, so mount it directly at the app root.
 
 ```tsx
 import React from 'react';
 import { OpChanProvider } from '@opchan/react';
-import { WagmiProvider } from 'wagmi';
-import { AppKitProvider } from '@reown/appkit/react';
-import { appkitConfig, config } from '@opchan/core';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiProvider config={config}>
-      <AppKitProvider {...appkitConfig}>
-        <OpChanProvider config={{ ordiscanApiKey: 'YOUR_API_KEY' }}>
-          {children}
-        </OpChanProvider>
-      </AppKitProvider>
-    </WagmiProvider>
+    <OpChanProvider config={{ ordiscanApiKey: 'YOUR_API_KEY' }}>
+      {children}
+    </OpChanProvider>
   );
 }
 ```

@@ -15,7 +15,8 @@ export interface OpChanProviderProps {
 
 /**
  * OpChan provider that constructs the OpChanClient and provides wallet context.
- * Must be nested inside WagmiProvider and AppKitProvider.
+ * This component already wraps WagmiProvider and AppKitProvider internally,
+ * so you can mount it directly at your app root with the required config.
  */
 export const OpChanProvider: React.FC<OpChanProviderProps> = ({
   config,

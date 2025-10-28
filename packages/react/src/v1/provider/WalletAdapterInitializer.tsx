@@ -37,9 +37,7 @@ export const WalletAdapterInitializer: React.FC = () => {
       // Initialize WalletManager for signing flows
       try {
         WalletManager.create(
-          appKit as unknown as AppKit,
-          btc as unknown as UseAppKitAccountReturn,
-          eth as unknown as UseAppKitAccountReturn,
+          appKit as unknown as AppKit, btc, eth
         );
       } catch (e) {
         console.warn('[WalletAdapterInitializer] WalletManager.create failed', e);
