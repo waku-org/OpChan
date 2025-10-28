@@ -2,21 +2,28 @@ import React from "react";
 import { OpChanClient, type OpChanClientConfig } from "@opchan/core";
 import { ClientProvider } from "../context/ClientContext";
 import { StoreWiring } from "./StoreWiring";
-import { WalletAdapterInitializer } from "./WalletAdapterInitializer";
-import { AppKitProvider } from "@reown/appkit/react";
 import { WagmiProvider } from "wagmi";
-import { appkitConfig, config as wagmiConfig } from "@opchan/core";
-import { AppKitErrorBoundary } from "../components/AppKitErrorBoundary";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { wagmiConfig } from "@opchan/core";
 
 export interface OpChanProviderProps {
   config: OpChanClientConfig;
   children: React.ReactNode;
 }
 
+// Create a default QueryClient instance
+const defaultQueryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
 /**
  * OpChan provider that constructs the OpChanClient and provides wallet context.
- * This component already wraps WagmiProvider and AppKitProvider internally,
- * so you can mount it directly at your app root with the required config.
+ * Simplified to use WagmiProvider + QueryClient only (no AppKit).
  */
 export const OpChanProvider: React.FC<OpChanProviderProps> = ({
   config,
@@ -26,15 +33,12 @@ export const OpChanProvider: React.FC<OpChanProviderProps> = ({
 
   return (
     <WagmiProvider config={wagmiConfig}>
-      <AppKitErrorBoundary>
-        <AppKitProvider {...appkitConfig}>
-          <ClientProvider client={client}>
-            <WalletAdapterInitializer />
-            <StoreWiring />
-            {children}
-          </ClientProvider>
-        </AppKitProvider>
-      </AppKitErrorBoundary>
+      <QueryClientProvider client={defaultQueryClient}>
+        <ClientProvider client={client}>
+          <StoreWiring />
+          {children}
+        </ClientProvider>
+      </QueryClientProvider>
     </WagmiProvider>
   );
 };

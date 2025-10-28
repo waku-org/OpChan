@@ -1,56 +1,38 @@
-import { AppKitOptions } from '@reown/appkit';
-import { BitcoinAdapter } from '@reown/appkit-adapter-bitcoin';
-import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
-import { createStorage } from 'wagmi';
-import { mainnet, bitcoin, AppKitNetwork } from '@reown/appkit/networks';
-import { environment } from '../utils/environment';
+import { createConfig, http } from 'wagmi';
+import { mainnet } from 'wagmi/chains';
+import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors';
 
-const networks: [AppKitNetwork, ...AppKitNetwork[]] = [mainnet, bitcoin];
+// Default WalletConnect project ID - users should override with their own
+const DEFAULT_PROJECT_ID = '2ead96ea166a03e5ab50e5c190532e72';
 
-const projectId =
-  environment.reownProjectId || 
-  process.env.VITE_REOWN_SECRET || 
-  '2ead96ea166a03e5ab50e5c190532e72';
+export function createWagmiConfig(projectId?: string) {
+  const wcProjectId = projectId || DEFAULT_PROJECT_ID;
 
-if (!projectId) {
-  throw new Error(
-    'Reown project ID is not defined. Please set it via config.reownProjectId, VITE_REOWN_SECRET environment variable, or use the default.'
-  );
+  return createConfig({
+    chains: [mainnet],
+    connectors: [
+      injected(), // MetaMask, Coinbase Wallet extension, etc.
+      walletConnect({
+        projectId: wcProjectId,
+        metadata: {
+          name: 'OpChan',
+          description: 'Decentralized Forum',
+          url: 'https://opchan.app',
+          icons: ['https://opchan.app/icon.png'],
+        },
+        showQrModal: true,
+      }),
+      coinbaseWallet({ 
+        appName: 'OpChan',
+        appLogoUrl: 'https://opchan.app/icon.png',
+      }),
+    ],
+    transports: {
+      [mainnet.id]: http(),
+    },
+  });
 }
 
-export const wagmiAdapter = new WagmiAdapter({
-  storage: createStorage({ storage: localStorage }),
-  ssr: false, // Set to false for Vite/React apps
-  projectId,
-  networks,
-});
-
-// Export the Wagmi config for the provider
-export const config = wagmiAdapter.wagmiConfig;
-
-export const bitcoinAdapter = new BitcoinAdapter({
-  projectId,
-});
-
-const metadata = {
-  name: 'OpChan',
-  description: 'Decentralized forum powered by Bitcoin Ordinals',
-  url:
-    process.env.NODE_ENV === 'production'
-      ? 'https://opchan.app'
-      : 'http://localhost:8080',
-  icons: ['https://opchan.com/logo.png'],
-};
-
-export const appkitConfig: AppKitOptions = {
-  adapters: [wagmiAdapter, bitcoinAdapter],
-  networks,
-  metadata,
-  projectId,
-  features: {
-    analytics: false,
-    socials: false,
-    allWallets: false,
-  },
-  enableWalletConnect: false,
-};
+// Default config export for convenience
+export const wagmiConfig = createWagmiConfig();
+export const config = wagmiConfig; // Alias for backward compatibility

@@ -44,10 +44,10 @@ export class ForumActions {
 
     switch (action) {
       case 'createCell':
-        if (verificationStatus !== EVerificationStatus.ENS_ORDINAL_VERIFIED) {
+        if (verificationStatus !== EVerificationStatus.ENS_VERIFIED) {
           return {
             valid: false,
-            error: 'Only ENS or Logos ordinal owners can create cells',
+            error: 'Only ENS owners can create cells',
           };
         }
         break;
@@ -104,8 +104,7 @@ export class ForumActions {
       const signed = await this.delegationManager.signMessage(unsignedPost);
       if (!signed) {
         const status = await this.delegationManager.getStatus(
-          currentUser!.address,
-          currentUser!.walletType
+          currentUser!.address
         );
         return {
           success: false,
@@ -173,8 +172,7 @@ export class ForumActions {
       const signed = await this.delegationManager.signMessage(unsignedComment);
       if (!signed) {
         const status = await this.delegationManager.getStatus(
-          currentUser!.address,
-          currentUser!.walletType
+          currentUser!.address
         );
         return {
           success: false,
@@ -245,8 +243,7 @@ export class ForumActions {
       const signed = await this.delegationManager.signMessage(unsignedCell);
       if (!signed) {
         const status = await this.delegationManager.getStatus(
-          currentUser!.address,
-          currentUser!.walletType
+          currentUser!.address
         );
         return {
           success: false,
@@ -317,8 +314,7 @@ export class ForumActions {
       const signed = await this.delegationManager.signMessage(unsignedVote);
       if (!signed) {
         const status = await this.delegationManager.getStatus(
-          currentUser!.address,
-          currentUser!.walletType
+          currentUser!.address
         );
         return {
           success: false,
@@ -389,8 +385,7 @@ export class ForumActions {
       const signed = await this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
         const status = await this.delegationManager.getStatus(
-          currentUser!.address,
-          currentUser!.walletType
+          currentUser!.address
         );
         return {
           success: false,
@@ -470,8 +465,7 @@ export class ForumActions {
       const signed = await this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
         const status = await this.delegationManager.getStatus(
-          currentUser!.address,
-          currentUser!.walletType
+          currentUser!.address
         );
         return {
           success: false,
@@ -550,8 +544,7 @@ export class ForumActions {
       const signed = await this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
         const status = await this.delegationManager.getStatus(
-          currentUser!.address,
-          currentUser!.walletType
+          currentUser!.address
         );
         return {
           success: false,
@@ -618,8 +611,7 @@ export class ForumActions {
       const signed = await this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
         const status = await this.delegationManager.getStatus(
-          currentUser!.address,
-          currentUser!.walletType
+          currentUser!.address
         );
         return {
           success: false,
@@ -699,8 +691,7 @@ export class ForumActions {
       const signed = await this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
         const status = await this.delegationManager.getStatus(
-          currentUser!.address,
-          currentUser!.walletType
+          currentUser!.address
         );
         return {
           success: false,
@@ -779,8 +770,7 @@ export class ForumActions {
       const signed = await this.delegationManager.signMessage(unsignedMod);
       if (!signed) {
         const status = await this.delegationManager.getStatus(
-          currentUser!.address,
-          currentUser!.walletType
+          currentUser!.address
         );
         return {
           success: false,

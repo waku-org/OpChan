@@ -153,7 +153,7 @@ const FeedPage: React.FC = () => {
                       Be the first to create a post in a cell!
                     </p>
                     {verificationStatus !==
-                      EVerificationStatus.ENS_ORDINAL_VERIFIED && (
+                      EVerificationStatus.ENS_VERIFIED && (
                       <p className="text-sm text-cyber-neutral/80">
                         Connect your wallet to start posting
                       </p>

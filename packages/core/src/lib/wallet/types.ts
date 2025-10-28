@@ -1,12 +1,6 @@
 export interface WalletInfo {
-  address: string;
-  walletType: 'bitcoin' | 'ethereum';
+  address: `0x${string}`;
   ensName?: string;
-  isConnected: boolean;
-}
-
-export interface ActiveWallet {
-  type: 'bitcoin' | 'ethereum';
-  address: string;
+  ensAvatar?: string;
   isConnected: boolean;
 }

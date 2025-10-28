@@ -42,7 +42,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
+import { useEthereumWallet } from '@opchan/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
 
 import { WakuHealthDot } from '@/components/ui/waku-health-indicator';
@@ -55,11 +55,7 @@ const Header = () => {
   const { toast } = useToast();
   const { content } = useForum();
 
-  const bitcoinAccount = useAppKitAccount({ namespace: 'bip122' });
-  const ethereumAccount = useAppKitAccount({ namespace: 'eip155' });
-  const { disconnect } = useDisconnect();
-
-  const isConnected = bitcoinAccount.isConnected || ethereumAccount.isConnected;
+  const { isConnected, disconnect } = useEthereumWallet();
 
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -117,7 +113,7 @@ const Header = () => {
 
     if (
       currentUser?.verificationStatus ===
-        EVerificationStatus.ENS_ORDINAL_VERIFIED &&
+        EVerificationStatus.ENS_VERIFIED &&
       delegationInfo?.isValid
     ) {
       return <CheckCircle className="w-4 h-4" />;
@@ -127,7 +123,7 @@ const Header = () => {
       return <AlertTriangle className="w-4 h-4" />;
     } else if (
       currentUser?.verificationStatus ===
-      EVerificationStatus.ENS_ORDINAL_VERIFIED
+      EVerificationStatus.ENS_VERIFIED
     ) {
       return <Key className="w-4 h-4" />;
     } else {
@@ -188,11 +184,11 @@ const Header = () => {
                     variant="outline"
                     className={`font-mono text-xs border-0 ${
                       currentUser?.verificationStatus ===
-                        EVerificationStatus.ENS_ORDINAL_VERIFIED &&
+                        EVerificationStatus.ENS_VERIFIED &&
                       delegationInfo?.isValid
                         ? 'bg-green-500/20 text-green-400 border-green-500/30'
                         : currentUser?.verificationStatus ===
-                            EVerificationStatus.ENS_ORDINAL_VERIFIED
+                            EVerificationStatus.ENS_VERIFIED
                           ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
                           : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                     }`}
@@ -205,7 +201,7 @@ const Header = () => {
                         : delegationInfo?.isValid
                           ? 'READY'
                           : currentUser?.verificationStatus ===
-                              EVerificationStatus.ENS_ORDINAL_VERIFIED
+                              EVerificationStatus.ENS_VERIFIED
                             ? 'EXPIRED'
                             : 'DELEGATE'}
                     </span>

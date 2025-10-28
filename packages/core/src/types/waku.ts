@@ -169,10 +169,7 @@ export interface VoteCache {
 export interface UserIdentityCache {
   [address: string]: {
     ensName?: string;
-    ordinalDetails?: {
-      ordinalId: string;
-      ordinalDetails: string;
-    };
+    ensAvatar?: string;
     callSign?: string;
     displayPreference: EDisplayPreference;
     lastUpdated: number;

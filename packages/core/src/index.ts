@@ -30,7 +30,6 @@ export * from './lib/forum/transformers';
 export { BookmarkService } from './lib/services/BookmarkService';
 export { MessageService } from './lib/services/MessageService';
 export { UserIdentityService, type UserIdentity } from './lib/services/UserIdentityService';
-export { ordinals } from './lib/services/Ordinals';
 
 // Export utilities
 export * from './lib/utils';
@@ -42,10 +41,9 @@ export { default as messageManager } from './lib/waku';
 export * from './lib/waku/network';
 
 // Export wallet functionality
-export { WalletManager } from './lib/wallet';
-export * from './lib/wallet/config';
+export { EthereumWallet, EthereumWalletHelpers } from './lib/wallet';
+export { wagmiConfig, config } from './lib/wallet/config';
 export * from './lib/wallet/types';
-export { type WalletAdapter, setWalletAdapter, getWalletAdapter } from './lib/wallet/adapter';
 
 // Primary client API
 export { OpChanClient, type OpChanClientConfig } from './client/OpChanClient';

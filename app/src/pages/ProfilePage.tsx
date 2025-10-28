@@ -162,7 +162,7 @@ export default function ProfilePage() {
   const getVerificationIcon = () => {
     // Use verification level from UserIdentityService (central database store)
     switch (currentUser.verificationStatus) {
-      case EVerificationStatus.ENS_ORDINAL_VERIFIED:
+      case EVerificationStatus.ENS_VERIFIED:
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case EVerificationStatus.WALLET_CONNECTED:
         return <Shield className="h-4 w-4 text-blue-500" />;
@@ -176,7 +176,7 @@ export default function ProfilePage() {
   const getVerificationText = () => {
     // Use verification level from UserIdentityService (central database store)
     switch (currentUser.verificationStatus) {
-      case EVerificationStatus.ENS_ORDINAL_VERIFIED:
+      case EVerificationStatus.ENS_VERIFIED:
         return 'Owns ENS or Ordinal';
       case EVerificationStatus.WALLET_CONNECTED:
         return 'Connected Wallet';
@@ -190,7 +190,7 @@ export default function ProfilePage() {
   const getVerificationColor = () => {
     // Use verification level from UserIdentityService (central database store)
     switch (currentUser.verificationStatus) {
-      case EVerificationStatus.ENS_ORDINAL_VERIFIED:
+      case EVerificationStatus.ENS_VERIFIED:
         return 'bg-green-100 text-green-800 border-green-200';
       case EVerificationStatus.WALLET_CONNECTED:
         return 'bg-blue-100 text-blue-800 border-blue-200';

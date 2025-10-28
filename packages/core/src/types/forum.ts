@@ -121,7 +121,6 @@ export interface UserVerificationStatus {
   [address: string]: {
     isVerified: boolean;
     hasENS: boolean;
-    hasOrdinal: boolean;
     ensName?: string;
     verificationStatus?: EVerificationStatus;
   };

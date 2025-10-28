@@ -1,16 +1,9 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Bitcoin,
-  Coins,
-  Shield,
-  ShieldCheck,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
+import { Coins, Shield, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
-import { OrdinalDetails, EnsDetails } from '@opchan/core';
+import { EnsDetails } from '@opchan/core';
 
 interface VerificationStepProps {
   onComplete: () => void;
@@ -30,7 +23,7 @@ export function VerificationStep({
   const [verificationResult, setVerificationResult] = React.useState<{
     success: boolean;
     message: string;
-    details?: OrdinalDetails | EnsDetails;
+    details?: EnsDetails;
   } | null>(null);
 
   // Watch for changes in user state after verification
@@ -39,29 +32,18 @@ export function VerificationStep({
       verificationResult?.success &&
       verificationResult.message.includes('Checking ownership')
     ) {
-      const hasOwnership =
-        currentUser?.verificationStatus ===
-        EVerificationStatus.ENS_ORDINAL_VERIFIED;
+      const hasOwnership = currentUser?.verificationStatus === EVerificationStatus.ENS_VERIFIED;
 
       if (hasOwnership) {
         setVerificationResult({
           success: true,
-          message:
-            currentUser?.walletType === 'bitcoin'
-              ? 'Ordinal ownership verified successfully!'
-              : 'ENS ownership verified successfully!',
-          details:
-            currentUser?.walletType === 'bitcoin'
-              ? currentUser?.ordinalDetails
-              : currentUser?.ensDetails,
+          message: 'ENS ownership verified successfully!',
+          details: currentUser?.ensDetails,
         });
       } else {
         setVerificationResult({
           success: false,
-          message:
-            currentUser?.walletType === 'bitcoin'
-              ? 'No Ordinal ownership found. You can still participate in the forum with your connected wallet!'
-              : 'No ENS ownership found. You can still participate in the forum with your connected wallet!',
+          message: 'No ENS ownership found. You can still participate in the forum with your connected wallet!',
         });
       }
     }
@@ -84,10 +66,7 @@ export function VerificationStep({
       if (ok) {
         setVerificationResult({
           success: true,
-          message:
-            currentUser?.walletType === 'bitcoin'
-              ? 'Verification process completed. Checking ownership...'
-              : 'Verification process completed. Checking ownership...',
+          message: 'Verification process completed. Checking ownership...',
           details: undefined,
         });
       } else {
@@ -116,29 +95,14 @@ export function VerificationStep({
     onComplete();
   };
 
-  const getVerificationType = () => {
-    return currentUser?.walletType === 'bitcoin'
-      ? 'Bitcoin Ordinal'
-      : 'Ethereum ENS';
-  };
+  const getVerificationType = () => 'Ethereum ENS';
 
-  const getVerificationIcon = () => {
-    return currentUser?.walletType === 'bitcoin' ? Bitcoin : Coins;
-  };
+  const getVerificationIcon = () => Coins;
 
-  const getVerificationColor = () => {
-    return currentUser?.walletType === 'bitcoin'
-      ? 'text-orange-500'
-      : 'text-blue-500';
-  };
+  const getVerificationColor = () => 'text-blue-500';
 
-  const getVerificationDescription = () => {
-    if (currentUser?.walletType === 'bitcoin') {
-      return "Verify your Bitcoin Ordinal ownership to unlock premium features. If you don't own any Ordinals, you can still participate in the forum with your connected wallet.";
-    } else {
-      return "Verify your Ethereum ENS ownership to unlock premium features. If you don't own any ENS, you can still participate in the forum with your connected wallet.";
-    }
-  };
+  const getVerificationDescription = () =>
+    "Verify your Ethereum ENS ownership to unlock premium features. If you don't own any ENS, you can still participate in the forum with your connected wallet.";
 
   // Show verification result
   if (verificationResult) {
@@ -175,23 +139,12 @@ export function VerificationStep({
             </p>
             {verificationResult.details && (
               <div className="text-xs text-neutral-400">
-                {currentUser?.walletType === 'bitcoin' ? (
-                  <p>
-                    Ordinal ID:{' '}
-                    {typeof verificationResult.details === 'object' &&
-                    'ordinalId' in verificationResult.details
-                      ? verificationResult.details.ordinalId
-                      : 'Verified'}
-                  </p>
-                ) : (
-                  <p>
-                    ENS Name:{' '}
-                    {typeof verificationResult.details === 'object' &&
-                    'ensName' in verificationResult.details
-                      ? verificationResult.details.ensName
-                      : 'Verified'}
-                  </p>
-                )}
+                <p>
+                  ENS Name:{' '}
+                  {typeof verificationResult.details === 'object' && 'ensName' in verificationResult.details
+                    ? verificationResult.details.ensName
+                    : 'Verified'}
+                </p>
               </div>
             )}
           </div>
@@ -213,7 +166,7 @@ export function VerificationStep({
 
   // Show verification status
   if (
-    currentUser?.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED
+    currentUser?.verificationStatus === EVerificationStatus.ENS_VERIFIED
   ) {
     return (
       <div className="flex flex-col h-full">
@@ -230,12 +183,7 @@ export function VerificationStep({
             </p>
             {currentUser && (
               <div className="text-xs text-neutral-400">
-                {currentUser?.walletType === 'bitcoin' && (
-                  <p>Ordinal ID: Verified</p>
-                )}
-                {currentUser?.walletType === 'ethereum' && (
-                  <p>ENS Name: Verified</p>
-                )}
+                <p>ENS Name: Verified</p>
               </div>
             )}
           </div>
@@ -281,19 +229,9 @@ export function VerificationStep({
             </span>
           </div>
           <ul className="text-xs text-neutral-400 space-y-1">
-            {currentUser?.walletType === 'bitcoin' ? (
-              <>
-                <li>• We'll check your wallet for Bitcoin Ordinal ownership</li>
-                <li>• If found, you'll get full posting and voting access</li>
-                <li>• If not found, you'll have read-only access</li>
-              </>
-            ) : (
-              <>
-                <li>• We'll check your wallet for ENS domain ownership</li>
-                <li>• If found, you'll get full posting and voting access</li>
-                <li>• If not found, you'll have read-only access</li>
-              </>
-            )}
+            <li>• We'll check your wallet for ENS domain ownership</li>
+            <li>• If found, you'll get full posting and voting access</li>
+            <li>• If not found, you'll have read-only access</li>
           </ul>
         </div>
 

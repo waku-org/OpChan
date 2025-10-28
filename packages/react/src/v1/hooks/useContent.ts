@@ -13,7 +13,7 @@ import {
 import { BookmarkService } from '@opchan/core';
 
 function reflectCache(client: ReturnType<typeof useClient>): void {
-  getDataFromCache().then(({ cells, posts, comments }) => {
+  getDataFromCache().then(({ cells, posts, comments }: { cells: Cell[]; posts: Post[]; comments: Comment[] }) => {
     setOpchanState(prev => ({
       ...prev,
       content: {
@@ -27,7 +27,7 @@ function reflectCache(client: ReturnType<typeof useClient>): void {
         pendingVotes: prev.content.pendingVotes,
       },
     }));
-  }).catch(err => {
+  }).catch((err: Error) => {
     console.error('reflectCache failed', err);
   });
 }
@@ -77,16 +77,16 @@ export function useContent() {
     const identities = client.database.cache.userIdentities;
     const result: UserVerificationStatus = {};
     for (const [address, rec] of Object.entries(identities)) {
-      const hasEns = Boolean(rec.ensName);
-      const hasOrdinal = Boolean(rec.ordinalDetails);
-      const isVerified = rec.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
-      result[address] = {
-        isVerified,
-        hasENS: hasEns,
-        hasOrdinal,
-        ensName: rec.ensName,
-        verificationStatus: rec.verificationStatus,
-      };
+      if (rec) {
+        const hasEns = Boolean(rec.ensName);
+        const isVerified = rec.verificationStatus === EVerificationStatus.ENS_VERIFIED;
+        result[address] = {
+          isVerified,
+          hasENS: hasEns,
+          ensName: rec.ensName,
+          verificationStatus: rec.verificationStatus,
+        };
+      }
     }
     return result;
   }, [client.database.cache.userIdentities]);

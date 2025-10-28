@@ -1,9 +1,8 @@
 export type User = {
-  address: string;
-  walletType: 'bitcoin' | 'ethereum';
+  address: `0x${string}`;
 
-  ordinalDetails?: OrdinalDetails;
-  ensDetails?: EnsDetails;
+  ensName?: string;
+  ensAvatar?: string;
 
   callSign?: string;
   displayPreference: EDisplayPreference;
@@ -14,23 +13,14 @@ export type User = {
   signature?: string;
   lastChecked?: number;
   browserPubKey?: string; // Browser-generated public key for key delegation
-  delegationSignature?: string; // Signature from Bitcoin/Ethereum wallet for delegation
+  delegationSignature?: string; // Signature from Ethereum wallet for delegation
   delegationExpiry?: number; // When the delegation expires
 };
 
 export enum EVerificationStatus {
   WALLET_UNCONNECTED = 'wallet-unconnected',
   WALLET_CONNECTED = 'wallet-connected',
-  ENS_ORDINAL_VERIFIED = 'ens-ordinal-verified',
-}
-
-export interface OrdinalDetails {
-  ordinalId: string;
-  ordinalDetails: string;
-}
-
-export interface EnsDetails {
-  ensName: string;
+  ENS_VERIFIED = 'ens-verified',
 }
 
 export enum EDisplayPreference {

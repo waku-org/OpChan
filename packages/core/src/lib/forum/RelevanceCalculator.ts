@@ -20,8 +20,8 @@ export class RelevanceCalculator {
     COMMENT: 0.5,
   };
 
-  private static readonly VERIFICATION_BONUS = 1.25; // 25% increase for ENS/Ordinal owners
-  private static readonly BASIC_VERIFICATION_BONUS = 1.1; // 10% increase for basic verified users
+  private static readonly VERIFICATION_BONUS = 1.25; // 25% increase for ENS verified users
+  private static readonly BASIC_VERIFICATION_BONUS = 1.1; // 10% increase for wallet-connected users
   private static readonly VERIFIED_UPVOTE_BONUS = 0.1;
   private static readonly VERIFIED_COMMENTER_BONUS = 0.05;
 
@@ -219,12 +219,11 @@ export class RelevanceCalculator {
   }
 
   /**
-   * Check if a user is verified (has ENS or ordinal ownership, or basic verification)
+   * Check if a user is verified (has ENS or basic verification)
    */
   isUserVerified(user: User): boolean {
     return !!(
-      user.ensDetails ||
-      user.ordinalDetails ||
+      user.ensName ||
       user.verificationStatus === EVerificationStatus.WALLET_CONNECTED
     );
   }
@@ -238,9 +237,8 @@ export class RelevanceCalculator {
     users.forEach(user => {
       status[user.address] = {
         isVerified: this.isUserVerified(user),
-        hasENS: !!user.ensDetails,
-        hasOrdinal: !!user.ordinalDetails,
-        ensName: user.ensDetails?.ensName,
+        hasENS: !!user.ensName,
+        ensName: user.ensName,
         verificationStatus: user.verificationStatus,
       };
     });
@@ -285,9 +283,9 @@ export class RelevanceCalculator {
     }
 
     // Apply different bonuses based on verification signals from UserVerificationStatus
-    // Full bonus if author owns ENS or Ordinal. Otherwise, if merely verified (wallet connected), apply basic bonus
+    // Full bonus if author owns ENS. Otherwise, if merely verified (wallet connected), apply basic bonus
     let bonus = 0;
-    if (authorStatus?.hasENS || authorStatus?.hasOrdinal) {
+    if (authorStatus?.hasENS) {
       bonus = score * (RelevanceCalculator.VERIFICATION_BONUS - 1);
     } else if (authorStatus?.isVerified) {
       bonus = score * (RelevanceCalculator.BASIC_VERIFICATION_BONUS - 1);

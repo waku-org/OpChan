@@ -93,7 +93,7 @@ describe('RelevanceCalculator', () => {
       const verifiedUser: User = {
         address: 'user1',
         walletType: 'ethereum',
-        verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
+        verificationStatus: EVerificationStatus.ENS_VERIFIED,
         displayPreference: EDisplayPreference.WALLET_ADDRESS,
         ensDetails: {
           ensName: 'test.eth',
@@ -110,7 +110,7 @@ describe('RelevanceCalculator', () => {
       const verifiedUser: User = {
         address: 'user3',
         walletType: 'bitcoin',
-        verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
+        verificationStatus: EVerificationStatus.ENS_VERIFIED,
         displayPreference: EDisplayPreference.WALLET_ADDRESS,
         ordinalDetails: {
           ordinalId: '1',
@@ -300,7 +300,7 @@ describe('RelevanceCalculator', () => {
         {
           address: 'user1',
           walletType: 'ethereum',
-          verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
+          verificationStatus: EVerificationStatus.ENS_VERIFIED,
           displayPreference: EDisplayPreference.WALLET_ADDRESS,
           ensDetails: {
             ensName: 'test.eth',

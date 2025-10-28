@@ -1,14 +1,13 @@
 # OpChan
 
-A decentralized forum application built as a Proof of Concept for a Waku-powered discussion platform. OpChan enables users to create "cells" (discussion boards), make posts, and engage in threaded conversations using Bitcoin Ordinal verification and the Waku protocol for decentralized messaging.
+A decentralized forum application built as a Proof of Concept for a Waku-powered discussion platform. OpChan enables users to create "cells" (discussion boards), make posts, and engage in threaded conversations using Ethereum wallets (wagmi) with optional ENS verification and the Waku protocol for decentralized messaging.
 
 ## Quick Start
 
 ### Prerequisites
 
 - Node.js 18+ and npm
-- [Phantom Wallet](https://phantom.app/) browser extension
-- Bitcoin Ordinals (required for posting, optional for reading)
+- Ethereum wallet (e.g., MetaMask, Coinbase Wallet) or WalletConnect-compatible wallet
 
 ### Installation
 
@@ -31,12 +30,7 @@ A decentralized forum application built as a Proof of Concept for a Waku-powered
    cp .env.example .env
    ```
 
-   Edit `.env` to configure development settings:
-
-   ```env
-   # Set to 'true' to bypass verification in development
-   VITE_OPCHAN_MOCK_ORDINAL_CHECK=false
-   ```
+   Edit `.env` to configure development settings as needed for local testing.
 
 4. **Start development server**
    ```bash
@@ -69,8 +63,8 @@ src/
 
 ### Getting Started
 
-1. **Connect Wallet**: Click "Connect Wallet" and approve the Phantom wallet connection
-2. **Verify Ordinals**: The app will check if your wallet contains Logos Operator Bitcoin Ordinals
+1. **Connect Wallet**: Click "Connect Wallet" and approve the wallet connection
+2. **Verify ENS**: The app will resolve your ENS name (if any) and mark your account as ENS-verified
 3. **Browse Cells**: View existing discussion boards on the dashboard
 4. **Create Content**: Create new cells, posts, or comments (requires Ordinals)
 5. **Moderate**: Cell creators can moderate their boards
@@ -79,7 +73,7 @@ src/
 
 OpChan uses a two-tier authentication system:
 
-1. **Wallet Connection**: Initial connection to Phantom wallet
+1. **Wallet Connection**: Initial connection via wagmi connectors (Injected / WalletConnect / Coinbase)
 2. **Key Delegation**: Optional browser key generation for improved UX
    - Reduces wallet signature prompts
    - Configurable duration: 1 week or 30 days
@@ -119,7 +113,7 @@ OpChan uses a two-tier authentication system:
 OpChan implements a decentralized architecture with these key components:
 
 - **Waku Protocol**: Handles peer-to-peer messaging and content distribution
-- **Bitcoin Ordinals**: Provides decentralized identity verification
+- **ENS**: Provides decentralized identity signal for identity and display
 - **Key Delegation**: Improves UX while maintaining security
 - **Content Addressing**: Messages are cryptographically signed and verifiable
 - **Moderation Layer**: Cell-based moderation without global censorship

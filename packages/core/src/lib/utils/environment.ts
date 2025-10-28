@@ -4,22 +4,14 @@
  */
 
 export interface EnvironmentConfig {
-  apiKeys?: {
-    ordiscan?: string;
-  };
   reownProjectId?: string;
 }
 
 class Environment { 
-  private config: EnvironmentConfig = {
-  };
+  private config: EnvironmentConfig = {};
 
   public configure(config: EnvironmentConfig): void {
     this.config = { ...this.config, ...config };
-  }
-
-  public get ordiscanApiKey(): string | undefined {
-    return this.config.apiKeys?.ordiscan;
   }
 
   public get reownProjectId(): string | undefined {

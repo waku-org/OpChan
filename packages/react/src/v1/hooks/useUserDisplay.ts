@@ -78,12 +78,12 @@ export function useUserDisplay(address: string): UserDisplayInfo {
     }
 
     return {
-      address,
+      address: address as `0x${string}`,
       displayName: `${address.slice(0, 6)}...${address.slice(-4)}`,
       lastUpdated: 0,
       callSign: undefined,
       ensName: undefined,
-      ordinalDetails: undefined,
+      ensAvatar: undefined,
       verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
       displayPreference: EDisplayPreference.WALLET_ADDRESS,
       isLoading,

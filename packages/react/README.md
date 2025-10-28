@@ -10,15 +10,15 @@ npm i @opchan/react @opchan/core react react-dom
 
 ### Quickstart
 
-#### With Reown AppKit (Recommended)
+#### Quickstart Provider (wagmi-only)
 
-OpChan integrates with Reown AppKit for wallet management. The OpChanProvider already wraps WagmiProvider and AppKitProvider internally, so you can mount it directly:
+OpChan uses wagmi connectors for wallet management. The OpChanProvider already wraps WagmiProvider and React Query internally, so you can mount it directly:
 
 ```tsx
 import React from 'react';
 import { OpChanProvider } from '@opchan/react';
 
-const opchanConfig = { ordiscanApiKey: 'YOUR_ORDISCAN_API_KEY' };
+const opchanConfig = {};
 
 function App() {
   return (
@@ -69,12 +69,9 @@ export function Connect() {
         </>
       ) : (
         <>
-          <button onClick={() => connect('ethereum')}>
-            Connect Ethereum
-          </button>
-          <button onClick={() => connect('bitcoin')}>
-            Connect Bitcoin
-          </button>
+      <button onClick={() => connect()}>
+        Connect Wallet
+      </button>
         </>
       )}
     </div>
@@ -85,12 +82,11 @@ export function Connect() {
 ### API
 
 - **Providers**
-  - **`OpChanProvider`**: High-level provider that constructs an `OpChanClient` and integrates with AppKit.
+- **`OpChanProvider`**: High-level provider that constructs an `OpChanClient` and wires wagmi + React Query.
     - Props:
       - `config: OpChanClientConfig` — core client configuration.
       - `children: React.ReactNode`.
-    - Requirements: None — this provider already wraps `WagmiProvider` and `AppKitProvider` internally.
-    - Internally provides `AppKitWalletProvider` for wallet state management.
+    - Requirements: None — this provider already wraps `WagmiProvider` and `QueryClientProvider` internally.
   
   - **`AppKitWalletProvider`**: Wallet context provider (automatically included in `OpChanProvider`).
     - Provides wallet state and controls from AppKit.
@@ -107,9 +103,7 @@ export function Connect() {
       `delegate(duration)`, `delegationStatus()`, `clearDelegation()`,
       `updateProfile({ callSign?, displayPreference? })`.
   
-  - **`useAppKitWallet()`** → AppKit wallet state (low-level)
-    - Data: `address`, `walletType`, `isConnected`, `isInitialized`.
-    - Actions: `connect(walletType)`, `disconnect()`.
+ 
 
   - **`useContent()`** → forum data & actions
     - Data: `cells`, `posts`, `comments`, `bookmarks`, `postsByCell`, `commentsByPost`,
@@ -135,7 +129,7 @@ export function Connect() {
     - Categories: `'wizardStates' | 'preferences' | 'temporaryStates'` (default `'preferences'`).
 
   - **`useUserDisplay(address)`** → identity details for any address
-    - Returns `{ address, displayName, callSign?, ensName?, ordinalDetails?, verificationStatus, displayPreference, lastUpdated, isLoading, error }`.
+    - Returns `{ address, displayName, callSign?, ensName?, verificationStatus, displayPreference, lastUpdated, isLoading, error }`.
     - Backed by a centralized identity cache; updates propagate automatically.
 
   - **`useClient()`** → access the underlying `OpChanClient` (advanced use only).
@@ -154,9 +148,7 @@ export function Connect() {
   if (!(window as any).Buffer) (window as any).Buffer = Buffer
   ```
 - Config values you likely need to pass to `OpChanProvider`:
-  - `ordiscanApiKey` (optional for dev)
   - `wakuConfig` with `contentTopic` and `reliableChannelId`
-  - `reownProjectId` (e.g., from `import.meta.env.VITE_REOWN_SECRET`)
 
 ### License
 

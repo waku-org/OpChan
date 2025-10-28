@@ -12,7 +12,7 @@ The examples assume you install and use the `@opchan/react` and `@opchan/core` p
 npm i @opchan/react @opchan/core
 ```
 
-Create an app-level provider using `OpChanProvider`. You must pass a minimal client config (e.g., Ordiscan API key if you have one). OpChanProvider already wraps `WagmiProvider` and `AppKitProvider` from Reown AppKit internally, so mount it directly at the app root.
+Create an app-level provider using `OpChanProvider`. The provider already wraps `WagmiProvider` and React Query; no AppKit is required. Mount it directly at the app root.
 
 ```tsx
 import React from 'react';
@@ -20,14 +20,14 @@ import { OpChanProvider } from '@opchan/react';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <OpChanProvider config={{ ordiscanApiKey: 'YOUR_API_KEY' }}>
+    <OpChanProvider config={{}}>
       {children}
     </OpChanProvider>
   );
 }
 ```
 
-OpChanProvider automatically integrates with AppKit for wallet management.
+OpChanProvider uses wagmi connectors (Injected/WalletConnect/Coinbase) for wallet management.
 
 ---
 
@@ -66,17 +66,12 @@ function WalletControls() {
         <>
           <div>Connected: {currentUser.displayName}</div>
           <button onClick={() => disconnect()}>Disconnect</button>
-          <button onClick={() => verifyOwnership()}>Verify ENS/Ordinal</button>
+          <button onClick={() => verifyOwnership()}>Verify ENS</button>
           <div>Status: {verificationStatus}</div>
         </>
       ) : (
         <>
-          <button onClick={() => connect('bitcoin')}>
-            Connect Bitcoin
-          </button>
-          <button onClick={() => connect('ethereum')}>
-            Connect Ethereum
-          </button>
+          <button onClick={() => connect()}>Connect Wallet</button>
         </>
       )}
     </div>
@@ -85,8 +80,8 @@ function WalletControls() {
 ```
 
 Notes:
-- `connect(walletType)` opens the AppKit modal for the specified wallet type (bitcoin/ethereum). Upon successful connection, OpChan automatically syncs the wallet state and creates a user session.
-- `verifyOwnership()` refreshes identity and sets `EVerificationStatus` appropriately (checks ENS or Bitcoin Ordinals).
+- `connect()` opens the selected wagmi connector (e.g., Injected/WalletConnect). Upon successful connection, OpChan automatically syncs the wallet state and creates a user session.
+- `verifyOwnership()` refreshes identity and sets `EVerificationStatus` appropriately (checks ENS).
 
 ---
 
@@ -327,9 +322,9 @@ API: `useUserDisplay(address)` returns resolved user identity for UI labels.
 import { useUserDisplay } from '@opchan/react';
 
 function AuthorName({ address }: { address: string }) {
-  const { displayName, ensName, ordinalDetails, isLoading } = useUserDisplay(address);
+  const { displayName, ensName, isLoading } = useUserDisplay(address);
   if (isLoading) return <span>Loading…</span>;
-  return <span title={ensName || ordinalDetails?.ordinalId}>{displayName}</span>;
+  return <span title={ensName || undefined}>{displayName}</span>;
 }
 ```
 
@@ -367,7 +362,7 @@ function Home() {
 
 export default function App() {
   return (
-    <OpChanProvider config={{ ordiscanApiKey: '' }}>
+    <OpChanProvider config={{}}>
       <Home />
     </OpChanProvider>
   );
@@ -381,6 +376,6 @@ export default function App() {
 - Always gate actions with `usePermissions()` to provide clear UX reasons.
 - Use `pending.isPending(id)` to show optimistic “syncing…” states for content you just created or voted on.
 - The store is hydrated from IndexedDB on load; Waku live messages keep it in sync.
-- Identity (ENS/Ordinals/Call Sign) is resolved and cached; calling `verifyOwnership()` or updating the profile will refresh it.
+- Identity (ENS/Call Sign) is resolved and cached; calling `verifyOwnership()` or updating the profile will refresh it.
 
 

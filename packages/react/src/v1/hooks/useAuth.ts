@@ -1,31 +1,29 @@
 import React from 'react';
 import { useClient } from '../context/ClientContext';
-import { useAppKitWallet } from '../hooks/useAppKitWallet';
+import { useEthereumWallet } from './useEthereumWallet';
 import { useOpchanStore, setOpchanState } from '../store/opchanStore';
 import {
   User,
   EVerificationStatus,
   DelegationDuration,
   EDisplayPreference,
-  WalletManager,
 } from '@opchan/core';
 import type { DelegationFullStatus } from '@opchan/core';
 
 export function useAuth() {
   const client = useClient();
-  const wallet = useAppKitWallet();
+  const wallet = useEthereumWallet();
   const currentUser = useOpchanStore(s => s.session.currentUser);
   const verificationStatus = useOpchanStore(s => s.session.verificationStatus);
   const delegation = useOpchanStore(s => s.session.delegation);
 
-  // Sync AppKit wallet state to OpChan session
+  // Sync Ethereum wallet state to OpChan session
   React.useEffect(() => {
     const syncWallet = async () => {
-      if (wallet.isConnected && wallet.address && wallet.walletType) {
+      if (wallet.isConnected && wallet.address) {
         // Wallet connected - create/update user session
         const baseUser: User = {
           address: wallet.address,
-          walletType: wallet.walletType,
           displayName: wallet.address.slice(0, 6) + '...' + wallet.address.slice(-4),
           displayPreference: EDisplayPreference.WALLET_ADDRESS,
           verificationStatus: EVerificationStatus.WALLET_CONNECTED,
@@ -33,6 +31,11 @@ export function useAuth() {
         };
 
         try {
+          // Set public client for ENS resolution
+          if (wallet.publicClient) {
+            client.userIdentityService.setPublicClient(wallet.publicClient);
+          }
+
           await client.database.storeUser(baseUser);
           // Prime identity service so display name/ens are cached
           const identity = await client.userIdentityService.getIdentity(baseUser.address);
@@ -80,10 +83,10 @@ export function useAuth() {
     };
 
     syncWallet();
-  }, [wallet.isConnected, wallet.address, wallet.walletType, client]);
+  }, [wallet.isConnected, wallet.address, wallet.publicClient, client, currentUser]);
 
-  const connect = React.useCallback((walletType: 'bitcoin' | 'ethereum'): void => {
-    wallet.connect(walletType);
+  const connect = React.useCallback((): void => {
+    wallet.connect();
   }, [wallet]);
 
   const disconnect = React.useCallback(async (): Promise<void> => {
@@ -91,7 +94,7 @@ export function useAuth() {
   }, [wallet]);
 
   const verifyOwnership = React.useCallback(async (): Promise<boolean> => {
-    console.log('verifyOwnership')
+    console.log('verifyOwnership');
     const user = currentUser;
     if (!user) return false;
     try {
@@ -103,15 +106,15 @@ export function useAuth() {
 
       const updated: User = {
         ...user,
-        ...identity,  
+        ...identity,
       };
 
       await client.database.storeUser(updated);
       await client.database.upsertUserIdentity(user.address, {
         displayName: identity.displayName,
         ensName: identity?.ensName || undefined,
-        ordinalDetails: identity?.ordinalDetails,
-        verificationStatus: identity.verificationStatus,  
+        ensAvatar: identity?.ensAvatar || undefined,
+        verificationStatus: identity.verificationStatus,
         lastUpdated: Date.now(),
       });
 
@@ -119,7 +122,7 @@ export function useAuth() {
         ...prev,
         session: { ...prev.session, currentUser: updated, verificationStatus: identity.verificationStatus },
       }));
-      return identity.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
+      return identity.verificationStatus === EVerificationStatus.ENS_VERIFIED;
     } catch (e) {
       console.error('verifyOwnership failed', e);
       return false;
@@ -132,15 +135,13 @@ export function useAuth() {
     const user = currentUser;
     if (!user) return false;
     try {
-      const signer = ((message: string) => WalletManager.getInstance().signMessage(message));
       const ok = await client.delegation.delegate(
         user.address,
-        user.walletType,
         duration,
-        signer,
+        wallet.signMessage,
       );
 
-      const status = await client.delegation.getStatus(user.address, user.walletType);
+      const status = await client.delegation.getStatus(user.address);
       setOpchanState(prev => ({
         ...prev,
         session: { ...prev.session, delegation: status },
@@ -150,12 +151,12 @@ export function useAuth() {
       console.error('delegate failed', e);
       return false;
     }
-  }, [client, currentUser]);
+  }, [client, currentUser, wallet]);
 
   const delegationStatus = React.useCallback(async () => {
     const user = currentUser;
     if (!user) return { hasDelegation: false, isValid: false } as const;
-    return client.delegation.getStatus(user.address, user.walletType);
+    return client.delegation.getStatus(user.address);
   }, [client, currentUser]);
 
   const clearDelegation = React.useCallback(async (): Promise<boolean> => {
@@ -222,7 +223,3 @@ export function useAuth() {
     updateProfile,
   } as const;
 }
-
-
-
-

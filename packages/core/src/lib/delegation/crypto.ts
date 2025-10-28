@@ -1,7 +1,7 @@
 import * as ed from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha512';
 import { bytesToHex, hexToBytes } from '../utils';
-import { WalletManager } from '../wallet';
+import { EthereumWalletHelpers } from '../wallet/EthereumWallet';
 
 // Set up ed25519 with sha512
 ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
@@ -31,25 +31,22 @@ export class DelegationCrypto {
   }
 
   /**
-   * Verify a wallet signature using WalletManager
+   * Verify a wallet signature using Ethereum verification
    * @param authMessage - The message that was signed
    * @param walletSignature - The signature to verify
    * @param walletAddress - The wallet address that signed
-   * @param walletType - The type of wallet
    * @returns Promise<boolean> - True if signature is valid
    */
   static async verifyWalletSignature(
     authMessage: string,
     walletSignature: string,
-    walletAddress: string,
-    walletType: 'bitcoin' | 'ethereum'
+    walletAddress: `0x${string}`
   ): Promise<boolean> {
     try {
-      return await WalletManager.verifySignature(
+      return await EthereumWalletHelpers.verifySignature(
         authMessage,
-        walletSignature,
-        walletAddress,
-        walletType
+        walletSignature as `0x${string}`,
+        walletAddress
       );
     } catch (error) {
       console.error('Error verifying wallet signature:', error);

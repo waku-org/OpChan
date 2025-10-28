@@ -5,7 +5,7 @@ export {
   useClient,
 } from './v1/context/ClientContext';
 
-export { useAppKitWallet } from './v1/hooks/useAppKitWallet';
+export { useEthereumWallet } from './v1/hooks/useEthereumWallet';
 
 export { OpChanProvider } from './v1/provider/OpChanProvider';
 export type { OpChanProviderProps } from './v1/provider/OpChanProvider';

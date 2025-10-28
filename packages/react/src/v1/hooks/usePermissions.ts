@@ -5,10 +5,10 @@ export function usePermissions() {
   const { session, content } = useOpchanStore(s => ({ session: s.session, content: s.content }));
   const currentUser = session.currentUser;
 
-  const isVerified = session.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED;
+  const isVerified = session.verificationStatus === EVerificationStatus.ENS_VERIFIED;
   const isConnected = session.verificationStatus !== EVerificationStatus.WALLET_UNCONNECTED;
 
-  const canCreateCell = isVerified || isConnected;
+  const canCreateCell = isVerified;
   const canPost = isConnected;
   const canComment = isConnected;
   const canVote = isConnected;

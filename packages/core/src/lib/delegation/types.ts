@@ -7,8 +7,7 @@ export interface DelegationProof {
   authMessage: string; // "I authorize browser key: 0xabc... until 1640995200"
   walletSignature: string; // Wallet's signature of authMessage
   expiryTimestamp: number; // When this delegation expires
-  walletAddress: string; // Wallet address that signed the delegation
-  walletType: 'bitcoin' | 'ethereum'; // Type of wallet that created the delegation
+  walletAddress: `0x${string}`; // Ethereum address that signed the delegation
 }
 
 /**

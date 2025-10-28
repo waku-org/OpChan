@@ -59,10 +59,9 @@ export const StoreWiring: React.FC = () => {
         // Hydrate session (user + delegation) from LocalDatabase
         try {
           const loadedUser = await client.database.loadUser();
-          const delegationStatus = await client.delegation.getStatus(
-            loadedUser?.address,
-            loadedUser?.walletType,
-          );
+          const delegationStatus = loadedUser?.address
+            ? await client.delegation.getStatus(loadedUser.address)
+            : null;
 
           setOpchanState(prev => ({
             ...prev,
@@ -128,7 +127,7 @@ export const StoreWiring: React.FC = () => {
       });
 
       // Reactively update ALL identities when they refresh (not just current user)
-      unsubIdentity = client.userIdentityService.subscribe(async (address: string, identity) => {
+      unsubIdentity = client.userIdentityService.subscribe(async (address: string, identity: UserIdentity | null) => {
         try {
           if (!identity) {
             // Try to fetch if not provided

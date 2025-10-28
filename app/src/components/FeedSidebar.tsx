@@ -32,7 +32,7 @@ const FeedSidebar: React.FC = () => {
 
   // User's verification status display
   const getVerificationBadge = () => {
-    if (verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED) {
+    if (verificationStatus === EVerificationStatus.ENS_VERIFIED) {
       return { text: 'Verified Owner', color: 'bg-green-500' };
     } else if (verificationStatus === EVerificationStatus.WALLET_CONNECTED) {
       return { text: 'Verified', color: 'bg-blue-500' };

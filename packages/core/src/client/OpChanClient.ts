@@ -5,12 +5,10 @@ import { ForumActions } from '../lib/forum/ForumActions';
 import { RelevanceCalculator } from '../lib/forum/RelevanceCalculator';
 import { UserIdentityService } from '../lib/services/UserIdentityService';
 import { DelegationManager, delegationManager } from '../lib/delegation';
-import WalletManager from '../lib/wallet';
 import { MessageService } from '../lib/services/MessageService';
 import { WakuConfig } from '../types';
 
 export interface OpChanClientConfig {
-  ordiscanApiKey: string;
   wakuConfig: WakuConfig;
   reownProjectId?: string;
 }
@@ -25,15 +23,11 @@ export class OpChanClient {
   readonly messageService: MessageService;
   readonly userIdentityService: UserIdentityService;
   readonly delegation: DelegationManager = delegationManager;
-  readonly wallet = WalletManager
 
   constructor(config: OpChanClientConfig) {
     this.config = config;
 
     const env: EnvironmentConfig = {
-      apiKeys: {
-        ordiscan: config.ordiscanApiKey,
-      },
       reownProjectId: config.reownProjectId,
     };
 

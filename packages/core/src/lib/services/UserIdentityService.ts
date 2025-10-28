@@ -7,16 +7,13 @@ import {
 } from '../../types/waku';
 import { MessageService } from './MessageService';
 import { localDatabase } from '../database/LocalDatabase';
-import { WalletManager } from '../wallet';
-import { getWalletAdapter } from '../wallet/adapter';
+import { EthereumWalletHelpers } from '../wallet/EthereumWallet';
+import type { PublicClient } from 'viem';
 
 export interface UserIdentity {
-  address: string;
+  address: `0x${string}`;
   ensName?: string;
-  ordinalDetails?: {
-    ordinalId: string;
-    ordinalDetails: string;
-  };
+  ensAvatar?: string;
   callSign?: string;
   displayPreference: EDisplayPreference;
   displayName: string;
@@ -26,11 +23,20 @@ export interface UserIdentity {
 
 export class UserIdentityService {
   private messageService: MessageService;
+  private publicClient: PublicClient | null = null;
   private refreshListeners: Set<(address: string) => void> = new Set();
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
 
-  constructor(messageService: MessageService) {
+  constructor(messageService: MessageService, publicClient?: PublicClient) {
     this.messageService = messageService;
+    this.publicClient = publicClient || null;
+  }
+
+  /**
+   * Set the public client for ENS resolution
+   */
+  setPublicClient(publicClient: PublicClient): void {
+    this.publicClient = publicClient;
   }
 
   // ===== PUBLIC METHODS =====
@@ -81,7 +87,7 @@ export class UserIdentityService {
    */
   getAll(): UserIdentity[] {
     return Object.entries(localDatabase.cache.userIdentities).map(([address, cached]) => ({
-      address,
+      address: address as `0x${string}`,
       ...cached,
       verificationStatus: this.mapVerificationStatus(cached.verificationStatus),
     }));
@@ -224,38 +230,37 @@ export class UserIdentityService {
   }
 
   /**
-   * Resolve user identity from various sources
+   * Resolve user identity from ENS
    */
   private async resolveUserIdentity(
     address: string
   ): Promise<UserIdentity | null> {
     try {
       console.log('resolveUserIdentity', address);
-      const [ensName, ordinalDetails] = await Promise.all([
-        this.resolveENSName(address),
-        this.resolveOrdinalDetails(address),
-      ]);
+      
+      // Only resolve ENS for Ethereum addresses
+      if (!address.startsWith('0x')) {
+        return null;
+      }
 
-      const isWalletConnected = (getWalletAdapter()?.isConnected?.() ?? (WalletManager.hasInstance()
-        ? WalletManager.getInstance().isConnected()
-        : false));
+      const ensData = await this.resolveENSName(address as `0x${string}`);
+
       let verificationStatus: EVerificationStatus;
-      if (ensName || ordinalDetails) {
-        verificationStatus = EVerificationStatus.ENS_ORDINAL_VERIFIED;
+      if (ensData?.name) {
+        verificationStatus = EVerificationStatus.ENS_VERIFIED;
       } else {
-        verificationStatus = isWalletConnected ? EVerificationStatus.WALLET_CONNECTED : EVerificationStatus.WALLET_UNCONNECTED;
+        verificationStatus = EVerificationStatus.WALLET_CONNECTED;
       }
 
       const displayPreference = localDatabase.cache.userIdentities[address]?.displayPreference ?? EDisplayPreference.WALLET_ADDRESS;
 
-
       return {
-        address,
-        ensName: ensName || undefined,
-        ordinalDetails: ordinalDetails || undefined,
+        address: address as `0x${string}`,
+        ensName: ensData?.name || undefined,
+        ensAvatar: ensData?.avatar || undefined,
         callSign: undefined, // Will be populated from Waku messages
         displayPreference: displayPreference,
-        displayName: this.getDisplayName({address, ensName, displayPreference}),
+        displayName: this.getDisplayName({address, ensName: ensData?.name, displayPreference}),
         lastUpdated: Date.now(),
         verificationStatus,
       };
@@ -266,47 +271,16 @@ export class UserIdentityService {
   }
 
   /**
-   * Resolve ENS name from Ethereum address with caching to prevent multiple calls
+   * Resolve ENS name and avatar from Ethereum address with caching
    */
-  private async resolveENSName(address: string): Promise<string | null> {
-    if (!address.startsWith('0x')) {
-      return null; // Not an Ethereum address
-    }
-
+  private async resolveENSName(address: `0x${string}`): Promise<{ name: string | null; avatar: string | null }> {
     // Prefer previously persisted ENS if recent
     const cached = localDatabase.cache.userIdentities[address];
     if (cached?.ensName && cached.lastUpdated > Date.now() - 300000) {
-      return cached.ensName;
+      return { name: cached.ensName, avatar: cached.ensAvatar || null };
     }
 
     return this.doResolveENSName(address);
-  }
-
-  /**
-   * Resolve Ordinal details from Bitcoin address
-   */
-  private async resolveOrdinalDetails(
-    address: string
-  ): Promise<{ ordinalId: string; ordinalDetails: string } | null> {
-    try {
-      if (address.startsWith('0x')) {
-        return null;
-      }
-
-      const inscriptions = await WalletManager.resolveOperatorOrdinals(address);
-      if (Array.isArray(inscriptions) && inscriptions.length > 0) {
-        const first = inscriptions[0]!;
-        return {
-          ordinalId: first.inscription_id,
-          ordinalDetails:
-            first.parent_inscription_id || 'Operator badge present',
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Failed to resolve Ordinal details:', error);
-      return null;
-    }
   }
 
   /**
@@ -326,9 +300,9 @@ export class UserIdentityService {
     record: UserIdentityCache[string]
   ): UserIdentity {
     return {
-      address,
+      address: address as `0x${string}`,
       ensName: record.ensName,
-      ordinalDetails: record.ordinalDetails,
+      ensAvatar: record.ensAvatar,
       callSign: record.callSign,
       displayPreference: record.displayPreference,
       displayName: this.getDisplayName({address, ensName: record.ensName, displayPreference: record.displayPreference}),
@@ -345,18 +319,20 @@ export class UserIdentityService {
     identity: UserIdentity
   ): Promise<UserIdentity> {
     if (!identity.ensName && address.startsWith('0x')) {
-      const ensName = await this.resolveENSName(address);
-      if (ensName) {
+      const ensData = await this.resolveENSName(address as `0x${string}`);
+      if (ensData.name) {
         const updated: UserIdentity = {
           ...identity,
-          ensName,
-          verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
+          ensName: ensData.name,
+          ensAvatar: ensData.avatar || undefined,
+          verificationStatus: EVerificationStatus.ENS_VERIFIED,
           lastUpdated: Date.now(),
         };
 
         await localDatabase.upsertUserIdentity(address, {
-          ensName,
-          verificationStatus: EVerificationStatus.ENS_ORDINAL_VERIFIED,
+          ensName: ensData.name,
+          ensAvatar: ensData.avatar || undefined,
+          verificationStatus: EVerificationStatus.ENS_VERIFIED,
           lastUpdated: updated.lastUpdated,
         });
 
@@ -366,14 +342,17 @@ export class UserIdentityService {
     return identity;
   }
 
-  private async doResolveENSName(address: string): Promise<string | null> {
+  private async doResolveENSName(address: `0x${string}`): Promise<{ name: string | null; avatar: string | null }> {
     try {
-      // Resolve ENS via centralized WalletManager helper
-      const ensName = await WalletManager.resolveENS(address);
-      return ensName || null;
+      if (!this.publicClient) {
+        console.warn('No publicClient available for ENS resolution');
+        return { name: null, avatar: null };
+      }
+
+      return await EthereumWalletHelpers.resolveENS(this.publicClient, address);
     } catch (error) {
       console.error('Failed to resolve ENS name:', error);
-      return null;
+      return { name: null, avatar: null };
     }
   }
 
@@ -386,7 +365,8 @@ export class UserIdentityService {
       case 'verified-basic':
         return EVerificationStatus.WALLET_CONNECTED;
       case 'verified-owner':
-        return EVerificationStatus.ENS_ORDINAL_VERIFIED;
+      case 'ens-ordinal-verified': // Legacy value
+        return EVerificationStatus.ENS_VERIFIED;
       case 'verifying':
         return EVerificationStatus.WALLET_CONNECTED; // Temporary state during verification
 
@@ -395,8 +375,8 @@ export class UserIdentityService {
         return EVerificationStatus.WALLET_UNCONNECTED;
       case EVerificationStatus.WALLET_CONNECTED:
         return EVerificationStatus.WALLET_CONNECTED;
-      case EVerificationStatus.ENS_ORDINAL_VERIFIED:
-        return EVerificationStatus.ENS_ORDINAL_VERIFIED;
+      case EVerificationStatus.ENS_VERIFIED:
+        return EVerificationStatus.ENS_VERIFIED;
 
       default:
         return EVerificationStatus.WALLET_UNCONNECTED;

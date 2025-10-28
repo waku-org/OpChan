@@ -11,8 +11,7 @@ import { DelegationCrypto } from './crypto';
 
 export interface DelegationFullStatus extends DelegationStatus {
   publicKey?: string;
-  address?: string;
-  walletType?: 'bitcoin' | 'ethereum';
+  address?: `0x${string}`;
 }
 
 export class DelegationManager {
@@ -36,8 +35,7 @@ export class DelegationManager {
    * Create a delegation with cryptographic proof
    */
   async delegate(
-    address: string,
-    walletType: 'bitcoin' | 'ethereum',
+    address: `0x${string}`,
     duration: DelegationDuration = '7days',
     signFunction: (message: string) => Promise<string>
   ): Promise<boolean> {
@@ -66,7 +64,6 @@ export class DelegationManager {
         walletSignature,
         expiryTimestamp,
         walletAddress: address,
-        walletType,
         browserPublicKey: keypair.publicKey,
         browserPrivateKey: keypair.privateKey,
         nonce,
@@ -210,8 +207,7 @@ export class DelegationManager {
    * Get delegation status
    */
   async getStatus(
-    currentAddress?: string,
-    currentWalletType?: 'bitcoin' | 'ethereum'
+    currentAddress?: `0x${string}`
   ): Promise<DelegationFullStatus> {
     const now = Date.now();
     if (
@@ -229,9 +225,7 @@ export class DelegationManager {
     const hasExpired = now >= delegation.expiryTimestamp;
     const addressMatches =
       !currentAddress || delegation.walletAddress === currentAddress;
-    const walletTypeMatches =
-      !currentWalletType || delegation.walletType === currentWalletType;
-    const isValid = !hasExpired && addressMatches && walletTypeMatches;
+    const isValid = !hasExpired && addressMatches;
 
     return {
       hasDelegation: true,
@@ -241,7 +235,6 @@ export class DelegationManager {
         : undefined,
       publicKey: delegation.browserPublicKey,
       address: delegation.walletAddress,
-      walletType: delegation.walletType,
       proof: isValid ? this.createProof(delegation) : undefined,
     };
   }
@@ -269,7 +262,6 @@ export class DelegationManager {
       walletSignature: delegation.walletSignature,
       expiryTimestamp: delegation.expiryTimestamp,
       walletAddress: delegation.walletAddress,
-      walletType: delegation.walletType,
     };
   }
 
@@ -305,8 +297,7 @@ export class DelegationManager {
     return await DelegationCrypto.verifyWalletSignature(
       proof.authMessage,
       proof.walletSignature,
-      proof.walletAddress,
-      proof.walletType
+      proof.walletAddress
     );
   }
 
@@ -346,8 +337,7 @@ export class DelegationManager {
     const walletSigOk = await DelegationCrypto.verifyWalletSignature(
       proof.authMessage,
       proof.walletSignature,
-      proof.walletAddress,
-      proof.walletType
+      proof.walletAddress
     );
 
     if (!walletSigOk) {

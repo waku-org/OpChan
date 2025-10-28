@@ -14,17 +14,17 @@ The OpChan application has successfully implemented most core functionality incl
 
 ### ✅ IMPLEMENTED
 
-#### 1. Bitcoin Key Authentication
+#### 1. Ethereum Wallet Authentication
 
 - **Status**: ✅ Fully Implemented
-- **Implementation**: `src/lib/identity/wallets/ReOwnWalletService.ts`, `src/contexts/AuthContext.tsx`
-- **Details**: Complete Bitcoin wallet integration with message signing capabilities
+- **Implementation**: `src/lib/services/UserIdentityService.ts`, wagmi wiring in provider
+- **Details**: Ethereum wallet integration with message signing capabilities
 
 #### 2. Cell Creation Restrictions
 
 - **Status**: ✅ Fully Implemented
 - **Implementation**: `src/lib/forum/ForumActions.ts`, `src/components/CreateCellDialog.tsx`
-- **Details**: Only users with Logos ordinal or ENS can create cells
+- **Details**: Only users with ENS (or configured policy) can create cells
 
 #### 3. Content Visibility
 
@@ -65,8 +65,8 @@ The OpChan application has successfully implemented most core functionality incl
 #### 9. Web3 Key Authentication
 
 - **Status**: ✅ Fully Implemented
-- **Implementation**: `src/lib/identity/wallets/ReOwnWalletService.ts`
-- **Details**: Ethereum wallet support alongside Bitcoin
+- **Implementation**: wagmi connectors; `src/lib/services/UserIdentityService.ts`
+- **Details**: Ethereum wallet support with ENS resolution
 
 #### 10. Relevance Index System
 
@@ -95,12 +95,12 @@ The OpChan application has successfully implemented most core functionality incl
 - **Details**: Interface exists but no UI for setting up call signs
 - **Missing**: User interface for call sign configuration
 
-#### 14. Ordinal Avatar Display
+#### 14. ENS Avatar Display
 
 - **Status**: ⚠️ Partially Implemented
 - **Implementation**: `src/components/ui/author-display.tsx`
-- **Details**: Basic ordinal detection but limited avatar display
-- **Missing**: Full ordinal image integration and display
+- **Details**: ENS name display; avatar resolution depends on ENS records
+- **Missing**: Consistent avatar fallback behavior
 
 ### ❌ NOT IMPLEMENTED
 
@@ -228,7 +228,7 @@ The OpChan application has successfully implemented most core functionality incl
 
 - **Status**: ✅ Fully Implemented
 - **Implementation**: `src/contexts/AuthContext.tsx`
-- **Details**: Bitcoin and Ethereum wallet integration
+- **Details**: Ethereum wallet integration
 
 ---
 
@@ -236,11 +236,11 @@ The OpChan application has successfully implemented most core functionality incl
 
 ### ✅ IMPLEMENTED
 
-#### 1. Centralized Ordinal API
+#### 1. ENS Resolution
 
 - **Status**: ✅ Fully Implemented
-- **Implementation**: `src/lib/identity/ordinal.ts`
-- **Details**: Integration with Logos dashboard API
+- **Implementation**: ENS resolution via viem public client in `UserIdentityService`
+- **Details**: Name + avatar (when published in ENS records)
 
 #### 2. Waku Network Integration
 
@@ -264,9 +264,9 @@ The OpChan application has successfully implemented most core functionality incl
    - Implement call sign validation and uniqueness
    - Estimated effort: 3-4 days
 
-3. **Enhanced Ordinal Display**
-   - Integrate full ordinal image display
-   - Add ordinal metadata visualization
+3. **Enhanced ENS Display**
+   - Improve ENS avatar and fallback handling
+   - Cache ENS lookups with smarter TTL
    - Estimated effort: 2-3 days
 
 ### Medium Priority
@@ -329,7 +329,7 @@ OpChan has successfully implemented the vast majority of FURPS requirements, pro
 **Areas for Improvement:**
 
 - User personalization features (bookmarks, call signs)
-- Enhanced ordinal integration
+- Enhanced ENS integration
 - Advanced search and filtering
 
 The application is ready for production use with the current feature set, and the remaining features can be implemented incrementally based on user feedback and priorities.

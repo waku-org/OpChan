@@ -241,7 +241,7 @@ export class LocalDatabase {
         if (!existing || timestamp > existing.lastUpdated) {
           const nextRecord = {
             ensName: existing?.ensName,
-            ordinalDetails: existing?.ordinalDetails,
+            ensAvatar: existing?.ensAvatar,
             callSign: callSign !== undefined ? callSign : existing?.callSign,
             displayPreference,
             lastUpdated: timestamp,
@@ -663,11 +663,12 @@ export class LocalDatabase {
       this.cache.userIdentities[address] ||
       {
         ensName: undefined,
-        ordinalDetails: undefined,
+        ensAvatar: undefined,
         callSign: undefined,
         displayPreference: EDisplayPreference.WALLET_ADDRESS,
         lastUpdated: 0,
         verificationStatus: EVerificationStatus.WALLET_UNCONNECTED,
+        displayName: '',
       };
 
     const merged: UserIdentityCache[string] = {

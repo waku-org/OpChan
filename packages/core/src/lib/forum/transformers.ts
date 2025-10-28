@@ -258,9 +258,8 @@ export const getDataFromCache = async (
 
   for (const [address, rec] of Object.entries(userIdentities)) {
     userVerificationStatus[address] = {
-      isVerified: rec.verificationStatus === EVerificationStatus.ENS_ORDINAL_VERIFIED,
+      isVerified: rec.verificationStatus === EVerificationStatus.ENS_VERIFIED,
       hasENS: Boolean(rec.ensName),
-      hasOrdinal: Boolean(rec.ordinalDetails),
       ensName: rec.ensName,
       verificationStatus: rec.verificationStatus,
     };
