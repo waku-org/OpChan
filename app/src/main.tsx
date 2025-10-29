@@ -11,7 +11,7 @@ if (!(window as Window & typeof globalThis).Buffer) {
 createRoot(document.getElementById('root')!).render(
       <OpChanProvider config={{ 
         wakuConfig: {
-          contentTopic: '/opchan/1/messages/proto',
+          contentTopic: '/opchan-demo/1/messages/proto',
           reliableChannelId: 'opchan-messages'
         },
         reownProjectId: import.meta.env.VITE_REOWN_SECRET || '2ead96ea166a03e5ab50e5c190532e72'
