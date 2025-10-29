@@ -1,0 +1,45 @@
+# Development files
+*.log
+*.tmp
+.DS_Store
+.vscode/
+.idea/
+
+# Test files
+**/*.test.*
+**/*.spec.*
+**/test/
+**/tests/
+**/__tests__/
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build artifacts (except dist)
+**/dist/
+!app/dist/
+
+# Source files (we only need the built app)
+packages/
+!packages/core/dist/
+!packages/react/dist/
+
+# Development configs
+.eslintrc*
+.prettierrc*
+vitest.config.*
+vite.config.*
+tailwind.config.*
+postcss.config.*
+tsconfig*.json
+
+# Git
+.git/
+.gitignore

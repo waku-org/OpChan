@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "installCommand": "npm ci --workspaces",
-  "buildCommand": "npm run -w packages/core build && npm run -w packages/react build && npm run -w app build",
+  "installCommand": "npm ci --workspaces --include=optional",
+  "buildCommand": "cd app && npm run build",
   "outputDirectory": "app/dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "functions": {
+    "app/dist/**": {
+      "runtime": "nodejs20.x"
+    }
+  }
 }
 

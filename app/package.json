@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run build:deps && vite build",
+    "build:deps": "cd ../packages/core && npm run build && cd ../react && npm run build",
     "build:dev": "vite build --mode development",
     "check": "tsc --project tsconfig.app.json --noEmit && tsc --project tsconfig.node.json --noEmit && eslint . --fix && prettier --write .",
     "fix": "prettier --write . && eslint . --fix",
@@ -102,5 +103,8 @@
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1",
     "vitest": "^3.2.4"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.28.1"
   }
 }
