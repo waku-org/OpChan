@@ -10,7 +10,6 @@ if (!(window as Window & typeof globalThis).Buffer) {
 
 createRoot(document.getElementById('root')!).render(
       <OpChanProvider config={{ 
-        ordiscanApiKey: '6bb07766-d98c-4ddd-93fb-6a0e94d629dd',
         wakuConfig: {
           contentTopic: '/opchan/1/messages/proto',
           reliableChannelId: 'opchan-messages'

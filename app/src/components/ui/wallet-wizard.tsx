@@ -59,6 +59,13 @@ export function WalletWizard({
   }, [isAuthenticated, getDelegationStatus]);
 
   const handleStepComplete = (step: WizardStep) => {
+    // If user is anonymous after step 1, close wizard immediately
+    if (step === 1 && verificationStatus === EVerificationStatus.ANONYMOUS) {
+      onComplete();
+      onOpenChange(false);
+      return;
+    }
+    
     if (step < 3) {
       setCurrentStep((step + 1) as WizardStep);
     } else {

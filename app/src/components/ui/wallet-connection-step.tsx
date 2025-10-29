@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Wallet, Loader2, CheckCircle } from 'lucide-react';
+import { Wallet, Loader2, CheckCircle, UserX } from 'lucide-react';
 import { useAuth } from '@opchan/react';
 import { useEffect } from 'react';
 
@@ -15,7 +15,7 @@ export function WalletConnectionStep({
   isLoading,
   setIsLoading,
 }: WalletConnectionStepProps) {
-  const { isAuthenticated, currentUser, connect } = useAuth();
+  const { isAuthenticated, currentUser, connect, startAnonymous } = useAuth();
 
   // Auto-complete step when wallet connects
   useEffect(() => {
@@ -30,6 +30,20 @@ export function WalletConnectionStep({
       connect();
     } catch (error) {
       console.error('Error connecting wallet:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAnonymous = async () => {
+    setIsLoading(true);
+    try {
+      const sessionId = await startAnonymous();
+      if (sessionId) {
+        onComplete();
+      }
+    } catch (error) {
+      console.error('Error starting anonymous session:', error);
     } finally {
       setIsLoading(false);
     }
@@ -117,6 +131,34 @@ export function WalletConnectionStep({
 
         <div className="text-xs text-neutral-500 text-center pt-2">
           Supports MetaMask, WalletConnect, Coinbase Wallet, and more
+        </div>
+
+        {/* Anonymous Option */}
+        <div className="mt-6 pt-4 border-t border-neutral-800">
+          <p className="text-xs text-neutral-500 text-center mb-3">
+            Or continue without connecting a wallet
+          </p>
+          <Button
+            onClick={handleAnonymous}
+            disabled={isLoading}
+            variant="outline"
+            className="w-full border-neutral-700 hover:bg-neutral-800"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Starting...
+              </>
+            ) : (
+              <>
+                <UserX className="h-4 w-4 mr-2" />
+                Continue Anonymously
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-neutral-600 text-center mt-2">
+            You can post, comment, and vote (but not create cells)
+          </p>
         </div>
       </div>
     </div>

@@ -275,6 +275,11 @@ export class RelevanceCalculator {
     authorAddress: string,
     userVerificationStatus: UserVerificationStatus
   ): { bonus: number; isVerified: boolean } {
+    // Anonymous users (UUID format) get no bonus
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(authorAddress)) {
+      return { bonus: 0, isVerified: false };
+    }
+
     const authorStatus = userVerificationStatus[authorAddress];
     const isVerified = authorStatus?.isVerified || false;
 

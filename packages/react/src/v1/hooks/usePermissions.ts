@@ -6,12 +6,14 @@ export function usePermissions() {
   const currentUser = session.currentUser;
 
   const isVerified = session.verificationStatus === EVerificationStatus.ENS_VERIFIED;
-  const isConnected = session.verificationStatus !== EVerificationStatus.WALLET_UNCONNECTED;
+  const isConnected = session.verificationStatus !== EVerificationStatus.WALLET_UNCONNECTED &&
+                      session.verificationStatus !== EVerificationStatus.ANONYMOUS;
+  const isAnonymous = session.verificationStatus === EVerificationStatus.ANONYMOUS;
 
   const canCreateCell = isVerified;
-  const canPost = isConnected;
-  const canComment = isConnected;
-  const canVote = isConnected;
+  const canPost = isConnected || isAnonymous;
+  const canComment = isConnected || isAnonymous;
+  const canVote = isConnected || isAnonymous;
 
   const canModerate = (cellId: string): boolean => {
     if (!currentUser) return false;
@@ -20,9 +22,9 @@ export function usePermissions() {
   };
 
   const reasons = {
-    post: canPost ? '' : 'Connect your wallet to post',
-    comment: canComment ? '' : 'Connect your wallet to comment',
-    vote: canVote ? '' : 'Connect your wallet to vote',
+    post: canPost ? '' : 'Connect your wallet or use anonymous mode to post',
+    comment: canComment ? '' : 'Connect your wallet or use anonymous mode to comment',
+    vote: canVote ? '' : 'Connect your wallet or use anonymous mode to vote',
     createCell: canCreateCell ? '' : 'Verification required to create a cell',
     moderate: (cellId: string) => (canModerate(cellId) ? '' : 'Only cell owner can moderate'),
   } as const;

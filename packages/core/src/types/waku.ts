@@ -37,7 +37,7 @@ export interface UnsignedBaseMessage {
 export interface BaseMessage extends UnsignedBaseMessage {
   signature: string; // Message signature for verification
   browserPubKey: string; // Public key that signed the message
-  delegationProof: DelegationProof; // Cryptographic proof that browser key was authorized
+  delegationProof?: DelegationProof; // Cryptographic proof that browser key was authorized (wallet users only)
 }
 
 /**

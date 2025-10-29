@@ -20,6 +20,8 @@ import CommentCard from './CommentCard';
 import { useAuth, useContent, usePermissions } from '@/hooks';
 import type { Cell as ForumCell } from '@opchan/core';
 import { ShareButton } from './ui/ShareButton';
+import { InlineCallSignInput } from './ui/inline-callsign-input';
+import { EVerificationStatus } from '@opchan/core';
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -290,6 +292,13 @@ const PostDetail = () => {
               </Button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Inline Call Sign Suggestion for Anonymous Users */}
+      {currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS && !currentUser.callSign && permissions.canComment && (
+        <div className="mb-6">
+          <InlineCallSignInput />
         </div>
       )}
 

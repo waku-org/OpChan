@@ -55,10 +55,11 @@ export class ForumActions {
       case 'createPost':
       case 'createComment':
       case 'vote':
-        if (!_isAuthenticated || !currentUser) {
+        // Allow wallet-connected OR anonymous users
+        if (verificationStatus === EVerificationStatus.WALLET_UNCONNECTED) {
           return {
             valid: false,
-            error: 'Connect your wallet to perform this action',
+            error: 'Connect your wallet or use anonymous mode to perform this action',
           };
         }
         break;

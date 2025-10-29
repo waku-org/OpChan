@@ -11,13 +11,29 @@ export interface DelegationProof {
 }
 
 /**
- * Complete delegation information including private key (stored locally)
+ * Anonymous delegation information (browser-only, no wallet proof)
  */
-export interface DelegationInfo extends DelegationProof {
+export interface AnonymousDelegationInfo {
+  sessionId: string; // UUID session identifier
+  browserPublicKey: string; // Browser-generated public key
+  browserPrivateKey: string; // Browser-generated private key (never shared)
+  expiryTimestamp: number; // When this delegation expires
+  nonce: string; // Unique nonce to prevent replay attacks
+}
+
+/**
+ * Wallet delegation information (includes wallet proof)
+ */
+export interface WalletDelegationInfo extends DelegationProof {
   browserPublicKey: string; // Browser-generated public key
   browserPrivateKey: string; // Browser-generated private key (never shared)
   nonce: string; // Unique nonce to prevent replay attacks
 }
+
+/**
+ * Complete delegation information - can be wallet-based or anonymous
+ */
+export type DelegationInfo = WalletDelegationInfo | AnonymousDelegationInfo;
 
 /**
  * Status of current delegation

@@ -64,8 +64,8 @@ export function useAuth() {
         } catch (e) {
           console.error('Failed to sync wallet to session', e);
         }
-      } else if (!wallet.isConnected && currentUser) {
-        // Wallet disconnected - clear session
+      } else if (!wallet.isConnected && currentUser && currentUser.verificationStatus !== EVerificationStatus.ANONYMOUS) {
+        // Wallet disconnected - clear session (but preserve anonymous users)
         try {
           await client.database.clearUser();
         } catch (e) {
@@ -134,9 +134,14 @@ export function useAuth() {
   ): Promise<boolean> => {
     const user = currentUser;
     if (!user) return false;
+    // Only wallet users (not anonymous) can delegate with wallet signature
+    if (user.verificationStatus === EVerificationStatus.ANONYMOUS) {
+      console.warn('Anonymous users cannot create wallet delegations');
+      return false;
+    }
     try {
       const ok = await client.delegation.delegate(
-        user.address,
+        user.address as `0x${string}`,
         duration,
         wallet.signMessage,
       );
@@ -173,6 +178,35 @@ export function useAuth() {
     }
   }, [client]);
 
+  const startAnonymous = React.useCallback(async (): Promise<string | null> => {
+    try {
+      const sessionId = await client.delegation.delegateAnonymous('7days');
+      
+      const anonymousUser: User = {
+        address: sessionId,
+        displayName: `Anonymous-${sessionId.slice(0, 8)}`,
+        displayPreference: EDisplayPreference.WALLET_ADDRESS,
+        verificationStatus: EVerificationStatus.ANONYMOUS,
+        lastChecked: Date.now(),
+      };
+      
+      await client.database.storeUser(anonymousUser);
+      setOpchanState(prev => ({
+        ...prev,
+        session: {
+          ...prev.session,
+          currentUser: anonymousUser,
+          verificationStatus: EVerificationStatus.ANONYMOUS,
+        },
+      }));
+      
+      return sessionId;
+    } catch (e) {
+      console.error('startAnonymous failed', e);
+      return null;
+    }
+  }, [client]);
+
   const updateProfile = React.useCallback(async (updates: { callSign?: string; displayPreference?: EDisplayPreference }): Promise<boolean> => {
     const user = currentUser;
     if (!user) return false;
@@ -190,6 +224,8 @@ export function useAuth() {
       const updated: User = {
         ...user,
         ...identity,
+        // Preserve verification status for anonymous users (getIdentity might not return it)
+        verificationStatus: user.verificationStatus,
       };
       await client.database.storeUser(updated);
       setOpchanState(prev => ({ ...prev, session: { ...prev.session, currentUser: updated } }));
@@ -220,6 +256,7 @@ export function useAuth() {
     delegate,
     delegationStatus,
     clearDelegation,
+    startAnonymous,
     updateProfile,
   } as const;
 }

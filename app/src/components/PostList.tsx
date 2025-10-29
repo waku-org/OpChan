@@ -31,6 +31,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { InlineCallSignInput } from './ui/inline-callsign-input';
+import { EVerificationStatus } from '@opchan/core';
 
 const PostList = () => {
   const { cellId } = useParams<{ cellId: string }>();
@@ -255,6 +257,13 @@ const PostList = () => {
               </Button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Inline Call Sign Suggestion for Anonymous Users */}
+      {currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS && !currentUser.callSign && canPost && (
+        <div className="section-spacing">
+          <InlineCallSignInput />
         </div>
       )}
 

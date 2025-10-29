@@ -44,6 +44,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useEthereumWallet } from '@opchan/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
+import { CallSignSetupDialog } from '@/components/ui/call-sign-setup-dialog';
 
 import { WakuHealthDot } from '@/components/ui/waku-health-indicator';
 
@@ -59,6 +60,7 @@ const Header = () => {
 
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [callSignDialogOpen, setCallSignDialogOpen] = useState(false);
 
   // Use centralized UI state instead of direct LocalDatabase access
   const [hasShownWizard, setHasShownWizard] = useUIState(
@@ -83,6 +85,15 @@ const Header = () => {
   };
 
   const handleDisconnect = async () => {
+    // For anonymous users, clear their session
+    if (currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS) {
+      await localDatabase.clearUser();
+      await localDatabase.clearDelegation();
+      window.location.reload(); // Reload to reset state
+      return;
+    }
+    
+    // For wallet users, disconnect wallet
     await disconnect();
     setHasShownWizard(false); // Reset so wizard can show again on next connection
     toast({
@@ -177,7 +188,7 @@ const Header = () => {
               </div>
 
               {/* User Status & Actions */}
-              {isConnected ? (
+              {isConnected || currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? (
                 <div className="flex items-center space-x-2">
                   {/* Status Badge */}
                   <Badge
@@ -235,13 +246,23 @@ const Header = () => {
                         </Link>
                       </DropdownMenuItem>
 
-                      <DropdownMenuItem
-                        onClick={handleOpenWizard}
-                        className="flex items-center space-x-2"
-                      >
-                        <Settings className="w-4 h-4" />
-                        <span>Setup Wizard</span>
-                      </DropdownMenuItem>
+                      {currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? (
+                        <DropdownMenuItem
+                          onClick={() => setCallSignDialogOpen(true)}
+                          className="flex items-center space-x-2"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>{currentUser?.callSign ? 'Update' : 'Set'} Call Sign</span>
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={handleOpenWizard}
+                          className="flex items-center space-x-2"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <span>Setup Wizard</span>
+                        </DropdownMenuItem>
+                      )}
 
                       <DropdownMenuSeparator className="bg-cyber-muted/30" />
 
@@ -291,7 +312,7 @@ const Header = () => {
                         className="flex items-center space-x-2 text-red-400 focus:text-red-400"
                       >
                         <LogOut className="w-4 h-4" />
-                        <span>Disconnect</span>
+                        <span>{currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? 'Exit Anonymous' : 'Disconnect'}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -454,6 +475,14 @@ const Header = () => {
           });
         }}
       />
+
+      {/* Call Sign Dialog for Anonymous Users */}
+      {currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS && (
+        <CallSignSetupDialog
+          open={callSignDialogOpen}
+          onOpenChange={setCallSignDialogOpen}
+        />
+      )}
     </>
   );
 };

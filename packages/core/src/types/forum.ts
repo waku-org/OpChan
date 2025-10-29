@@ -106,12 +106,13 @@ export interface Comment extends CommentMessage {
 
 /**
  * Extended message types for verification
- * These fields are now REQUIRED for all valid messages
+ * Signature and browserPubKey are REQUIRED for all messages
+ * delegationProof is OPTIONAL - present for wallet users, absent for anonymous users
  */
 export interface SignedMessage {
   signature: string;
   browserPubKey: string;
-  delegationProof: DelegationProof; // Cryptographic proof that browser key was authorized - REQUIRED
+  delegationProof?: DelegationProof; // Cryptographic proof that browser key was authorized (wallet users only)
 }
 
 /**

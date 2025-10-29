@@ -1,5 +1,5 @@
 export type User = {
-  address: `0x${string}`;
+  address: string; // Can be `0x${string}` for wallet users or UUID for anonymous users
 
   ensName?: string;
   ensAvatar?: string;
@@ -18,6 +18,7 @@ export type User = {
 };
 
 export enum EVerificationStatus {
+  ANONYMOUS = 'anonymous',
   WALLET_UNCONNECTED = 'wallet-unconnected',
   WALLET_CONNECTED = 'wallet-connected',
   ENS_VERIFIED = 'ens-verified',

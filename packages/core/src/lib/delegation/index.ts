@@ -5,6 +5,8 @@ import {
   DelegationInfo,
   DelegationStatus,
   DelegationProof,
+  AnonymousDelegationInfo,
+  WalletDelegationInfo,
 } from './types';
 import { DelegationStorage } from './storage';
 import { DelegationCrypto } from './crypto';
@@ -59,7 +61,7 @@ export class DelegationManager {
       const walletSignature = await signFunction(authMessage);
 
       // Store delegation
-      const delegationInfo: DelegationInfo = {
+      const delegationInfo: WalletDelegationInfo = {
         authMessage,
         walletSignature,
         expiryTimestamp,
@@ -70,10 +72,46 @@ export class DelegationManager {
       };
 
       await DelegationStorage.store(delegationInfo);
+      this.cachedDelegation = delegationInfo;
+      this.cachedAt = Date.now();
       return true;
     } catch (error) {
       console.error('Error creating delegation:', error);
       return false;
+    }
+  }
+
+  /**
+   * Create an anonymous delegation (no wallet proof required)
+   */
+  async delegateAnonymous(duration: DelegationDuration = '7days'): Promise<string> {
+    try {
+      // Generate browser keypair
+      const keypair = DelegationCrypto.generateKeypair();
+
+      // Create expiry, nonce, and session ID
+      const expiryTimestamp =
+        Date.now() +
+        DelegationManager.getDurationHours(duration) * 60 * 60 * 1000;
+      const nonce = crypto.randomUUID();
+      const sessionId = crypto.randomUUID();
+
+      // Store anonymous delegation
+      const anonymousDelegation: AnonymousDelegationInfo = {
+        sessionId,
+        browserPublicKey: keypair.publicKey,
+        browserPrivateKey: keypair.privateKey,
+        expiryTimestamp,
+        nonce,
+      };
+
+      await DelegationStorage.store(anonymousDelegation);
+      this.cachedDelegation = anonymousDelegation;
+      this.cachedAt = Date.now();
+      return sessionId;
+    } catch (error) {
+      console.error('Error creating anonymous delegation:', error);
+      throw error;
     }
   }
 
@@ -108,12 +146,24 @@ export class DelegationManager {
     );
     if (!signature) return null;
 
-    return {
-      ...message,
-      signature,
-      browserPubKey: delegation.browserPublicKey,
-      delegationProof: this.createProof(delegation),
-    } as OpchanMessage;
+    // Check delegation type and construct appropriate message
+    if ('walletAddress' in delegation) {
+      // Wallet delegation - include delegationProof
+      return {
+        ...message,
+        signature,
+        browserPubKey: delegation.browserPublicKey,
+        delegationProof: this.createProof(delegation as WalletDelegationInfo),
+      } as OpchanMessage;
+    } else {
+      // Anonymous delegation - no delegationProof
+      return {
+        ...message,
+        signature,
+        browserPubKey: delegation.browserPublicKey,
+        delegationProof: undefined,
+      } as OpchanMessage;
+    }
   }
 
   /**
@@ -124,7 +174,6 @@ export class DelegationManager {
     if (
       !message.signature ||
       !message.browserPubKey ||
-      !message.delegationProof ||
       !message.author
     ) {
       return false;
@@ -148,12 +197,17 @@ export class DelegationManager {
       return false;
     }
 
-    // Verify delegation proof
-    return await this.verifyProof(
-      message.delegationProof,
-      message.browserPubKey,
-      message.author
-    );
+    // If has delegationProof, verify it (wallet user)
+    if (message.delegationProof) {
+      return await this.verifyProof(
+        message.delegationProof,
+        message.browserPubKey,
+        message.author
+      );
+    }
+
+    // Anonymous message - verify author is valid session ID (UUID format)
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(message.author);
   }
 
   /**
@@ -167,8 +221,7 @@ export class DelegationManager {
     // Check required fields
     if (!message.signature) reasons.push('Missing message signature');
     if (!message.browserPubKey) reasons.push('Missing browser public key');
-    if (!message.delegationProof) reasons.push('Missing delegation proof');
-    if (!message.author) reasons.push('Missing author address');
+    if (!message.author) reasons.push('Missing author');
     if (reasons.length > 0) return { isValid: false, reasons };
 
     // Verify message signature
@@ -189,15 +242,23 @@ export class DelegationManager {
       return { isValid: false, reasons };
     }
 
-    // Verify delegation proof with details
-    const proofResult = await this.verifyProofWithReason(
-      message.delegationProof,
-      message.browserPubKey,
-      message.author
-    );
-    if (!proofResult.isValid) {
-      reasons.push(...proofResult.reasons);
-      return { isValid: false, reasons };
+    // If has delegationProof, verify it (wallet user)
+    if (message.delegationProof) {
+      const proofResult = await this.verifyProofWithReason(
+        message.delegationProof,
+        message.browserPubKey,
+        message.author
+      );
+      if (!proofResult.isValid) {
+        reasons.push(...proofResult.reasons);
+        return { isValid: false, reasons };
+      }
+    } else {
+      // Anonymous message - verify session ID format
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(message.author)) {
+        reasons.push('Invalid anonymous session ID format');
+        return { isValid: false, reasons };
+      }
     }
 
     return { isValid: true, reasons: [] };
@@ -207,7 +268,7 @@ export class DelegationManager {
    * Get delegation status
    */
   async getStatus(
-    currentAddress?: `0x${string}`
+    currentAddress?: string
   ): Promise<DelegationFullStatus> {
     const now = Date.now();
     if (
@@ -223,8 +284,11 @@ export class DelegationManager {
     }
 
     const hasExpired = now >= delegation.expiryTimestamp;
-    const addressMatches =
-      !currentAddress || delegation.walletAddress === currentAddress;
+    
+    // Check if wallet delegation (has walletAddress property)
+    const isWalletDelegation = 'walletAddress' in delegation;
+    const addressMatches = !currentAddress || 
+      (isWalletDelegation && delegation.walletAddress === currentAddress);
     const isValid = !hasExpired && addressMatches;
 
     return {
@@ -234,8 +298,8 @@ export class DelegationManager {
         ? Math.max(0, delegation.expiryTimestamp - now)
         : undefined,
       publicKey: delegation.browserPublicKey,
-      address: delegation.walletAddress,
-      proof: isValid ? this.createProof(delegation) : undefined,
+      address: isWalletDelegation ? delegation.walletAddress : undefined,
+      proof: isValid && isWalletDelegation ? this.createProof(delegation as WalletDelegationInfo) : undefined,
     };
   }
 
@@ -256,7 +320,7 @@ export class DelegationManager {
   /**
    * Create delegation proof from stored info
    */
-  private createProof(delegation: DelegationInfo): DelegationProof {
+  private createProof(delegation: WalletDelegationInfo): DelegationProof {
     return {
       authMessage: delegation.authMessage,
       walletSignature: delegation.walletSignature,

@@ -371,6 +371,8 @@ export class UserIdentityService {
         return EVerificationStatus.WALLET_CONNECTED; // Temporary state during verification
 
       // Enum string values persisted in LocalDatabase
+      case EVerificationStatus.ANONYMOUS:
+        return EVerificationStatus.ANONYMOUS;
       case EVerificationStatus.WALLET_UNCONNECTED:
         return EVerificationStatus.WALLET_UNCONNECTED;
       case EVerificationStatus.WALLET_CONNECTED:

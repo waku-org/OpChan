@@ -441,7 +441,7 @@ export default function ProfilePage() {
                       <Shield className="h-5 w-5 text-cyber-accent" />
                       Security
                     </div>
-                    {delegationInfo.hasDelegation && (
+                    {currentUser.verificationStatus !== EVerificationStatus.ANONYMOUS && delegationInfo.hasDelegation && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -455,25 +455,48 @@ export default function ProfilePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Delegation Status */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-cyber-neutral">
-                        Delegation
-                      </span>
-                      <Badge
-                        variant={
-                          delegationInfo.isValid ? 'default' : 'secondary'
-                        }
-                        className={
-                          delegationInfo.isValid
-                            ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                            : 'bg-red-500/20 text-red-400 border-red-500/30'
-                        }
-                      >
-                        {delegationInfo.isValid ? 'Active' : 'Inactive'}
-                      </Badge>
+                  {currentUser.verificationStatus === EVerificationStatus.ANONYMOUS ? (
+                    /* Anonymous User Security Info */
+                    <div className="space-y-3">
+                      <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-md">
+                        <div className="flex items-center gap-2 text-blue-400">
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-xs font-medium">
+                            Anonymous Session Active
+                          </span>
+                        </div>
+                        <p className="text-xs text-cyber-neutral mt-2">
+                          Your session is secured with browser-generated encryption keys. No wallet connection required.
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-xs text-cyber-neutral">Session ID</span>
+                        <div className="text-xs font-mono text-cyber-light bg-cyber-dark/50 px-2 py-1 rounded">
+                          {currentUser.address.slice(0, 8)}...{currentUser.address.slice(-8)}
+                        </div>
+                      </div>
                     </div>
+                  ) : (
+                    /* Wallet User Delegation Status */
+                    <>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-cyber-neutral">
+                            Delegation
+                          </span>
+                          <Badge
+                            variant={
+                              delegationInfo.isValid ? 'default' : 'secondary'
+                            }
+                            className={
+                              delegationInfo.isValid
+                                ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                : 'bg-red-500/20 text-red-400 border-red-500/30'
+                            }
+                          >
+                            {delegationInfo.isValid ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
 
                     {/* Expiry Date */}
                     {delegationInfo.expiresAt && (
@@ -534,17 +557,19 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Warning for expired delegation */}
-                  {!delegationInfo.isValid && delegationInfo.hasDelegation && (
-                    <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
-                      <div className="flex items-center gap-2 text-orange-400">
-                        <AlertTriangle className="w-4 h-4" />
-                        <span className="text-xs font-medium">
-                          Delegation expired. Renew to continue using your
-                          browser key.
-                        </span>
-                      </div>
-                    </div>
+                      {/* Warning for expired delegation */}
+                      {!delegationInfo.isValid && delegationInfo.hasDelegation && (
+                        <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
+                          <div className="flex items-center gap-2 text-orange-400">
+                            <AlertTriangle className="w-4 h-4" />
+                            <span className="text-xs font-medium">
+                              Delegation expired. Renew to continue using your
+                              browser key.
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
