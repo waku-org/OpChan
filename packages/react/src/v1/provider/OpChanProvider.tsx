@@ -1,10 +1,9 @@
 import React from "react";
-import { OpChanClient, type OpChanClientConfig } from "@opchan/core";
+import { OpChanClient, type OpChanClientConfig, createWagmiConfig } from "@opchan/core";
 import { ClientProvider } from "../context/ClientContext";
 import { StoreWiring } from "./StoreWiring";
 import { WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { wagmiConfig } from "@opchan/core";
 
 export interface OpChanProviderProps {
   config: OpChanClientConfig;
@@ -30,6 +29,7 @@ export const OpChanProvider: React.FC<OpChanProviderProps> = ({
   children,
 }) => {
   const [client] = React.useState(() => new OpChanClient(config));
+  const [wagmiConfig] = React.useState(() => createWagmiConfig(config.reownProjectId));
 
   return (
     <WagmiProvider config={wagmiConfig}>

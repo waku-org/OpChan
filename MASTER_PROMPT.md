@@ -543,6 +543,72 @@ const popular = [...posts].sort((a, b) =>
 }
 ```
 
+### Critical Setup Requirements
+
+**⚠️ IMPORTANT: Provider Configuration**
+
+The `OpChanProvider` must be properly configured to avoid the "useClient must be used within ClientProvider" error:
+
+```tsx
+// ✅ CORRECT - Complete setup
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { OpChanProvider } from '@opchan/react';
+import { Buffer } from 'buffer';
+import App from './App';
+
+// Required polyfill for crypto libraries
+if (!(window as any).Buffer) {
+  (window as any).Buffer = Buffer;
+}
+
+createRoot(document.getElementById('root')!).render(
+  <OpChanProvider 
+    config={{ 
+      wakuConfig: {
+        contentTopic: '/opchan/1/messages/proto',
+        reliableChannelId: 'opchan-messages'
+      },
+      reownProjectId: 'your-reown-project-id' // ⚠️ REQUIRED for WalletConnect
+    }}
+  >
+    <App />
+  </OpChanProvider>
+);
+```
+
+**Common Setup Mistakes:**
+
+1. **Missing reownProjectId** - Causes wallet connection failures
+2. **Missing Buffer polyfill** - Causes crypto library errors
+3. **Provider not wrapping all components** - Causes "useClient must be used within ClientProvider" error
+4. **Using hooks outside provider** - All `@opchan/react` hooks must be inside `OpChanProvider`
+
+**Environment Variables:**
+
+```bash
+# .env
+VITE_REOWN_SECRET=your_reown_project_id_here
+```
+
+**Vite Configuration (if using Vite):**
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['buffer'],
+  },
+});
+```
+
 ### Recommended UI Libraries
 
 - **shadcn/ui** - Accessible component primitives
@@ -741,6 +807,79 @@ export function PostDetail({ postId }: { postId: string }) {
     </div>
   );
 }
+```
+
+## Troubleshooting Common Issues
+
+### Error: "useClient must be used within ClientProvider"
+
+**Root Cause:** Components using `@opchan/react` hooks are not wrapped by `OpChanProvider`.
+
+**Solution:**
+```tsx
+// ❌ WRONG - Hooks used outside provider
+function App() {
+  const { currentUser } = useAuth(); // This will fail
+  return <div>Hello</div>;
+}
+
+// ✅ CORRECT - All hooks inside provider
+function App() {
+  return (
+    <OpChanProvider config={config}>
+      <MainApp />
+    </OpChanProvider>
+  );
+}
+
+function MainApp() {
+  const { currentUser } = useAuth(); // This works
+  return <div>Hello</div>;
+}
+```
+
+### Error: Wallet Connection Fails
+
+**Root Cause:** Missing or invalid `reownProjectId` in provider config.
+
+**Solution:**
+```tsx
+// ❌ WRONG - Missing reownProjectId
+<OpChanProvider config={{ wakuConfig: {...} }}>
+
+// ✅ CORRECT - Include reownProjectId
+<OpChanProvider config={{ 
+  wakuConfig: {...},
+  reownProjectId: 'your-project-id' 
+}}>
+```
+
+### Error: "Buffer is not defined"
+
+**Root Cause:** Missing Buffer polyfill for crypto libraries.
+
+**Solution:**
+```tsx
+import { Buffer } from 'buffer';
+
+// Add before rendering
+if (!(window as any).Buffer) {
+  (window as any).Buffer = Buffer;
+}
+```
+
+### Error: Anonymous users can't interact after setting call sign
+
+**Root Cause:** Verification status not preserved during profile updates.
+
+**Solution:**
+```tsx
+// In updateProfile function
+const updated: User = {
+  ...user,
+  ...identity,
+  verificationStatus: user.verificationStatus, // Preserve!
+};
 ```
 
 ## Testing Your Implementation

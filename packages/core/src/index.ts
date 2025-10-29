@@ -42,7 +42,7 @@ export * from './lib/waku/network';
 
 // Export wallet functionality
 export { EthereumWallet, EthereumWalletHelpers } from './lib/wallet';
-export { wagmiConfig, config } from './lib/wallet/config';
+export { wagmiConfig, config, createWagmiConfig } from './lib/wallet/config';
 export * from './lib/wallet/types';
 
 // Primary client API

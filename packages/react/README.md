@@ -618,6 +618,262 @@ interface OpChanProviderProps {
 }
 ```
 
+## Complete Example App
+
+Here's a minimal working example that demonstrates all the key patterns:
+
+### 1. Main Entry Point (`main.tsx`)
+
+```tsx
+import { createRoot } from 'react-dom/client';
+import { OpChanProvider } from '@opchan/react';
+import { Buffer } from 'buffer';
+import App from './App';
+
+// Required polyfill
+if (!(window as any).Buffer) {
+  (window as any).Buffer = Buffer;
+}
+
+createRoot(document.getElementById('root')!).render(
+  <OpChanProvider 
+    config={{ 
+      wakuConfig: {
+        contentTopic: '/opchan/1/messages/proto',
+        reliableChannelId: 'opchan-messages'
+      },
+      reownProjectId: import.meta.env.VITE_REOWN_SECRET || '2ead96ea166a03e5ab50e5c190532e72'
+    }}
+  >
+    <App />
+  </OpChanProvider>
+);
+```
+
+### 2. App Component (`App.tsx`)
+
+```tsx
+import { useForum } from '@opchan/react';
+
+export default function App() {
+  const { user, content, permissions, network } = useForum();
+
+  // Wait for initial data load
+  if (!network.isHydrated) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white">
+      <Header />
+      <main className="container mx-auto p-4">
+        {!user.currentUser ? (
+          <AuthPrompt />
+        ) : (
+          <ForumInterface />
+        )}
+      </main>
+    </div>
+  );
+}
+```
+
+### 3. Authentication Component (`AuthPrompt.tsx`)
+
+```tsx
+import { useAuth } from '@opchan/react';
+
+export function AuthPrompt() {
+  const { connect, startAnonymous } = useAuth();
+
+  return (
+    <div className="text-center space-y-4">
+      <h1 className="text-2xl font-bold">Welcome to OpChan</h1>
+      <p className="text-gray-400">Choose how you'd like to participate:</p>
+      
+      <div className="space-y-2">
+        <button 
+          onClick={connect}
+          className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+        >
+          Connect Wallet
+        </button>
+        <button 
+          onClick={startAnonymous}
+          className="w-full bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
+        >
+          Continue Anonymously
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+### 4. Header Component (`Header.tsx`)
+
+```tsx
+import { useAuth } from '@opchan/react';
+
+export function Header() {
+  const { currentUser, disconnect, verificationStatus } = useAuth();
+
+  return (
+    <header className="bg-gray-800 p-4">
+      <div className="flex justify-between items-center">
+        <h1 className="text-xl font-bold">OpChan</h1>
+        
+        {currentUser ? (
+          <div className="flex items-center space-x-4">
+            <span className="text-sm">
+              {currentUser.displayName}
+              {verificationStatus === 'anonymous' && ' (Anonymous)'}
+              {verificationStatus === 'ens-verified' && ' (ENS)'}
+            </span>
+            <button 
+              onClick={disconnect}
+              className="text-sm text-gray-400 hover:text-white"
+            >
+              Disconnect
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </header>
+  );
+}
+```
+
+### 5. Forum Interface (`ForumInterface.tsx`)
+
+```tsx
+import { useContent, usePermissions } from '@opchan/react';
+
+export function ForumInterface() {
+  const { cells, posts, createPost } = useContent();
+  const { canPost, canCreateCell } = usePermissions();
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Cells</h2>
+        {canCreateCell && (
+          <button className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+            Create Cell
+          </button>
+        )}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {cells.map(cell => (
+          <CellCard key={cell.id} cell={cell} />
+        ))}
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Recent Posts</h3>
+        <div className="space-y-2">
+          {posts.slice(0, 10).map(post => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### 6. Cell Card Component (`CellCard.tsx`)
+
+```tsx
+import { useContent } from '@opchan/react';
+
+export function CellCard({ cell }) {
+  const { postsByCell } = useContent();
+  const cellPosts = postsByCell[cell.id] || [];
+
+  return (
+    <div className="bg-gray-800 p-4 rounded-lg">
+      <h3 className="font-semibold">{cell.name}</h3>
+      <p className="text-sm text-gray-400 mb-2">{cell.description}</p>
+      <div className="text-xs text-gray-500">
+        {cellPosts.length} posts
+      </div>
+    </div>
+  );
+}
+```
+
+### 7. Post Card Component (`PostCard.tsx`)
+
+```tsx
+import { useUserDisplay } from '@opchan/react';
+
+export function PostCard({ post }) {
+  const { displayName, callSign, ensName } = useUserDisplay(post.author);
+
+  return (
+    <div className="bg-gray-800 p-3 rounded">
+      <div className="flex justify-between items-start mb-2">
+        <span className="text-sm font-medium">
+          {displayName}
+          {callSign && ` (#${callSign})`}
+          {ensName && ` (${ensName})`}
+        </span>
+        <span className="text-xs text-gray-500">
+          {new Date(post.timestamp).toLocaleDateString()}
+        </span>
+      </div>
+      <h4 className="font-medium">{post.title}</h4>
+      <p className="text-sm text-gray-400 mt-1">{post.content}</p>
+    </div>
+  );
+}
+```
+
+### 8. Package.json Dependencies
+
+```json
+{
+  "dependencies": {
+    "@opchan/react": "^1.1.0",
+    "@opchan/core": "^1.0.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "buffer": "^6.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "@vitejs/plugin-react": "^4.0.0"
+  }
+}
+```
+
+### 9. Vite Configuration (`vite.config.ts`)
+
+```typescript
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['buffer'],
+  },
+});
+```
+
+### 10. Environment Variables (`.env`)
+
+```bash
+VITE_REOWN_SECRET=your_reown_project_id_here
+```
+
 ## Best Practices
 
 1. **Use `useForum()` for most cases** - Cleaner than importing individual hooks
@@ -646,6 +902,63 @@ interface OpChanProviderProps {
 4. Test message verification with optional delegation proofs
 
 ## Troubleshooting
+
+### Error: "useClient must be used within ClientProvider"
+
+**Root Cause:** Components using `@opchan/react` hooks are not wrapped by `OpChanProvider`.
+
+**Solution:**
+```tsx
+// ❌ WRONG - Hooks used outside provider
+function App() {
+  const { currentUser } = useAuth(); // This will fail
+  return <div>Hello</div>;
+}
+
+// ✅ CORRECT - All hooks inside provider
+function App() {
+  return (
+    <OpChanProvider config={config}>
+      <MainApp />
+    </OpChanProvider>
+  );
+}
+
+function MainApp() {
+  const { currentUser } = useAuth(); // This works
+  return <div>Hello</div>;
+}
+```
+
+### Error: Wallet Connection Fails
+
+**Root Cause:** Missing or invalid `reownProjectId` in provider config.
+
+**Solution:**
+```tsx
+// ❌ WRONG - Missing reownProjectId
+<OpChanProvider config={{ wakuConfig: {...} }}>
+
+// ✅ CORRECT - Include reownProjectId
+<OpChanProvider config={{ 
+  wakuConfig: {...},
+  reownProjectId: 'your-project-id' 
+}}>
+```
+
+### Error: "Buffer is not defined"
+
+**Root Cause:** Missing Buffer polyfill for crypto libraries.
+
+**Solution:**
+```tsx
+import { Buffer } from 'buffer';
+
+// Add before rendering
+if (!(window as any).Buffer) {
+  (window as any).Buffer = Buffer;
+}
+```
 
 ### Anonymous users can't interact after setting call sign
 - Ensure `mapVerificationStatus` includes `ANONYMOUS` case
