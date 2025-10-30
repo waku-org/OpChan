@@ -190,33 +190,35 @@ const Header = () => {
               {/* User Status & Actions */}
               {isConnected || currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? (
                 <div className="flex items-center space-x-2">
-                  {/* Status Badge */}
-                  <Badge
-                    variant="outline"
-                    className={`font-mono text-xs border-0 ${
-                      currentUser?.verificationStatus ===
-                        EVerificationStatus.ENS_VERIFIED &&
-                      delegationInfo?.isValid
-                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                        : currentUser?.verificationStatus ===
-                            EVerificationStatus.ENS_VERIFIED
-                          ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                          : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                    }`}
-                  >
-                    {getStatusIcon()}
-                    <span className="ml-1">
-                      {currentUser?.verificationStatus ===
-                      EVerificationStatus.WALLET_UNCONNECTED
-                        ? 'CONNECT'
-                        : delegationInfo?.isValid
-                          ? 'READY'
+                  {/* Status Badge - hidden for anonymous sessions */}
+                  {currentUser?.verificationStatus !== EVerificationStatus.ANONYMOUS && (
+                    <Badge
+                      variant="outline"
+                      className={`font-mono text-xs border-0 ${
+                        currentUser?.verificationStatus ===
+                          EVerificationStatus.ENS_VERIFIED &&
+                        delegationInfo?.isValid
+                          ? 'bg-green-500/20 text-green-400 border-green-500/30'
                           : currentUser?.verificationStatus ===
                               EVerificationStatus.ENS_VERIFIED
-                            ? 'EXPIRED'
-                            : 'DELEGATE'}
-                    </span>
-                  </Badge>
+                            ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                            : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                      }`}
+                    >
+                      {getStatusIcon()}
+                      <span className="ml-1">
+                        {currentUser?.verificationStatus ===
+                        EVerificationStatus.WALLET_UNCONNECTED
+                          ? 'CONNECT'
+                          : delegationInfo?.isValid
+                            ? 'READY'
+                            : currentUser?.verificationStatus ===
+                                EVerificationStatus.ENS_VERIFIED
+                              ? 'EXPIRED'
+                              : 'DELEGATE'}
+                      </span>
+                    </Badge>
+                  )}
 
                   {/* User Dropdown */}
                   <DropdownMenu>
