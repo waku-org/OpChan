@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Terminal, FileText, Shield } from 'lucide-react';
+import { Terminal, FileText, Shield, Github, BookOpen } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
@@ -16,7 +16,7 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Center: Links */}
-          <nav className="flex items-center space-x-6">
+          <nav className="flex items-center flex-wrap justify-center gap-x-6 gap-y-2">
             <Link
               to="/terms"
               className="flex items-center space-x-1 text-sm font-mono text-cyber-neutral hover:text-cyber-accent transition-colors"
@@ -31,6 +31,24 @@ const Footer: React.FC = () => {
               <Shield className="w-4 h-4" />
               <span>Privacy Policy</span>
             </Link>
+            <a
+              href="https://github.com/waku-org/opchan/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-1 text-sm font-mono text-cyber-neutral hover:text-cyber-accent transition-colors"
+            >
+              <Github className="w-4 h-4" />
+              <span>GitHub</span>
+            </a>
+            <a
+              href="https://docs.waku.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-1 text-sm font-mono text-cyber-neutral hover:text-cyber-accent transition-colors"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Docs</span>
+            </a>
           </nav>
 
           {/* Right: Additional Info */}
