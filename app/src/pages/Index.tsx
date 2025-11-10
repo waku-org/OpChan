@@ -1,4 +1,5 @@
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import CellList from '@/components/CellList';
 import { Button } from '@/components/ui/button';
 import { Wifi } from 'lucide-react';
@@ -25,9 +26,7 @@ const Index = () => {
           </div>
         )}
       </main>
-      <footer className="page-footer">
-        <p>OpChan - A decentralized forum built on Waku & Bitcoin Ordinals</p>
-      </footer>
+      <Footer />
     </div>
   );
 };

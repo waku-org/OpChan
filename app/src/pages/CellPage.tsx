@@ -1,4 +1,5 @@
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import PostList from '@/components/PostList';
 
 const CellPage = () => {
@@ -8,9 +9,7 @@ const CellPage = () => {
       <main className="page-content">
         <PostList />
       </main>
-      <footer className="page-footer">
-        <p>OpChan - A decentralized forum built on Waku & Bitcoin Ordinals</p>
-      </footer>
+      <Footer />
     </div>
   );
 };

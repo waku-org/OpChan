@@ -11,6 +11,8 @@ import Index from './pages/Index';
 import ProfilePage from './pages/ProfilePage';
 import BookmarksPage from './pages/BookmarksPage';
 import DebugPage from './pages/DebugPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -29,6 +31,8 @@ const App = () => (
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/bookmarks" element={<BookmarksPage />} />
           <Route path="/debug" element={<DebugPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>

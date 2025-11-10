@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import {
   Loader2,
   User,
@@ -578,9 +579,7 @@ export default function ProfilePage() {
         </div>
       </main>
 
-      <footer className="page-footer">
-        <p>OpChan - A decentralized forum built on Waku & Bitcoin Ordinals</p>
-      </footer>
+      <Footer />
 
       {/* Wallet Wizard */}
       <WalletWizard

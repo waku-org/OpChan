@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import { BookmarkList } from '@/components/ui/bookmark-card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -217,9 +218,7 @@ const BookmarksPage = () => {
         </div>
       </main>
 
-      <footer className="page-footer">
-        <p>OpChan - A decentralized forum built on Waku & Bitcoin Ordinals</p>
-      </footer>
+      <Footer />
     </div>
   );
 };

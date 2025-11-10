@@ -1,4 +1,5 @@
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import PostDetail from '@/components/PostDetail';
 
 const PostPage = () => {
@@ -8,9 +9,7 @@ const PostPage = () => {
       <main className="flex-1 pt-16">
         <PostDetail />
       </main>
-      <footer className="border-t border-cyber-muted py-4 text-center text-xs text-cyber-neutral">
-        <p>OpChan - A decentralized forum built on Waku & Bitcoin Ordinals</p>
-      </footer>
+      <Footer />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { useLocation, Link } from 'react-router-dom';
 import { useEffect } from 'react';
+import Footer from '@/components/Footer';
 
 const NotFound = () => {
   const location = useLocation();
@@ -27,9 +28,7 @@ const NotFound = () => {
           </Link>
         </div>
       </main>
-      <footer className="border-t border-cyber-muted py-4 text-center text-xs text-cyber-neutral">
-        <p>OpChan - A decentralized forum built on Waku & Bitcoin Ordinals</p>
-      </footer>
+      <Footer />
     </div>
   );
 };

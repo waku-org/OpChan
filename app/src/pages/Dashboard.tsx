@@ -1,5 +1,6 @@
 import React from 'react';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import FeedPage from './FeedPage';
 
 const Dashboard: React.FC = () => {
@@ -9,6 +10,7 @@ const Dashboard: React.FC = () => {
       <main className="flex-1 pt-16">
         <FeedPage />
       </main>
+      <Footer />
     </div>
   );
 };
