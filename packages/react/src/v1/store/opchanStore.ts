@@ -47,6 +47,8 @@ export interface NetworkSlice {
   statusMessage: string;
   issues: string[];
   isHydrated: boolean;
+  syncStatus: 'syncing' | 'synced' | 'unknown';
+  syncDetail: { received: number; missing: number; lost: number } | null;
 }
 
 export interface OpchanState {
@@ -87,6 +89,8 @@ const defaultState: OpchanState = {
     statusMessage: 'connecting…',
     issues: [],
     isHydrated: false,
+    syncStatus: 'unknown',
+    syncDetail: null,
   },
 };
 

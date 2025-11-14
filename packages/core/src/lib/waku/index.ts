@@ -5,10 +5,10 @@ import {
   MessageService,
   MessageStatusCallback,
 } from './services/MessageService';
-import { ReliableMessaging } from './core/ReliableMessaging';
+import { ReliableMessaging, SyncStatusCallback } from './core/ReliableMessaging';
 import { WakuConfig } from '../../types';
 
-export type { HealthChangeCallback, MessageStatusCallback };
+export type { HealthChangeCallback, MessageStatusCallback, SyncStatusCallback };
 
 class MessageManager {
   private nodeManager: WakuNodeManager | null = null;
@@ -71,6 +71,13 @@ class MessageManager {
     return this.messageService.onMessageReceived(callback);
   }
 
+  public onSyncStatus(callback: SyncStatusCallback): () => void {
+    if (!this.reliableMessaging) {
+      throw new Error('Reliable messaging not initialized');
+    }
+    return this.reliableMessaging.onSyncStatus(callback);
+  }
+
   // ===== PRIVATE METHODS =====
 
   private async initialize(): Promise<void> {
@@ -84,9 +91,9 @@ class MessageManager {
       );
 
       // Set up health-based reliable messaging initialization
-      this.nodeManager.onHealthChange(isReady => {
+      this.nodeManager.onHealthChange(async (isReady) => {
         if (isReady && !this.reliableMessaging) {
-          this.initializeReliableMessaging();
+          await this.initializeReliableMessaging();
         } else if (!isReady && this.reliableMessaging) {
           this.cleanupReliableMessaging();
         }
@@ -115,6 +122,10 @@ class MessageManager {
     }
   }
 
+  public getReliableMessaging(): ReliableMessaging | null {
+    return this.reliableMessaging;
+  }
+
   private cleanupReliableMessaging(): void {
     if (this.reliableMessaging) {
       console.log('Cleaning up reliable messaging due to health status');
@@ -131,6 +142,7 @@ export class DefaultMessageManager {
   private _initPromise: Promise<MessageManager> | null = null;
   private _pendingHealthSubscriptions: HealthChangeCallback[] = [];
   private _pendingMessageSubscriptions: ((message: any) => void)[] = [];
+  private _pendingSyncStatusSubscriptions: SyncStatusCallback[] = [];
   private _wakuConfig: WakuConfig | null = null;
 
   // ===== PUBLIC METHODS =====
@@ -157,6 +169,31 @@ export class DefaultMessageManager {
       this._instance!.onMessageReceived(callback);
     });
     this._pendingMessageSubscriptions = [];
+    
+    // Establish all pending sync status subscriptions
+    this._pendingSyncStatusSubscriptions.forEach(callback => {
+      try {
+        this._instance!.onSyncStatus(callback);
+      } catch (e) {
+        // Reliable messaging might not be ready yet, keep in pending
+      }
+    });
+    
+    // Set up a listener to retry sync subscriptions when reliable messaging becomes available
+    const reliableMessaging = this._instance.getReliableMessaging();
+    if (!reliableMessaging) {
+      // Watch for when it becomes available
+      const checkInterval = setInterval(() => {
+        const rm = this._instance?.getReliableMessaging();
+        if (rm && this._pendingSyncStatusSubscriptions.length > 0) {
+          this.retryPendingSyncSubscriptions();
+          clearInterval(checkInterval);
+        }
+      }, 1000);
+      
+      // Clean up after 30 seconds
+      setTimeout(() => clearInterval(checkInterval), 30000);
+    }
   }
 
   // Proxy other common methods
@@ -208,6 +245,49 @@ export class DefaultMessageManager {
       };
     }
     return this._instance.onMessageReceived(callback);
+  }
+
+  onSyncStatus(callback: SyncStatusCallback) {
+    if (!this._instance) {
+      // Queue the callback for when we're initialized
+      this._pendingSyncStatusSubscriptions.push(callback);
+      
+      return () => {
+        const index = this._pendingSyncStatusSubscriptions.indexOf(callback);
+        if (index !== -1) {
+          this._pendingSyncStatusSubscriptions.splice(index, 1);
+        }
+      };
+    }
+    try {
+      return this._instance.onSyncStatus(callback);
+    } catch (e) {
+      // Reliable messaging not ready, queue it
+      this._pendingSyncStatusSubscriptions.push(callback);
+      return () => {
+        const index = this._pendingSyncStatusSubscriptions.indexOf(callback);
+        if (index !== -1) {
+          this._pendingSyncStatusSubscriptions.splice(index, 1);
+        }
+      };
+    }
+  }
+
+  // Helper to retry pending sync subscriptions when reliable messaging becomes available
+  private retryPendingSyncSubscriptions() {
+    if (!this._instance) return;
+    
+    const pending = [...this._pendingSyncStatusSubscriptions];
+    this._pendingSyncStatusSubscriptions = [];
+    
+    pending.forEach(callback => {
+      try {
+        this._instance!.onSyncStatus(callback);
+      } catch (e) {
+        // Still not ready, put it back
+        this._pendingSyncStatusSubscriptions.push(callback);
+      }
+    });
   }
 }
 

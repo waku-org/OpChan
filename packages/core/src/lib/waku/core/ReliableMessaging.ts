@@ -16,16 +16,19 @@ export interface MessageStatusCallback {
 }
 
 export type IncomingMessageCallback = (message: OpchanMessage) => void;
+export type SyncStatusCallback = (status: 'syncing' | 'synced', detail: { received: number; missing: number; lost: number }) => void;
 
 export class ReliableMessaging {
   private channel: ReliableChannel<IDecodedMessage> | null = null;
   private messageCallbacks: Map<string, MessageStatusCallback> = new Map();
   private incomingMessageCallbacks: Set<IncomingMessageCallback> = new Set();
+  private syncStatusCallbacks: Set<SyncStatusCallback> = new Set();
   private codecManager: CodecManager;
 
   constructor(node: LightNode, config: WakuConfig) {
     this.codecManager = new CodecManager(node, config);
     this.initializeChannel(node, config);
+    
   }
 
   // ===== PUBLIC METHODS =====
@@ -58,9 +61,15 @@ export class ReliableMessaging {
     return () => this.incomingMessageCallbacks.delete(callback);
   }
 
+  public onSyncStatus(callback: SyncStatusCallback): () => void {
+    this.syncStatusCallbacks.add(callback);
+    return () => this.syncStatusCallbacks.delete(callback);
+  }
+
   public cleanup(): void {
     this.messageCallbacks.clear();
     this.incomingMessageCallbacks.clear();
+    this.syncStatusCallbacks.clear();
     this.channel = null;
   }
 
@@ -81,9 +90,28 @@ export class ReliableMessaging {
         decoder
       );
       this.setupChannelListeners(this.channel);
+      this.setupSyncStatusListeners(this.channel);
     } catch (error) {
       console.error('Failed to create reliable channel:', error);
     }
+  }
+
+  private setupSyncStatusListeners(channel: ReliableChannel<IDecodedMessage>): void {
+    // Check if syncStatus API is available
+    if (!channel.syncStatus) {
+      console.warn('ReliableChannel.syncStatus is not available in this SDK version');
+      return;
+    }
+
+    channel.syncStatus.addEventListener('syncing', (event) => {
+      const detail = event.detail;
+      this.syncStatusCallbacks.forEach(cb => cb('syncing', detail));
+    });
+
+    channel.syncStatus.addEventListener('synced', (event) => {
+      const detail = event.detail;
+      this.syncStatusCallbacks.forEach(cb => cb('synced', detail));
+    });
   }
 
   private setupChannelListeners(

@@ -22,6 +22,7 @@ import {
   X,
   Clock,
   Trash2,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -30,6 +31,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +57,7 @@ import { WakuHealthDot } from '@/components/ui/waku-health-indicator';
 
 const Header = () => {
   const { currentUser, delegationInfo } = useAuth();
-  const { statusMessage } = useNetwork();
+  const { statusMessage, syncStatus, syncDetail } = useNetwork();
 
   const location = useLocation();
   const { toast } = useToast();
@@ -166,16 +173,52 @@ const Header = () => {
                 <span className="text-[10px] text-muted-foreground">
                   {statusMessage}
                 </span>
+                {syncStatus === 'syncing' && syncDetail && syncDetail.missing > 0 && (
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center space-x-1 text-[10px] text-yellow-400 cursor-help">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>SYNCING ({syncDetail.missing})</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">
+                          <strong>Syncing messages</strong>
+                          <br />
+                          Pending: {syncDetail.missing}
+                          <br />
+                          Received: {syncDetail.received}
+                          {syncDetail.lost > 0 && (
+                            <>
+                              <br />
+                              Lost: {syncDetail.lost}
+                            </>
+                          )}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
                 {content.lastSync && (
-                  <div className="flex items-center space-x-1 text-[10px] text-muted-foreground">
-                    <Clock className="w-3 h-3" />
-                    <span>
-                      {new Date(content.lastSync).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center space-x-1 text-[10px] text-muted-foreground cursor-help">
+                          <Clock className="w-3 h-3" />
+                          <span>
+                            {new Date(content.lastSync).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Last message sync time</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
             </div>
@@ -183,9 +226,26 @@ const Header = () => {
             {/* Right: User Actions */}
             <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
               {/* Network Status (Mobile) */}
-              <div className="lg:hidden">
-                <WakuHealthDot />
-              </div>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="lg:hidden flex items-center space-x-1 cursor-help">
+                      {syncStatus === 'syncing' && syncDetail && syncDetail.missing > 0 ? (
+                        <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />
+                      ) : (
+                        <WakuHealthDot />
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">
+                      {syncStatus === 'syncing' && syncDetail && syncDetail.missing > 0
+                        ? `Syncing ${syncDetail.missing} messages...`
+                        : 'Network connected'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* User Status & Actions */}
               {isConnected || currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? (
@@ -466,8 +526,14 @@ const Header = () => {
                 <div className="flex items-center space-x-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                   <WakuHealthDot />
                   <span>{statusMessage}</span>
+                  {syncStatus === 'syncing' && syncDetail && syncDetail.missing > 0 && (
+                    <span className="text-yellow-400 flex items-center space-x-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>SYNCING ({syncDetail.missing})</span>
+                    </span>
+                  )}
                   {content.lastSync && (
-                    <span className="ml-auto">
+                    <span className="ml-auto" title="Last message sync">
                       {new Date(content.lastSync).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',

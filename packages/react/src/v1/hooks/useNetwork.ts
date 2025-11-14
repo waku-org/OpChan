@@ -20,6 +20,8 @@ export function useNetwork() {
     statusMessage: network.statusMessage,
     issues: network.issues,
     isHydrated: network.isHydrated,
+    syncStatus: network.syncStatus,
+    syncDetail: network.syncDetail,
     canRefresh: true,
     refresh,
   } as const;

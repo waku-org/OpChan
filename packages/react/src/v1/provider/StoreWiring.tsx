@@ -103,6 +103,22 @@ export const StoreWiring: React.FC = () => {
         }));
       });
 
+      // Wire sync status
+      try {
+        client.messageManager.onSyncStatus((status, detail) => {
+          setOpchanState(prev => ({
+            ...prev,
+            network: {
+              ...prev.network,
+              syncStatus: status,
+              syncDetail: detail,
+            },
+          }));
+        });
+      } catch (e) {
+        // Reliable messaging not ready yet
+      }
+
       unsubMessages = client.messageManager.onMessageReceived(async (message: OpchanMessage) => {
         // Persist, then reflect cache in store
         try {
