@@ -345,6 +345,21 @@ const Header = () => {
             </div>
           </div>
 
+          {/* Builder Banner */}
+          <div className="mt-1 mb-1 flex items-center justify-between gap-2 text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <span className="truncate">
+              Reference client on top of @opchan/core. UI is intentionally bare.
+            </span>
+            <a
+              href="https://github.com/waku-org/opchan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 text-primary hover:underline"
+            >
+              Build your own →
+            </a>
+          </div>
+
           {/* Navigation Bar (Desktop) */}
           <div className="hidden md:flex items-center justify-center border-t border-border py-2">
             <nav className="flex items-center space-x-0.5 text-[11px] uppercase tracking-[0.2em]">

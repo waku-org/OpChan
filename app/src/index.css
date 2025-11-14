@@ -100,14 +100,14 @@
   }
 
   .text-glow {
-    text-transform: uppercase;
-    letter-spacing: 0.25em;
+    text-transform: none;
+    letter-spacing: 0.02em;
     text-shadow: none;
   }
 
   .text-glow-subtle {
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
+    text-transform: none;
+    letter-spacing: 0.01em;
     text-shadow: none;
   }
 
@@ -128,7 +128,7 @@
   }
 
   .btn {
-    @apply inline-flex items-center justify-between border border-border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60;
+    @apply inline-flex items-center justify-between border border-border px-3 py-2 text-xs font-normal text-foreground transition-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60;
   }
 }
 
@@ -143,11 +143,11 @@
   }
 
   .page-title {
-    @apply text-sm sm:text-base font-semibold uppercase tracking-[0.25em] sm:tracking-[0.3em] text-foreground mb-1;
+    @apply text-sm sm:text-base font-semibold text-foreground mb-1;
   }
 
   .page-subtitle {
-    @apply text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-muted-foreground;
+    @apply text-[10px] sm:text-xs text-muted-foreground;
   }
 
   .page-content {
@@ -159,7 +159,7 @@
   }
 
   .page-footer {
-    @apply border-t border-border py-2 sm:py-3 text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground px-3;
+    @apply border-t border-border py-2 sm:py-3 text-center text-[10px] text-muted-foreground px-3;
   }
 
   /* Card Components */
@@ -219,7 +219,7 @@
 
   /* Button Variants */
   .btn-cyber {
-    @apply border border-border bg-transparent text-foreground uppercase tracking-[0.2em] text-[11px] hover:bg-white/10;
+    @apply border border-border bg-transparent text-foreground text-xs hover:bg-white/10;
   }
 
   .btn-cyber-outline {
@@ -263,7 +263,7 @@
   }
 
   .empty-state-title {
-    @apply text-base sm:text-lg md:text-xl font-mono font-bold text-white mb-2 tracking-[0.2em] sm:tracking-[0.25em];
+    @apply text-base sm:text-lg md:text-xl font-mono font-bold text-white mb-2;
   }
 
   .empty-state-description {
@@ -272,7 +272,7 @@
 }
 
 .cyberpunk-glow {
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
+  text-transform: none;
+  letter-spacing: 0.02em;
   text-shadow: none;
 }

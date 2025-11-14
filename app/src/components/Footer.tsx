@@ -48,7 +48,7 @@ const Footer: React.FC = () => {
           </nav>
 
           <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-muted-foreground text-center">
-            Licensed under CC-BY-SA
+            Reference client · build your own with @opchan/core
           </div>
         </div>
       </div>

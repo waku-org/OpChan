@@ -72,135 +72,99 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   };
 
   return (
-    <div className="thread-card mb-2">
-      <div className="flex flex-col sm:flex-row">
-        {/* Voting column */}
-        <div className="flex sm:flex-col flex-row items-center justify-between sm:justify-start gap-2 sm:gap-2 p-2 sm:p-2 border-b sm:border-b-0 sm:border-r border-border/60 bg-transparent sm:w-auto w-full">
-          <div className="flex sm:flex-col items-center gap-2">
-            <button
-              className={`p-1.5 sm:p-1 border border-transparent hover:border-border touch-manipulation ${
-                userUpvoted
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-primary'
-              }`}
-              onClick={e => handleVote(e, true)}
-              disabled={!permissions.canVote}
-              title={permissions.canVote ? 'Upvote' : permissions.reasons.vote}
-            >
-              <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-
-            <span className="text-sm font-semibold text-foreground min-w-[24px] text-center">
-              {score}
-            </span>
-
-            <button
-              className={`p-1.5 sm:p-1 border border-transparent hover:border-border touch-manipulation ${
-                userDownvoted
-                  ? 'text-blue-400'
-                  : 'text-muted-foreground hover:text-blue-400'
-              }`}
-              onClick={e => handleVote(e, false)}
-              disabled={!permissions.canVote}
-              title={permissions.canVote ? 'Downvote' : permissions.reasons.vote}
-            >
-              <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          </div>
-          {isPending && (
-            <span className="text-[9px] sm:text-[10px] text-yellow-400 sm:mt-1">syncing…</span>
-          )}
+    <div className="border-b border-border/30 py-3 px-2 hover:bg-border/5">
+      <div className="flex gap-3">
+        {/* Vote column - compact */}
+        <div className="flex flex-col items-center gap-0.5 text-xs min-w-[40px]">
+          <button
+            className={`hover:text-primary ${
+              userUpvoted ? 'text-primary' : 'text-muted-foreground'
+            }`}
+            onClick={e => handleVote(e, true)}
+            disabled={!permissions.canVote}
+            title={permissions.canVote ? 'Upvote' : permissions.reasons.vote}
+          >
+            ▲
+          </button>
+          <span className={`font-mono text-xs ${score > 0 ? 'text-primary' : score < 0 ? 'text-red-400' : 'text-muted-foreground'}`}>
+            {score}
+          </span>
+          <button
+            className={`hover:text-blue-400 ${
+              userDownvoted ? 'text-blue-400' : 'text-muted-foreground'
+            }`}
+            onClick={e => handleVote(e, false)}
+            disabled={!permissions.canVote}
+            title={permissions.canVote ? 'Downvote' : permissions.reasons.vote}
+          >
+            ▼
+          </button>
         </div>
 
-        {/* Content column */}
-        <div className="flex-1 p-2 sm:p-3 min-w-0">
-          <div className="space-y-3">
-            {/* Post metadata */}
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] uppercase tracking-[0.1em] sm:tracking-[0.12em] text-muted-foreground">
-              <Link
-                to={cellName ? `/cell/${post.cellId}` : '#'}
-                className="text-primary hover:underline truncate"
-                tabIndex={0}
-                onClick={e => {
-                  if (!cellName) e.preventDefault();
-                }}
-                title={cellName ? `Go to /${cellName}` : undefined}
-              >
-                r/{cellName || 'unknown'}
-              </Link>
-              <span className="hidden sm:inline">•</span>
-              <span className="hidden sm:inline">Posted by u/</span>
-              <span className="sm:hidden">u/</span>
-              <AuthorDisplay
-                address={post.author}
-                className="text-[10px] sm:text-xs truncate"
-                showBadge={false}
-              />
-              <span className="opacity-50 hidden sm:inline">/</span>
-              <span className="normal-case tracking-normal text-foreground text-[10px] sm:text-[11px]">
-                {formatDistanceToNow(new Date(post.timestamp), {
-                  addSuffix: true,
-                })}
-              </span>
-              {'relevanceScore' in post &&
-                typeof (post as Post).relevanceScore === 'number' && (
-                  <>
-                    <span className="opacity-50 hidden sm:inline">/</span>
-                    <RelevanceIndicator
-                      score={(post as Post).relevanceScore as number}
-                      details={
-                        'relevanceDetails' in post
-                          ? (post as Post).relevanceDetails
-                          : undefined
-                      }
-                      type="post"
-                      className="text-[10px] sm:text-[11px]"
-                      showTooltip={true}
-                    />
-                  </>
-                )}
-            </div>
+        {/* Content */}
+        <div className="flex-1 min-w-0 text-xs">
+          {/* Title */}
+          <Link to={`/post/${post.id}`} className="block mb-1">
+            <h2 className="text-sm font-semibold text-foreground hover:underline break-words">
+              {post.title}
+            </h2>
+          </Link>
 
-            {/* Post title and content - clickable to navigate to post */}
-            <div className="block">
-              <Link to={`/post/${post.id}`} className="block">
-                <h2 className="text-sm sm:text-base font-semibold text-foreground break-words">
-                  {post.title}
-                </h2>
-              </Link>
+          {/* Metadata line */}
+          <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground mb-2">
+            <Link
+              to={cellName ? `/cell/${post.cellId}` : '#'}
+              className="text-primary hover:underline"
+              onClick={e => {
+                if (!cellName) e.preventDefault();
+              }}
+            >
+              r/{cellName}
+            </Link>
+            <span>·</span>
+            <AuthorDisplay
+              address={post.author}
+              className="text-[11px]"
+              showBadge={false}
+            />
+            <span>·</span>
+            <span className="text-muted-foreground/80">
+              {formatDistanceToNow(new Date(post.timestamp), {
+                addSuffix: true,
+              })}
+            </span>
+            {isPending && (
+              <>
+                <span>·</span>
+                <span className="text-yellow-400 text-[10px]">syncing</span>
+              </>
+            )}
+          </div>
 
-              {/* Post content preview */}
-              <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mt-1 sm:mt-2 break-words">
-                <LinkRenderer text={contentPreview} />
-              </p>
-            </div>
+          {/* Content preview */}
+          {contentPreview && (
+            <p className="text-muted-foreground text-xs leading-relaxed mb-2">
+              <LinkRenderer text={contentPreview} />
+            </p>
+          )}
 
-            {/* Post actions */}
-            <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 text-[10px] sm:text-[11px] uppercase tracking-[0.12em] sm:tracking-[0.15em] text-muted-foreground mt-2 sm:mt-3">
-              <div className="flex items-center flex-wrap gap-2 sm:gap-4">
-                <div className="flex items-center space-x-1 hover:text-foreground">
-                  <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span>{commentCount} comments</span>
-                </div>
-                {isPending && (
-                  <span className="px-1.5 sm:px-2 py-0.5 border border-yellow-500 text-yellow-400 text-[9px] sm:text-[10px]">
-                    syncing…
-                  </span>
-                )}
-                <ShareButton
-                  size="sm"
-                  url={`${window.location.origin}/post/${post.id}`}
-                  title={post.title}
-                />
-              </div>
-              <BookmarkButton
-                isBookmarked={isBookmarked}
-                loading={bookmarkLoading}
-                onClick={handleBookmark}
-                size="sm"
-                variant="ghost"
-              />
-            </div>
+          {/* Actions */}
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <Link to={`/post/${post.id}`} className="hover:underline">
+              {commentCount} {commentCount === 1 ? 'reply' : 'replies'}
+            </Link>
+            <button
+              onClick={handleBookmark}
+              disabled={bookmarkLoading}
+              className="hover:underline"
+            >
+              {isBookmarked ? 'unsave' : 'save'}
+            </button>
+            <ShareButton
+              size="sm"
+              url={`${window.location.origin}/post/${post.id}`}
+              title={post.title}
+            />
           </div>
         </div>
       </div>

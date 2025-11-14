@@ -150,12 +150,13 @@ const FeedPage: React.FC = () => {
                       No posts yet
                     </h3>
                     <p className="empty-state-description">
-                      Be the first to create a post in a cell!
+                      This is a reference UI built on top of @opchan/core.
+                      Swap this screen with your own feed layout.
                     </p>
                     {verificationStatus !==
                       EVerificationStatus.ENS_VERIFIED && (
                       <p className="text-xs sm:text-sm text-cyber-neutral/80">
-                        Connect your wallet to start posting
+                        Connect your wallet to try the reference client – or fork it and build your own.
                       </p>
                     )}
                   </div>

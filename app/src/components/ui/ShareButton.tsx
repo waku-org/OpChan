@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { Share2 } from 'lucide-react';
 import { cn } from '../../utils';
 import { useToast } from '../ui/use-toast';
 
@@ -15,22 +13,9 @@ interface ShareButtonProps {
 
 export function ShareButton({
   url,
-  size = 'sm',
-  variant = 'ghost',
   className,
-  showText = false,
 }: ShareButtonProps) {
   const { toast } = useToast();
-
-  const sizeClasses = {
-    sm: 'h-8 w-10 flex-shrink-0',
-    lg: 'h-10 whitespace-nowrap px-4',
-  };
-
-  const iconSize = {
-    sm: 14,
-    lg: 18,
-  };
 
   const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -39,8 +24,8 @@ export function ShareButton({
     try {
       await navigator.clipboard.writeText(url);
       toast({
-        title: 'Link copied!',
-        description: 'Link has been copied to your clipboard.',
+        title: 'Link copied',
+        description: 'Link copied to clipboard',
       });
     } catch {
       // Fallback for older browsers
@@ -52,26 +37,19 @@ export function ShareButton({
       document.body.removeChild(textArea);
 
       toast({
-        title: 'Link copied!',
-        description: 'Link has been copied to your clipboard.',
+        title: 'Link copied',
+        description: 'Link copied to clipboard',
       });
     }
   };
 
   return (
-    <Button
-      variant={variant}
-      size={size}
+    <button
       onClick={handleShare}
-      className={cn(
-        sizeClasses[size],
-        'transition-colors duration-200 text-cyber-neutral hover:text-cyber-light',
-        className
-      )}
+      className={cn('hover:underline', className)}
       title="Copy link"
     >
-      <Share2 size={iconSize[size]} />
-      {showText && <span className="ml-2 text-xs">Share</span>}
-    </Button>
+      share
+    </button>
   );
 }

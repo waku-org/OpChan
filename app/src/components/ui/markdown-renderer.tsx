@@ -9,7 +9,8 @@ interface MarkdownRendererProps {
 }
 
 /**
- * Renders sanitized Markdown with GFM support.
+ * Renders sanitized Markdown with GFM support and 4chan-style greentext.
+ * Lines starting with > are rendered in green.
  */
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
@@ -45,6 +46,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       'td',
       'a',
       'img',
+      'span',
     ],
     attributes: {
       ...defaultSchema.attributes,
@@ -61,16 +63,53 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         ['title'],
       ],
       code: [...(defaultSchema.attributes?.code || []), ['className']],
+      span: [['className']],
     },
   };
+
+  // Preprocess content to wrap greentext lines (lines starting with >) in special markers
+  // We'll handle this by checking for lines that start with > but aren't markdown quotes (>>)
+  const processedContent = content
+    .split('\n')
+    .map(line => {
+      // Check if line starts with > but not >> (markdown quote)
+      // and not a quote block (which would be > followed by space typically)
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('>') && !trimmedLine.startsWith('>>')) {
+        // Wrap in a span with greentext class
+        return `<span class="greentext">${line}</span>`;
+      }
+      return line;
+    })
+    .join('\n');
+
   return (
     <div className={className}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[[rehypeSanitize, schema]]}
+        components={{
+          p: ({ children, ...props }) => {
+            // Check if this paragraph contains greentext
+            const childText = String(children);
+            if (childText.trim().startsWith('>')) {
+              return (
+                <p {...props} className="text-green-400 my-1">
+                  {children}
+                </p>
+              );
+            }
+            return <p {...props}>{children}</p>;
+          },
+        }}
       >
         {content || ''}
       </ReactMarkdown>
+      <style>{`
+        .greentext {
+          color: rgb(74 222 128);
+        }
+      `}</style>
     </div>
   );
 };
