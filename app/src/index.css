@@ -6,44 +6,44 @@
 
 @layer base {
   :root {
-    --background: 226 20% 12%;
-    --foreground: 0 0% 95%;
+    --background: 210 5% 6%;
+    --foreground: 45 18% 92%;
 
-    --card: 226 20% 12%;
-    --card-foreground: 0 0% 94%;
+    --card: 210 4% 8%;
+    --card-foreground: 45 18% 92%;
 
-    --popover: 226 20% 18%;
-    --popover-foreground: 0 0% 94%;
+    --popover: 210 5% 10%;
+    --popover-foreground: 45 18% 92%;
 
-    --primary: 195 82% 42%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 38 80% 62%;
+    --primary-foreground: 0 0% 12%;
 
-    --secondary: 226 20% 18%;
-    --secondary-foreground: 0 0% 94%;
+    --secondary: 210 4% 12%;
+    --secondary-foreground: 45 18% 92%;
 
-    --muted: 226 13% 27%;
-    --muted-foreground: 225 6% 57%;
+    --muted: 210 5% 18%;
+    --muted-foreground: 210 10% 60%;
 
-    --accent: 195 82% 42%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 38 80% 62%;
+    --accent-foreground: 0 0% 12%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 2 64% 48%;
+    --destructive-foreground: 45 18% 96%;
 
-    --border: 226 13% 27%;
-    --input: 226 13% 27%;
-    --ring: 195 82% 42%;
+    --border: 210 6% 22%;
+    --input: 210 6% 22%;
+    --ring: 38 80% 62%;
 
-    --radius: 0.25rem;
+    --radius: 0rem;
 
-    --sidebar-background: 226 20% 14%;
-    --sidebar-foreground: 0 0% 94%;
-    --sidebar-primary: 195 82% 42%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 226 20% 18%;
-    --sidebar-accent-foreground: 0 0% 94%;
-    --sidebar-border: 226 13% 27%;
-    --sidebar-ring: 195 82% 42%;
+    --sidebar-background: 210 5% 8%;
+    --sidebar-foreground: 45 18% 92%;
+    --sidebar-primary: 38 80% 62%;
+    --sidebar-primary-foreground: 0 0% 12%;
+    --sidebar-accent: 210 4% 12%;
+    --sidebar-accent-foreground: 45 18% 90%;
+    --sidebar-border: 210 6% 22%;
+    --sidebar-ring: 38 80% 62%;
   }
 }
 
@@ -68,6 +68,19 @@
       'Open Sans',
       'Helvetica Neue',
       sans-serif;
+    letter-spacing: 0.03em;
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.02) 1px,
+        transparent 1px
+      );
+    background-size: 100% 32px, 32px 100%;
   }
 
   ::-webkit-scrollbar {
@@ -75,24 +88,31 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: hsl(var(--secondary));
+    background: hsl(var(--background));
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted));
-    border-radius: 3px;
+    background: hsl(var(--border));
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground));
+    background: hsl(var(--muted));
   }
 
   .text-glow {
-    text-shadow: 0 0 8px rgba(15, 160, 206, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    text-shadow: none;
+  }
+
+  .text-glow-subtle {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    text-shadow: none;
   }
 
   *:focus-visible {
-    @apply outline-none ring-2 ring-primary/70 ring-offset-1 ring-offset-background;
+    @apply outline-none ring-1 ring-primary/60 ring-offset-2 ring-offset-background;
   }
 
   h1,
@@ -108,67 +128,67 @@
   }
 
   .btn {
-    @apply inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none disabled:opacity-50;
+    @apply inline-flex items-center justify-between border border-border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60;
   }
 }
 
 @layer components {
   /* Page Layout Components */
   .page-container {
-    @apply min-h-screen flex flex-col bg-cyber-dark text-white;
+    @apply min-h-screen flex flex-col bg-cyber-dark text-foreground;
   }
 
   .page-header {
-    @apply mb-8;
+    @apply mb-4 sm:mb-6 border-b border-border pb-3 sm:pb-4;
   }
 
   .page-title {
-    @apply text-3xl font-mono font-bold text-white mb-2;
+    @apply text-sm sm:text-base font-semibold uppercase tracking-[0.25em] sm:tracking-[0.3em] text-foreground mb-1;
   }
 
   .page-subtitle {
-    @apply text-cyber-neutral;
+    @apply text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] text-muted-foreground;
   }
 
   .page-content {
-    @apply flex-1 pt-16;
+    @apply flex-1 pt-8 sm:pt-10;
   }
 
   .page-main {
-    @apply container mx-auto px-4 py-8 max-w-6xl;
+    @apply w-full mx-auto px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-8 max-w-5xl;
   }
 
   .page-footer {
-    @apply border-t border-cyber-muted py-4 text-center text-xs text-cyber-neutral;
+    @apply border-t border-border py-2 sm:py-3 text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground px-3;
   }
 
   /* Card Components */
   .card-base {
-    @apply bg-cyber-muted/20 border border-cyber-muted/30 rounded-sm transition-all duration-200;
+    @apply bg-transparent border border-border/70 rounded-none shadow-none;
   }
 
   .card-hover {
-    @apply hover:bg-cyber-muted/30 hover:border-cyber-accent/50;
+    @apply hover:bg-white/5;
   }
 
   .card-padding {
-    @apply p-6;
+    @apply p-3 sm:p-4;
   }
 
   .card-padding-sm {
-    @apply p-4;
+    @apply p-2 sm:p-3;
   }
 
   .thread-card {
-    @apply card-base card-hover card-padding-sm mb-4;
-  }
-
-  .board-card {
     @apply card-base card-hover card-padding-sm mb-3;
   }
 
+  .board-card {
+    @apply card-base card-hover card-padding-sm mb-2;
+  }
+
   .comment-card {
-    @apply border-l-2 border-muted pl-3 py-2 my-2 hover:border-primary transition-colors;
+    @apply border-l border-border pl-3 py-2 my-2;
   }
 
   /* Content Cards */
@@ -199,22 +219,14 @@
 
   /* Button Variants */
   .btn-cyber {
-    @apply bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono font-medium;
+    @apply border border-border bg-transparent text-foreground uppercase tracking-[0.2em] text-[11px] hover:bg-white/10;
   }
 
   .btn-cyber-outline {
-    @apply border-cyber-muted/30 text-cyber-neutral hover:bg-cyber-muted/30;
+    @apply border border-border text-muted-foreground hover:text-foreground hover:bg-white/5;
   }
 
   /* Typography */
-  .text-glow {
-    text-shadow: 0 0 8px rgba(15, 160, 206, 0.5);
-  }
-
-  .text-glow-subtle {
-    text-shadow: 0 0 4px rgba(15, 160, 206, 0.3);
-  }
-
   /* Spacing Utilities */
   .section-spacing {
     @apply mb-8;
@@ -243,60 +255,24 @@
 
   /* Empty States */
   .empty-state {
-    @apply flex flex-col items-center justify-center py-16 px-4 text-center;
+    @apply flex flex-col items-center justify-center py-8 sm:py-12 md:py-16 px-3 sm:px-4 text-center;
   }
 
   .empty-state-icon {
-    @apply w-16 h-16 text-cyber-accent/50 mb-4;
+    @apply w-12 h-12 sm:w-16 sm:h-16 text-cyber-accent/50 mb-3 sm:mb-4;
   }
 
   .empty-state-title {
-    @apply text-xl font-mono font-bold text-white mb-2;
+    @apply text-base sm:text-lg md:text-xl font-mono font-bold text-white mb-2 tracking-[0.2em] sm:tracking-[0.25em];
   }
 
   .empty-state-description {
-    @apply text-cyber-neutral mb-4;
-  }
-}
-
-@keyframes cyber-flicker {
-  0%,
-  100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.8));
-  }
-  8%,
-  10% {
-    opacity: 0.8;
-    filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.8));
-  }
-  20%,
-  25% {
-    opacity: 1;
-    filter: drop-shadow(0 0 1px rgba(0, 255, 255, 0.5));
-  }
-  30% {
-    opacity: 0.6;
-    filter: drop-shadow(0 0 8px rgba(0, 255, 255, 1));
-  }
-  40%,
-  45% {
-    opacity: 1;
-    filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.6));
-  }
-  50%,
-  55% {
-    opacity: 0.9;
-    filter: drop-shadow(0 0 3px rgba(0, 255, 255, 0.8));
-  }
-  60%,
-  100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.6));
+    @apply text-sm sm:text-base text-cyber-neutral mb-3 sm:mb-4 px-2;
   }
 }
 
 .cyberpunk-glow {
-  animation: cyber-flicker 8s infinite;
-  will-change: filter, opacity;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  text-shadow: none;
 }

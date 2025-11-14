@@ -59,14 +59,14 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
-        // Cypherpunk theme colors
+        // Raw terminal-inspired palette
         cyber: {
-          dark: '#1A1F2C',
-          light: '#F1F1F1',
-          accent: '#0FA0CE',
-          accent2: '#1EAEDB',
-          neutral: '#8E9196',
-          muted: '#3A3F4C',
+          dark: '#050505',
+          light: '#F4F4F4',
+          accent: '#F0C674',
+          accent2: '#DD6B20',
+          neutral: '#9F9F9F',
+          muted: '#1A1A1A',
         },
       },
       borderRadius: {

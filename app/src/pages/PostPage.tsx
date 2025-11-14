@@ -6,7 +6,7 @@ const PostPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-cyber-dark text-white">
       <Header />
-      <main className="flex-1 pt-16">
+      <main className="flex-1 pt-12 sm:pt-14 md:pt-16">
         <PostDetail />
       </main>
       <Footer />

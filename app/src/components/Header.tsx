@@ -144,30 +144,30 @@ const Header = () => {
 
   return (
     <>
-      <header className="bg-black/80 border-b border-cyber-muted/30 sticky top-0 z-50 backdrop-blur-md">
-        <div className="container mx-auto px-4">
+      <header className="bg-cyber-dark border-b border-border sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4">
           {/* Top Row - Logo, Network Status, User Actions */}
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-12 sm:h-14 md:h-16">
             {/* Left: Logo */}
-            <div className="flex items-center">
+            <div className="flex items-center min-w-0">
               <Link
                 to="/"
-                className="flex items-center space-x-2 text-xl font-mono font-bold text-white hover:text-cyber-accent transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm font-mono font-semibold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-foreground truncate"
               >
-                <Terminal className="w-6 h-6" />
-                <span className="tracking-wider">opchan</span>
+                <Terminal className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="truncate">opchan</span>
               </Link>
             </div>
 
             {/* Center: Network Status (Desktop) */}
             <div className="hidden lg:flex items-center space-x-3">
-              <div className="flex items-center space-x-2 px-3 py-1 bg-cyber-muted/20 rounded-full border border-cyber-muted/30">
+              <div className="flex items-center space-x-2 px-3 py-1 border border-border text-[10px] uppercase tracking-[0.2em]">
                 <WakuHealthDot />
-                <span className="text-xs font-mono text-cyber-neutral">
+                <span className="text-[10px] text-muted-foreground">
                   {statusMessage}
                 </span>
                 {content.lastSync && (
-                  <div className="flex items-center space-x-1 text-xs text-cyber-neutral/70">
+                  <div className="flex items-center space-x-1 text-[10px] text-muted-foreground">
                     <Clock className="w-3 h-3" />
                     <span>
                       {new Date(content.lastSync).toLocaleTimeString([], {
@@ -181,7 +181,7 @@ const Header = () => {
             </div>
 
             {/* Right: User Actions */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
               {/* Network Status (Mobile) */}
               <div className="lg:hidden">
                 <WakuHealthDot />
@@ -189,24 +189,24 @@ const Header = () => {
 
               {/* User Status & Actions */}
               {isConnected || currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 sm:space-x-2">
                   {/* Status Badge - hidden for anonymous sessions */}
                   {currentUser?.verificationStatus !== EVerificationStatus.ANONYMOUS && (
                     <Badge
                       variant="outline"
-                      className={`font-mono text-xs border-0 ${
+                      className={`hidden sm:flex items-center gap-1 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 ${
                         currentUser?.verificationStatus ===
                           EVerificationStatus.ENS_VERIFIED &&
                         delegationInfo?.isValid
-                          ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                          ? 'border-green-500 text-green-300'
                           : currentUser?.verificationStatus ===
                               EVerificationStatus.ENS_VERIFIED
-                            ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                            : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                            ? 'border-orange-500 text-orange-300'
+                            : 'border-yellow-500 text-yellow-300'
                       }`}
                     >
                       {getStatusIcon()}
-                      <span className="ml-1">
+                      <span className="hidden md:inline">
                         {currentUser?.verificationStatus ===
                         EVerificationStatus.WALLET_UNCONNECTED
                           ? 'CONNECT'
@@ -226,17 +226,17 @@ const Header = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="flex items-center space-x-2 text-white hover:bg-cyber-muted/30"
+                        className="flex items-center space-x-1 sm:space-x-2 text-foreground border-border px-2 sm:px-3"
                       >
-                        <div className="text-sm font-mono">
+                        <div className="text-[10px] sm:text-[11px] uppercase tracking-[0.15em] sm:tracking-[0.2em] truncate max-w-[80px] sm:max-w-none">
                           {currentUser?.displayName}
                         </div>
-                        <Settings className="w-4 h-4" />
+                        <Settings className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                       align="end"
-                      className="w-56 bg-black/95 border-cyber-muted/30"
+                      className="w-56 bg-[#050505] border border-border text-sm"
                     >
                       <DropdownMenuItem asChild>
                         <Link
@@ -266,7 +266,7 @@ const Header = () => {
                         </DropdownMenuItem>
                       )}
 
-                      <DropdownMenuSeparator className="bg-cyber-muted/30" />
+                      <DropdownMenuSeparator className="bg-border" />
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -278,12 +278,12 @@ const Header = () => {
                             <span>Clear Database</span>
                           </DropdownMenuItem>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-black/95 border-cyber-muted/30">
+                        <AlertDialogContent className="bg-[#050505] border border-border text-foreground">
                           <AlertDialogHeader>
-                            <AlertDialogTitle className="text-white">
+                            <AlertDialogTitle className="text-foreground uppercase tracking-[0.2em] text-sm">
                               Clear Local Database
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="text-cyber-neutral">
+                            <AlertDialogDescription className="text-muted-foreground">
                               This will permanently delete all locally stored
                               data including:
                               <br />• Posts and comments
@@ -296,12 +296,12 @@ const Header = () => {
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel className="bg-cyber-muted/20 border-cyber-muted/30 text-white hover:bg-cyber-muted/30">
+                            <AlertDialogCancel className="border border-border text-foreground hover:bg-white/5">
                               Cancel
                             </AlertDialogCancel>
                             <AlertDialogAction
                               onClick={handleClearDatabase}
-                              className="bg-red-600 hover:bg-red-700 text-white"
+                              className="border border-red-600 text-red-400 hover:bg-red-600/10"
                             >
                               Clear Database
                             </AlertDialogAction>
@@ -322,9 +322,10 @@ const Header = () => {
               ) : (
                 <Button
                   onClick={handleConnect}
-                  className="bg-cyber-accent hover:bg-cyber-accent/80 text-black font-mono font-medium"
+                  className="text-primary border-primary hover:bg-primary/10 text-[10px] sm:text-[11px] px-2 sm:px-3"
                 >
-                  Connect
+                  <span className="hidden sm:inline">Connect</span>
+                  <span className="sm:hidden">CON</span>
                 </Button>
               )}
 
@@ -333,26 +334,26 @@ const Header = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden text-white hover:bg-cyber-muted/30"
+                className="md:hidden border-border text-foreground p-2"
               >
                 {mobileMenuOpen ? (
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 ) : (
-                  <Menu className="w-5 h-5" />
+                  <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
                 )}
               </Button>
             </div>
           </div>
 
           {/* Navigation Bar (Desktop) */}
-          <div className="hidden md:flex items-center justify-center border-t border-cyber-muted/20 py-2">
-            <nav className="flex items-center space-x-1">
+          <div className="hidden md:flex items-center justify-center border-t border-border py-2">
+            <nav className="flex items-center space-x-0.5 text-[11px] uppercase tracking-[0.2em]">
               <Link
                 to="/"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
+                className={`flex items-center space-x-2 px-4 py-2 border-b ${
                   location.pathname === '/'
-                    ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
-                    : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Home className="w-4 h-4" />
@@ -360,10 +361,10 @@ const Header = () => {
               </Link>
               <Link
                 to="/cells"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
+                className={`flex items-center space-x-2 px-4 py-2 border-b ${
                   location.pathname === '/cells'
-                    ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
-                    : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Grid3X3 className="w-4 h-4" />
@@ -373,10 +374,10 @@ const Header = () => {
                 <>
                   <Link
                     to="/bookmarks"
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-mono transition-all ${
+                    className={`flex items-center space-x-2 px-4 py-2 border-b ${
                       location.pathname === '/bookmarks'
-                        ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
-                        : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     <Bookmark className="w-4 h-4" />
@@ -389,14 +390,14 @@ const Header = () => {
 
           {/* Mobile Navigation */}
           {mobileMenuOpen && (
-            <div className="md:hidden border-t border-cyber-muted/20 py-4 space-y-2">
+            <div className="md:hidden border-t border-border py-4 space-y-2">
               <nav className="space-y-1">
                 <Link
                   to="/"
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-mono transition-all ${
+                  className={`flex items-center space-x-3 px-4 py-3 border ${
                     location.pathname === '/'
-                      ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
-                      : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                      ? 'border-primary text-primary'
+                      : 'border-border text-muted-foreground'
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -405,10 +406,10 @@ const Header = () => {
                 </Link>
                 <Link
                   to="/cells"
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-mono transition-all ${
+                  className={`flex items-center space-x-3 px-4 py-3 border ${
                     location.pathname === '/cells'
-                      ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
-                      : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                      ? 'border-primary text-primary'
+                      : 'border-border text-muted-foreground'
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -419,10 +420,10 @@ const Header = () => {
                   <>
                     <Link
                       to="/bookmarks"
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-mono transition-all ${
+                      className={`flex items-center space-x-3 px-4 py-3 border ${
                         location.pathname === '/bookmarks'
-                          ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
-                          : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                          ? 'border-primary text-primary'
+                          : 'border-border text-muted-foreground'
                       }`}
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -431,10 +432,10 @@ const Header = () => {
                     </Link>
                     <Link
                       to="/profile"
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-mono transition-all ${
+                      className={`flex items-center space-x-3 px-4 py-3 border ${
                         location.pathname === '/profile'
-                          ? 'bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30'
-                          : 'text-cyber-neutral hover:text-white hover:bg-cyber-muted/20'
+                          ? 'border-primary text-primary'
+                          : 'border-border text-muted-foreground'
                       }`}
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -446,8 +447,8 @@ const Header = () => {
               </nav>
 
               {/* Mobile Network Status */}
-              <div className="px-4 py-3 border-t border-cyber-muted/20">
-                <div className="flex items-center space-x-2 text-xs text-cyber-neutral">
+              <div className="px-4 py-3 border-t border-border">
+                <div className="flex items-center space-x-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                   <WakuHealthDot />
                   <span>{statusMessage}</span>
                   {content.lastSync && (

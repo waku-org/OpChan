@@ -22,7 +22,7 @@ export function BookmarkButton({
   showText = false,
 }: BookmarkButtonProps) {
   const sizeClasses = {
-    sm: 'h-8 w-10',
+    sm: showText ? 'h-8 px-2 whitespace-nowrap' : 'h-8 w-10',
     lg: 'h-10 whitespace-nowrap px-4',
   };
 
@@ -39,7 +39,7 @@ export function BookmarkButton({
       disabled={loading}
       className={cn(
         sizeClasses[size],
-        'transition-colors duration-200',
+        'transition-colors duration-200 flex-shrink-0',
         isBookmarked
           ? 'text-cyber-accent hover:text-cyber-light'
           : 'text-cyber-neutral hover:text-cyber-light',

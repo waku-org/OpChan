@@ -47,14 +47,14 @@ const PostDetail = () => {
 
   const [newComment, setNewComment] = useState('');
 
-  if (!postId) return <div>Invalid post ID</div>;
+  if (!postId) return <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 text-center">Invalid post ID</div>;
 
   // ✅ Loading state handled by hook
   if (postPending) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-primary" />
-        <p className="text-lg font-medium text-muted-foreground">
+      <div className="container mx-auto px-3 sm:px-4 py-12 sm:py-16 text-center">
+        <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-3 sm:mb-4 animate-spin text-primary" />
+        <p className="text-sm sm:text-lg font-medium text-muted-foreground">
           Loading Post...
         </p>
       </div>
@@ -63,12 +63,12 @@ const PostDetail = () => {
 
   if (!post) {
     return (
-      <div className="container mx-auto px-4 py-6 text-center">
-        <h2 className="text-xl font-bold mb-4">Post not found</h2>
-        <p className="mb-4">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 text-center">
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 uppercase tracking-[0.2em]">Post not found</h2>
+        <p className="text-xs sm:text-sm mb-3 sm:mb-4 text-muted-foreground px-4">
           The post you're looking for doesn't exist or has been removed.
         </p>
-        <Button asChild>
+        <Button asChild size="sm" className="text-[10px] sm:text-[11px] px-3 sm:px-4">
           <Link to="/">Go back home</Link>
         </Button>
       </div>
@@ -149,64 +149,82 @@ const PostDetail = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-5xl">
+      <div className="mb-4 sm:mb-6">
         <Button
           onClick={() => navigate(`/cell/${post.cellId}`)}
           variant="ghost"
           size="sm"
-          className="mb-4"
+          className="mb-3 sm:mb-4 text-[10px] sm:text-[11px] px-2 sm:px-3"
         >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to /{cell?.name || 'cell'}/
+          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+          <span className="hidden sm:inline">Back to /{cell?.name || 'cell'}/</span>
+          <span className="sm:hidden">BACK</span>
         </Button>
 
-        <div className="border border-muted rounded-sm p-3 mb-6">
-          <div className="flex gap-4">
-            <div className="flex flex-col items-center">
-              <button
-                className={`p-1 rounded-sm hover:bg-muted/50 ${
-                  isPostUpvoted
-                    ? 'text-cyber-accent'
-                    : 'text-cyber-neutral hover:text-cyber-accent'
-                }`}
-                onClick={() => handleVotePost(true)}
-                disabled={!permissions.canVote}
-                title={
-                  permissions.canVote ? 'Upvote post' : permissions.reasons.vote
-                }
-              >
-                <ArrowUp className="w-4 h-4" />
-              </button>
-              <span className="text-sm font-bold">{score}</span>
-              <button
-                className={`p-1 rounded-sm hover:bg-muted/50 ${
-                  isPostDownvoted
-                    ? 'text-cyber-accent'
-                    : 'text-cyber-neutral hover:text-cyber-accent'
-                }`}
-                onClick={() => handleVotePost(false)}
-                disabled={!permissions.canVote}
-                title={
-                  permissions.canVote
-                    ? 'Downvote post'
-                    : permissions.reasons.vote
-                }
-              >
-                <ArrowDown className="w-4 h-4" />
-              </button>
+        <div className="border border-border rounded-none p-2 sm:p-3 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-3">
+            <div className="flex flex-row sm:flex-col items-center justify-between sm:justify-start gap-2 sm:gap-1 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-border/60 pb-3 sm:pb-0 sm:pr-3">
+              <div className="flex flex-row sm:flex-col items-center gap-2 sm:gap-1">
+                <button
+                  className={`p-1.5 sm:p-1 border border-transparent hover:border-border touch-manipulation ${
+                    isPostUpvoted
+                      ? 'text-primary'
+                      : 'text-muted-foreground hover:text-primary'
+                  }`}
+                  onClick={() => handleVotePost(true)}
+                  disabled={!permissions.canVote}
+                  title={
+                    permissions.canVote ? 'Upvote post' : permissions.reasons.vote
+                  }
+                >
+                  <ArrowUp className="w-4 h-4 sm:w-4 sm:h-4" />
+                </button>
+                <span className="text-sm font-semibold text-foreground min-w-[24px] text-center">{score}</span>
+                <button
+                  className={`p-1.5 sm:p-1 border border-transparent hover:border-border touch-manipulation ${
+                    isPostDownvoted
+                      ? 'text-blue-400'
+                      : 'text-muted-foreground hover:text-blue-400'
+                  }`}
+                  onClick={() => handleVotePost(false)}
+                  disabled={!permissions.canVote}
+                  title={
+                    permissions.canVote
+                      ? 'Downvote post'
+                      : permissions.reasons.vote
+                  }
+                >
+                  <ArrowDown className="w-4 h-4 sm:w-4 sm:h-4" />
+                </button>
+              </div>
               {postVotePending && (
-                <span className="mt-1 text-[10px] text-yellow-500">
+                <span className="text-[9px] sm:text-[10px] text-yellow-400 sm:mt-0.5 whitespace-nowrap">
                   syncing…
                 </span>
               )}
+              <div className="flex flex-row sm:flex-col items-center gap-1 sm:gap-1 mt-0 sm:mt-1">
+                <BookmarkButton
+                  isBookmarked={isBookmarked}
+                  loading={bookmarkLoading}
+                  onClick={handleBookmark}
+                  size="sm"
+                  variant="ghost"
+                  showText={false}
+                />
+                <ShareButton
+                  size="sm"
+                  url={`${window.location.origin}/post/${post.id}`}
+                  title={post.title}
+                />
+              </div>
             </div>
 
-            <div className="flex-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2">
                 <Link
                   to={cell?.id ? `/cell/${cell.id}` : "#"}
-                  className="font-medium text-primary hover:underline focus:underline"
+                  className="font-medium text-primary hover:underline focus:underline truncate"
                   tabIndex={0}
                   onClick={e => {
                     if (!cell?.id) e.preventDefault();
@@ -215,16 +233,17 @@ const PostDetail = () => {
                 >
                   r/{cell?.name || 'unknown'}
                 </Link>
-                <span>•</span>
-                <span>Posted by u/</span>
+                <span className="hidden sm:inline">•</span>
+                <span className="hidden sm:inline">Posted by u/</span>
+                <span className="sm:hidden">u/</span>
                 <AuthorDisplay
                   address={post.author}
-                  className="text-sm"
+                  className="text-[10px] sm:text-xs truncate"
                   showBadge={false}
                 />
-                <span>•</span>
-                <Clock className="w-3 h-3" />
-                <span>
+                <span className="hidden sm:inline">•</span>
+                <Clock className="w-3 h-3 flex-shrink-0" />
+                <span className="normal-case tracking-normal text-foreground text-[10px] sm:text-xs">
                   {formatDistanceToNow(new Date(post.timestamp), {
                     addSuffix: true,
                   })}
@@ -232,31 +251,16 @@ const PostDetail = () => {
                 {/* Relevance details unavailable in raw PostMessage; skip indicator */}
                 {postPending && (
                   <>
-                    <span>•</span>
-                    <span className="px-2 py-0.5 rounded-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                    <span className="hidden sm:inline">•</span>
+                    <span className="px-1.5 sm:px-2 py-0.5 border border-yellow-500 text-yellow-400 text-[9px] sm:text-[10px]">
                       syncing…
                     </span>
                   </>
                 )}
               </div>
 
-              <div className="flex items-start justify-between mb-3">
-                <h1 className="text-2xl font-bold flex-1">{post.title}</h1>
-                <BookmarkButton
-                  isBookmarked={isBookmarked}
-                  loading={bookmarkLoading}
-                  onClick={handleBookmark}
-                  size="lg"
-                  variant="ghost"
-                  showText={true}
-                />
-                <ShareButton
-                  size="lg"
-                  url={`${window.location.origin}/post/${post.id}`}
-                  title={post.title}
-                />
-              </div>
-              <div className="text-sm break-words prose prose-invert max-w-none">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold break-words text-foreground mb-2 sm:mb-3">{post.title}</h1>
+              <div className="text-xs sm:text-sm break-words prose prose-invert max-w-none">
                 <MarkdownRenderer content={post.content} />
               </div>
             </div>
@@ -266,11 +270,11 @@ const PostDetail = () => {
 
       {/* Comment Form */}
       {permissions.canComment && (
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <form onSubmit={handleCreateComment} onKeyDown={handleKeyDown}>
-            <h2 className="text-sm font-bold mb-2 flex items-center gap-1">
-              <MessageCircle className="w-4 h-4" />
-              Add a comment
+            <h2 className="text-xs sm:text-sm font-bold mb-2 sm:mb-3 flex items-center gap-1 uppercase tracking-[0.15em] sm:tracking-[0.2em]">
+              <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span>Add a comment</span>
             </h2>
             <MarkdownInput
               placeholder="What are your thoughts?"
@@ -278,17 +282,18 @@ const PostDetail = () => {
               onChange={setNewComment}
               disabled={false}
               minHeight={100}
-              initialHeight={140}
+              initialHeight={120}
               maxHeight={600}
             />
-            <div className="flex justify-end">
+            <div className="mt-2 sm:mt-3 flex justify-end">
               <Button
                 type="submit"
                 disabled={!permissions.canComment}
-                className="bg-cyber-accent hover:bg-cyber-accent/80"
+                className="text-primary border-primary hover:bg-primary/10 text-[10px] sm:text-[11px] px-3 sm:px-4"
               >
-                <Send className="w-4 h-4 mr-2" />
-                Post Comment
+                <Send className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Post Comment</span>
+                <span className="sm:hidden">POST</span>
               </Button>
             </div>
           </form>
@@ -303,26 +308,26 @@ const PostDetail = () => {
       )}
 
       {!permissions.canComment && (
-        <div className="mb-6 p-4 border border-cyber-muted rounded-sm bg-cyber-muted/20 text-center">
-          <p className="text-sm mb-3">Connect your wallet to comment</p>
-          <Button asChild size="sm">
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 border border-border rounded-none bg-transparent text-center">
+          <p className="text-xs sm:text-sm mb-2 sm:mb-3 text-muted-foreground">Connect your wallet to comment</p>
+          <Button asChild size="sm" className="text-[10px] sm:text-[11px] px-3 sm:px-4">
             <Link to="/">Connect Wallet</Link>
           </Button>
         </div>
       )}
 
       {/* Comments */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <MessageCircle className="w-5 h-5" />
-          Comments ({visibleComments.length})
+      <div className="space-y-3 sm:space-y-4">
+        <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 uppercase tracking-[0.2em] sm:tracking-[0.25em]">
+          <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+          <span>Comments ({visibleComments.length})</span>
         </h2>
 
         {visibleComments.length === 0 ? (
-          <div className="text-center py-8">
-            <MessageCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h3 className="text-lg font-bold mb-2">No comments yet</h3>
-            <p className="text-muted-foreground">
+          <div className="text-center py-6 sm:py-8">
+            <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-base sm:text-lg font-bold mb-2 uppercase tracking-[0.2em] sm:tracking-[0.25em]">No comments yet</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground px-4">
               {permissions.canComment
                 ? 'Be the first to share your thoughts!'
                 : 'Connect your wallet to join the conversation.'}

@@ -23,7 +23,7 @@ export function ShareButton({
   const { toast } = useToast();
 
   const sizeClasses = {
-    sm: 'h-8 w-10',
+    sm: 'h-8 w-10 flex-shrink-0',
     lg: 'h-10 whitespace-nowrap px-4',
   };
 
