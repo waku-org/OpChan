@@ -1,7 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshCw, TrendingUp, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -10,7 +7,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import PostCard from '@/components/PostCard';
-import FeedSidebar from '@/components/FeedSidebar';
 import { ModerationToggle } from '@/components/ui/moderation-toggle';
 import { useAuth, useContent, useNetwork } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
@@ -26,7 +22,7 @@ const FeedPage: React.FC = () => {
     [content.posts, sortOption]
   );
 
-  // Loading skeleton - only show if store is not yet hydrated
+  // Simple loading text
   if (
     !isHydrated &&
     !content.posts.length &&
@@ -35,52 +31,8 @@ const FeedPage: React.FC = () => {
   ) {
     return (
       <div className="min-h-screen bg-cyber-dark">
-        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-6xl">
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-            {/* Main feed skeleton */}
-            <div className="flex-1 lg:max-w-3xl">
-              <div className="space-y-3 sm:space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="bg-cyber-muted/20 border border-cyber-muted rounded-sm p-3 sm:p-4"
-                  >
-                    <div className="flex gap-3 sm:gap-4">
-                      <div className="w-8 sm:w-10 space-y-2 flex-shrink-0">
-                        <Skeleton className="h-5 w-5 sm:h-6 sm:w-6" />
-                        <Skeleton className="h-3 w-6 sm:h-4 sm:w-8" />
-                        <Skeleton className="h-5 w-5 sm:h-6 sm:w-6" />
-                      </div>
-                      <div className="flex-1 space-y-2 min-w-0">
-                        <Skeleton className="h-3 sm:h-4 w-2/3" />
-                        <Skeleton className="h-5 sm:h-6 w-full" />
-                        <Skeleton className="h-3 sm:h-4 w-full" />
-                        <Skeleton className="h-3 sm:h-4 w-3/4" />
-                        <Skeleton className="h-3 sm:h-4 w-1/3" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Sidebar skeleton - hidden on mobile */}
-            <div className="hidden lg:block lg:w-80 space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-cyber-muted/20 border border-cyber-muted rounded-sm p-4"
-                >
-                  <Skeleton className="h-6 w-1/2 mb-3" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="container mx-auto px-2 py-4 max-w-4xl">
+          <div className="text-xs text-muted-foreground">Loading...</div>
         </div>
       </div>
     );
@@ -88,89 +40,44 @@ const FeedPage: React.FC = () => {
 
   return (
     <div className="page-container">
-      <div className="page-main">
-        {/* Page Header */}
-        <div className="page-header">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-            <div>
-              <h1 className="page-title text-primary">
-                Popular Posts
-              </h1>
-              <p className="page-subtitle hidden sm:block">Latest posts from all cells</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-2">
-              <ModerationToggle />
-
-              <Select
-                value={sortOption}
-                onValueChange={(value: SortOption) => setSortOption(value)}
-              >
-                <SelectTrigger className="w-32 sm:w-40 text-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" />
-                      <span>Relevance</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="time">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      <span>Newest</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={content.refresh}
-                disabled={false}
-                className="flex items-center space-x-1 sm:space-x-2 text-[11px]"
-              >
-                <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Refresh</span>
-              </Button>
-            </div>
+      <div className="w-full mx-auto px-2 py-2 max-w-4xl">
+        {/* Minimal Header */}
+        <div className="mb-2 pb-1 border-b border-border/30 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-primary font-semibold">FEED</span>
+            <ModerationToggle />
+          </div>
+          <div className="flex items-center gap-2">
+            <Select
+              value={sortOption}
+              onValueChange={(value: SortOption) => setSortOption(value)}
+            >
+              <SelectTrigger className="w-24 text-[10px] h-6">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="relevance">Relevance</SelectItem>
+                <SelectItem value="time">Newest</SelectItem>
+              </SelectContent>
+            </Select>
+            <button
+              onClick={content.refresh}
+              className="text-muted-foreground hover:text-foreground text-[10px]"
+            >
+              refresh
+            </button>
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-          {/* Main Feed */}
-          <div className="flex-1 lg:max-w-3xl min-w-0">
-            {/* Posts Feed */}
-            <div className="space-y-0">
-              {allPosts.length === 0 ? (
-                <div className="empty-state">
-                  <div className="space-y-3">
-                    <h3 className="empty-state-title tracking-[0.25em]">
-                      No posts yet
-                    </h3>
-                    <p className="empty-state-description">
-                      This is a reference UI built on top of @opchan/core.
-                      Swap this screen with your own feed layout.
-                    </p>
-                    {verificationStatus !==
-                      EVerificationStatus.ENS_VERIFIED && (
-                      <p className="text-xs sm:text-sm text-cyber-neutral/80">
-                        Connect your wallet to try the reference client – or fork it and build your own.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                allPosts.map(post => <PostCard key={post.id} post={post} />)
-              )}
+        {/* Posts List */}
+        <div>
+          {allPosts.length === 0 ? (
+            <div className="py-4 text-xs text-muted-foreground text-center">
+              No posts yet. Connect wallet to post.
             </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
-            <FeedSidebar />
-          </div>
+          ) : (
+            allPosts.map(post => <PostCard key={post.id} post={post} />)
+          )}
         </div>
       </div>
     </div>

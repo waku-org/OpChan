@@ -3,26 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth, useForum, useNetwork, useUIState } from '@/hooks';
 import { EVerificationStatus } from '@opchan/core';
 import { localDatabase } from '@opchan/core';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 
 import {
   LogOut,
-  Terminal,
   AlertTriangle,
   CheckCircle,
   Key,
   CircleSlash,
-  Home,
-  Grid3X3,
-  User,
-  Bookmark,
-  Settings,
-  Menu,
-  X,
-  Clock,
   Trash2,
-  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,12 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,7 +35,6 @@ import { useEthereumWallet } from '@opchan/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
 import { CallSignSetupDialog } from '@/components/ui/call-sign-setup-dialog';
 
-import { WakuHealthDot } from '@/components/ui/waku-health-indicator';
 
 const Header = () => {
   const { currentUser, delegationInfo } = useAuth();
@@ -61,12 +42,10 @@ const Header = () => {
 
   const location = useLocation();
   const { toast } = useToast();
-  const { content } = useForum();
 
   const { isConnected, disconnect } = useEthereumWallet();
 
   const [walletWizardOpen, setWalletWizardOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [callSignDialogOpen, setCallSignDialogOpen] = useState(false);
 
   // Use centralized UI state instead of direct LocalDatabase access
@@ -152,177 +131,73 @@ const Header = () => {
   return (
     <>
       <header className="bg-cyber-dark border-b border-border sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4">
-          {/* Top Row - Logo, Network Status, User Actions */}
-          <div className="flex items-center justify-between h-12 sm:h-14 md:h-16">
-            {/* Left: Logo */}
-            <div className="flex items-center min-w-0">
-              <Link
-                to="/"
-                className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm font-mono font-semibold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-foreground truncate"
-              >
-                <Terminal className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                <span className="truncate">opchan</span>
+        <div className="max-w-6xl mx-auto px-2 py-2">
+          {/* Single Row - Logo, Nav, Status, User */}
+          <div className="flex items-center justify-between text-xs gap-2">
+            {/* Logo & Nav */}
+            <div className="flex items-center gap-3">
+              <Link to="/" className="font-semibold text-foreground">
+                OPCHAN
               </Link>
-            </div>
-
-            {/* Center: Network Status (Desktop) */}
-            <div className="hidden lg:flex items-center space-x-3">
-              <div className="flex items-center space-x-2 px-3 py-1 border border-border text-[10px] uppercase tracking-[0.2em]">
-                <WakuHealthDot />
-                <span className="text-[10px] text-muted-foreground">
-                  {statusMessage}
-                </span>
-                {syncStatus === 'syncing' && syncDetail && syncDetail.missing > 0 && (
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center space-x-1 text-[10px] text-yellow-400 cursor-help">
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          <span>SYNCING ({syncDetail.missing})</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">
-                          <strong>Syncing messages</strong>
-                          <br />
-                          Pending: {syncDetail.missing}
-                          <br />
-                          Received: {syncDetail.received}
-                          {syncDetail.lost > 0 && (
-                            <>
-                              <br />
-                              Lost: {syncDetail.lost}
-                            </>
-                          )}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-                {content.lastSync && (
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center space-x-1 text-[10px] text-muted-foreground cursor-help">
-                          <Clock className="w-3 h-3" />
-                          <span>
-                            {new Date(content.lastSync).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Last message sync time</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
-            </div>
-
-            {/* Right: User Actions */}
-            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-              {/* Network Status (Mobile) */}
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="lg:hidden flex items-center space-x-1 cursor-help">
-                      {syncStatus === 'syncing' && syncDetail && syncDetail.missing > 0 ? (
-                        <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />
-                      ) : (
-                        <WakuHealthDot />
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">
-                      {syncStatus === 'syncing' && syncDetail && syncDetail.missing > 0
-                        ? `Syncing ${syncDetail.missing} messages...`
-                        : 'Network connected'}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* User Status & Actions */}
-              {isConnected || currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? (
-                <div className="flex items-center space-x-1 sm:space-x-2">
-                  {/* Status Badge - hidden for anonymous sessions */}
-                  {currentUser?.verificationStatus !== EVerificationStatus.ANONYMOUS && (
-                    <Badge
-                      variant="outline"
-                      className={`hidden sm:flex items-center gap-1 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 ${
-                        currentUser?.verificationStatus ===
-                          EVerificationStatus.ENS_VERIFIED &&
-                        delegationInfo?.isValid
-                          ? 'border-green-500 text-green-300'
-                          : currentUser?.verificationStatus ===
-                              EVerificationStatus.ENS_VERIFIED
-                            ? 'border-orange-500 text-orange-300'
-                            : 'border-yellow-500 text-yellow-300'
-                      }`}
+              <nav className="hidden sm:flex items-center gap-2">
+                <Link
+                  to="/"
+                  className={location.pathname === '/' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}
+                >
+                  HOME
+                </Link>
+                <span className="text-muted-foreground">|</span>
+                <Link
+                  to="/cells"
+                  className={location.pathname === '/cells' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}
+                >
+                  CELLS
+                </Link>
+                {isConnected && (
+                  <>
+                    <span className="text-muted-foreground">|</span>
+                    <Link
+                      to="/bookmarks"
+                      className={location.pathname === '/bookmarks' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}
                     >
-                      {getStatusIcon()}
-                      <span className="hidden md:inline">
-                        {currentUser?.verificationStatus ===
-                        EVerificationStatus.WALLET_UNCONNECTED
-                          ? 'CONNECT'
-                          : delegationInfo?.isValid
-                            ? 'READY'
-                            : currentUser?.verificationStatus ===
-                                EVerificationStatus.ENS_VERIFIED
-                              ? 'EXPIRED'
-                              : 'DELEGATE'}
-                      </span>
-                    </Badge>
-                  )}
+                      BOOKMARKS
+                    </Link>
+                  </>
+                )}
+              </nav>
+            </div>
 
-                  {/* User Dropdown */}
+            {/* Network Status */}
+            <div className="hidden md:flex items-center gap-2 text-[10px] text-muted-foreground">
+              <span>{statusMessage}</span>
+              {syncStatus === 'syncing' && syncDetail && syncDetail.missing > 0 && (
+                <span className="text-yellow-400">SYNCING ({syncDetail.missing})</span>
+              )}
+            </div>
+
+            {/* User */}
+            <div className="flex items-center gap-2">
+              {isConnected || currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? (
+                <div className="flex items-center gap-2">
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="flex items-center space-x-1 sm:space-x-2 text-foreground border-border px-2 sm:px-3"
-                      >
-                        <div className="text-[10px] sm:text-[11px] uppercase tracking-[0.15em] sm:tracking-[0.2em] truncate max-w-[80px] sm:max-w-none">
-                          {currentUser?.displayName}
-                        </div>
-                        <Settings className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                      </Button>
+                      <button className="text-foreground hover:text-primary text-[10px]">
+                        {currentUser?.displayName}
+                      </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="w-56 bg-[#050505] border border-border text-sm"
-                    >
+                    <DropdownMenuContent align="end" className="w-48 bg-[#050505] border border-border text-xs">
                       <DropdownMenuItem asChild>
-                        <Link
-                          to="/profile"
-                          className="flex items-center space-x-2"
-                        >
-                          <User className="w-4 h-4" />
-                          <span>Profile</span>
-                        </Link>
+                        <Link to="/profile">Profile</Link>
                       </DropdownMenuItem>
 
                       {currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? (
-                        <DropdownMenuItem
-                          onClick={() => setCallSignDialogOpen(true)}
-                          className="flex items-center space-x-2"
-                        >
-                          <User className="w-4 h-4" />
-                          <span>{currentUser?.callSign ? 'Update' : 'Set'} Call Sign</span>
+                        <DropdownMenuItem onClick={() => setCallSignDialogOpen(true)}>
+                          {currentUser?.callSign ? 'Update' : 'Set'} Call Sign
                         </DropdownMenuItem>
                       ) : (
-                        <DropdownMenuItem
-                          onClick={handleOpenWizard}
-                          className="flex items-center space-x-2"
-                        >
-                          <Settings className="w-4 h-4" />
-                          <span>Setup Wizard</span>
+                        <DropdownMenuItem onClick={handleOpenWizard}>
+                          Setup Wizard
                         </DropdownMenuItem>
                       )}
 
@@ -330,12 +205,8 @@ const Header = () => {
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <DropdownMenuItem
-                            onSelect={e => e.preventDefault()}
-                            className="flex items-center space-x-2 text-orange-400 focus:text-orange-400"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span>Clear Database</span>
+                          <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-orange-400 focus:text-orange-400">
+                            Clear Database
                           </DropdownMenuItem>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="bg-[#050505] border border-border text-foreground">
@@ -369,181 +240,22 @@ const Header = () => {
                         </AlertDialogContent>
                       </AlertDialog>
 
-                      <DropdownMenuItem
-                        onClick={handleDisconnect}
-                        className="flex items-center space-x-2 text-red-400 focus:text-red-400"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>{currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? 'Exit Anonymous' : 'Disconnect'}</span>
+                      <DropdownMenuItem onClick={handleDisconnect} className="text-red-400 focus:text-red-400">
+                        {currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS ? 'Exit Anonymous' : 'Disconnect'}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               ) : (
-                <Button
+                <button
                   onClick={handleConnect}
-                  className="text-primary border-primary hover:bg-primary/10 text-[10px] sm:text-[11px] px-2 sm:px-3"
+                  className="text-primary hover:underline text-[10px]"
                 >
-                  <span className="hidden sm:inline">Connect</span>
-                  <span className="sm:hidden">CON</span>
-                </Button>
+                  CONNECT
+                </button>
               )}
-
-              {/* Mobile Menu Toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden border-border text-foreground p-2"
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                ) : (
-                  <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
-                )}
-              </Button>
             </div>
           </div>
-
-          {/* Builder Banner */}
-          <div className="mt-1 mb-1 flex items-center justify-between gap-2 text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            <span className="truncate">
-              Reference client on top of @opchan/core. UI is intentionally bare.
-            </span>
-            <a
-              href="https://github.com/waku-org/opchan"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 text-primary hover:underline"
-            >
-              Build your own →
-            </a>
-          </div>
-
-          {/* Navigation Bar (Desktop) */}
-          <div className="hidden md:flex items-center justify-center border-t border-border py-2">
-            <nav className="flex items-center space-x-0.5 text-[11px] uppercase tracking-[0.2em]">
-              <Link
-                to="/"
-                className={`flex items-center space-x-2 px-4 py-2 border-b ${
-                  location.pathname === '/'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Home className="w-4 h-4" />
-                <span>HOME</span>
-              </Link>
-              <Link
-                to="/cells"
-                className={`flex items-center space-x-2 px-4 py-2 border-b ${
-                  location.pathname === '/cells'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Grid3X3 className="w-4 h-4" />
-                <span>CELLS</span>
-              </Link>
-              {isConnected && (
-                <>
-                  <Link
-                    to="/bookmarks"
-                    className={`flex items-center space-x-2 px-4 py-2 border-b ${
-                      location.pathname === '/bookmarks'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Bookmark className="w-4 h-4" />
-                    <span>BOOKMARKS</span>
-                  </Link>
-                </>
-              )}
-            </nav>
-          </div>
-
-          {/* Mobile Navigation */}
-          {mobileMenuOpen && (
-            <div className="md:hidden border-t border-border py-4 space-y-2">
-              <nav className="space-y-1">
-                <Link
-                  to="/"
-                  className={`flex items-center space-x-3 px-4 py-3 border ${
-                    location.pathname === '/'
-                      ? 'border-primary text-primary'
-                      : 'border-border text-muted-foreground'
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Home className="w-4 h-4" />
-                  <span>HOME</span>
-                </Link>
-                <Link
-                  to="/cells"
-                  className={`flex items-center space-x-3 px-4 py-3 border ${
-                    location.pathname === '/cells'
-                      ? 'border-primary text-primary'
-                      : 'border-border text-muted-foreground'
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Grid3X3 className="w-4 h-4" />
-                  <span>CELLS</span>
-                </Link>
-                {isConnected && (
-                  <>
-                    <Link
-                      to="/bookmarks"
-                      className={`flex items-center space-x-3 px-4 py-3 border ${
-                        location.pathname === '/bookmarks'
-                          ? 'border-primary text-primary'
-                          : 'border-border text-muted-foreground'
-                      }`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Bookmark className="w-4 h-4" />
-                      <span>BOOKMARKS</span>
-                    </Link>
-                    <Link
-                      to="/profile"
-                      className={`flex items-center space-x-3 px-4 py-3 border ${
-                        location.pathname === '/profile'
-                          ? 'border-primary text-primary'
-                          : 'border-border text-muted-foreground'
-                      }`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <User className="w-4 h-4" />
-                      <span>PROFILE</span>
-                    </Link>
-                  </>
-                )}
-              </nav>
-
-              {/* Mobile Network Status */}
-              <div className="px-4 py-3 border-t border-border">
-                <div className="flex items-center space-x-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                  <WakuHealthDot />
-                  <span>{statusMessage}</span>
-                  {syncStatus === 'syncing' && syncDetail && syncDetail.missing > 0 && (
-                    <span className="text-yellow-400 flex items-center space-x-1">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      <span>SYNCING ({syncDetail.missing})</span>
-                    </span>
-                  )}
-                  {content.lastSync && (
-                    <span className="ml-auto" title="Last message sync">
-                      {new Date(content.lastSync).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </header>
 

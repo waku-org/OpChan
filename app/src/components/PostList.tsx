@@ -9,28 +9,17 @@ import type {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
 import { LinkRenderer } from '@/components/ui/link-renderer';
-import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
-import { ShareButton } from '@/components/ui/ShareButton';
 import {
   ArrowLeft,
   MessageSquare,
   MessageCircle,
   ArrowUp,
   ArrowDown,
-  RefreshCw,
   MessageSquareX,
   UserX,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { CypherImage } from './ui/CypherImage';
-import { AuthorDisplay } from './ui/author-display';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { InlineCallSignInput } from './ui/inline-callsign-input';
 import { EVerificationStatus } from '@opchan/core';
 
@@ -48,55 +37,14 @@ const PostList = () => {
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
 
-  if (!cellId) {
+  if (!cellId || !cell) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-6">
-          <Link
-            to="/"
-            className="text-cyber-accent hover:underline flex items-center gap-1 text-sm"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to Cells
-          </Link>
-        </div>
-
-        <Skeleton className="h-8 w-32 mb-6 bg-cyber-muted" />
-        <Skeleton className="h-6 w-64 mb-6 bg-cyber-muted" />
-
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="border border-cyber-muted rounded-sm p-4">
-              <div className="mb-2">
-                <Skeleton className="h-6 w-full mb-2 bg-cyber-muted" />
-                <Skeleton className="h-6 w-3/4 mb-2 bg-cyber-muted" />
-              </div>
-              <Skeleton className="h-4 w-32 bg-cyber-muted" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (!cell) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-6">
-          <Link
-            to="/"
-            className="text-cyber-accent hover:underline flex items-center gap-1 text-sm"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to Cells
-          </Link>
-        </div>
-        <div className="p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Cell Not Found</h1>
-          <p className="text-cyber-neutral mb-6">
-            The cell you're looking for doesn't exist.
-          </p>
-          <Button asChild>
-            <Link to="/">Return to Cells</Link>
-          </Button>
+      <div className="w-full mx-auto px-2 py-2 max-w-4xl">
+        <Link to="/" className="text-primary hover:underline text-xs">
+          ← Back
+        </Link>
+        <div className="py-4 text-xs text-muted-foreground">
+          {!cellId ? 'Loading...' : 'Cell not found'}
         </div>
       </div>
     );
@@ -181,236 +129,131 @@ const PostList = () => {
   };
 
   return (
-    <div className="page-main">
-      <div className="content-spacing">
-        <Link
-          to="/"
-          className="text-cyber-accent hover:underline flex items-center gap-1 text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Cells
-        </Link>
-      </div>
-
-      <div className="flex gap-4 items-start content-spacing">
-        <CypherImage
-          src={cell.icon}
-          alt={cell.name}
-          className="w-12 h-12 object-cover rounded-sm border border-cyber-muted"
-          generateUniqueFallback={true}
-        />
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <h1 className="page-title text-glow">{cell.name}</h1>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={refresh}
-              disabled={false}
-              title="Refresh data"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-          <p className="page-subtitle">{cell.description}</p>
+    <div className="w-full mx-auto px-2 py-2 max-w-4xl">
+      <div className="mb-2 pb-1 border-b border-border/30 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2">
+          <Link to="/" className="text-primary hover:underline">
+            ← Back
+          </Link>
+          <span className="text-muted-foreground">|</span>
+          <span className="font-semibold text-foreground">r/{cell.name}</span>
+          <span className="text-muted-foreground text-[10px]">{cell.description}</span>
         </div>
+        <button
+          onClick={refresh}
+          className="text-muted-foreground hover:text-foreground text-[10px]"
+        >
+          refresh
+        </button>
       </div>
 
       {canPost && (
-        <div className="section-spacing">
+        <div className="mb-2 border-b border-border/30 pb-2">
           <form onSubmit={handleCreatePost} onKeyDown={handleKeyDown}>
-            <h2 className="text-sm font-bold mb-2 flex items-center gap-1">
-              <MessageSquare className="w-4 h-4" />
-              New Thread
-            </h2>
-            <div className="mb-3">
-              <Input
-                placeholder="Thread title"
-                value={newPostTitle}
-                onChange={e => setNewPostTitle(e.target.value)}
-                className="mb-3 bg-cyber-muted/50 border-cyber-muted"
-                disabled={isCreatingPost}
-              />
-              <Textarea
-                placeholder="What's on your mind?"
-                value={newPostContent}
-                onChange={e => setNewPostContent(e.target.value)}
-                className="bg-cyber-muted/50 border-cyber-muted resize-none"
-                disabled={isCreatingPost}
-              />
-            </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 mb-2">
-              <span>
-                Press Enter for newline • Ctrl+Enter or Shift+Enter to post
-              </span>
-              <span />
-            </div>
-            <div className="flex justify-end">
-              <Button
+            <div className="text-[10px] font-semibold mb-1">NEW THREAD</div>
+            <Input
+              placeholder="Title"
+              value={newPostTitle}
+              onChange={e => setNewPostTitle(e.target.value)}
+              className="mb-1 text-xs h-7"
+              disabled={isCreatingPost}
+            />
+            <Textarea
+              placeholder="Content"
+              value={newPostContent}
+              onChange={e => setNewPostContent(e.target.value)}
+              className="text-xs resize-none h-16"
+              disabled={isCreatingPost}
+            />
+            <div className="flex justify-end mt-1">
+              <button
                 type="submit"
                 disabled={
                   isCreatingPost ||
                   !newPostContent.trim() ||
                   !newPostTitle.trim()
                 }
+                className="text-primary hover:underline text-[10px] disabled:opacity-50"
               >
-                {isCreatingPost ? 'Posting...' : 'Post Thread'}
-              </Button>
+                {isCreatingPost ? 'posting...' : 'post'}
+              </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Inline Call Sign Suggestion for Anonymous Users */}
-      {currentUser?.verificationStatus === EVerificationStatus.ANONYMOUS && !currentUser.callSign && canPost && (
-        <div className="section-spacing">
-          <InlineCallSignInput />
-        </div>
-      )}
-
       {!canPost && !currentUser && (
-        <div className="section-spacing content-card-sm text-center">
-          <p className="text-sm mb-3">Connect your wallet to post</p>
-          <Button asChild size="sm">
-            <Link to="/">Connect Wallet</Link>
-          </Button>
+        <div className="mb-2 py-2 text-xs text-center text-muted-foreground border-b border-border/30">
+          Connect wallet to post
         </div>
       )}
 
-      <div className="space-y-4">
+      <div>
         {visiblePosts.length === 0 ? (
-          <div className="empty-state">
-            <MessageCircle className="empty-state-icon text-cyber-neutral opacity-50" />
-            <h2 className="empty-state-title">No Threads Yet</h2>
-            <p className="empty-state-description">
-              {canPost
-                ? 'Be the first to post in this cell!'
-                : 'Connect your wallet to start a thread.'}
-            </p>
+          <div className="py-4 text-xs text-muted-foreground text-center">
+            No threads yet. {canPost ? 'Be the first to post!' : 'Connect wallet to post.'}
           </div>
         ) : (
           visiblePosts.map((post: ForumPost) => (
-            <div key={post.id} className="thread-card">
-              <div className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <button
-                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${getPostVoteType(post.id) === 'upvote' ? 'text-cyber-accent' : ''}`}
-                    onClick={() => handleVotePost(post.id, true)}
-                    disabled={!canVote || isVoting}
-                    title={canVote ? 'Upvote' : 'Connect your wallet to vote'}
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                  </button>
-                  <span className="text-sm py-1">
-                    {post.upvotes.length - post.downvotes.length}
-                  </span>
-                  <button
-                    className={`p-1 rounded-sm hover:bg-cyber-muted/50 ${getPostVoteType(post.id) === 'downvote' ? 'text-cyber-accent' : ''}`}
-                    onClick={() => handleVotePost(post.id, false)}
-                    disabled={!canVote || isVoting}
-                    title={canVote ? 'Downvote' : 'Connect your wallet to vote'}
-                  >
-                    <ArrowDown className="w-4 h-4" />
-                  </button>
-                </div>
+            <div key={post.id} className="border-b border-border/30 py-1.5 text-xs">
+              <div className="flex items-start gap-2">
+                <button
+                  className={`${getPostVoteType(post.id) === 'upvote' ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
+                  onClick={() => handleVotePost(post.id, true)}
+                  disabled={!canVote || isVoting}
+                >
+                  ▲
+                </button>
+                <span className={`font-mono text-xs min-w-[2ch] text-center ${(post.upvotes.length - post.downvotes.length) > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {post.upvotes.length - post.downvotes.length}
+                </span>
+                <button
+                  className={`${getPostVoteType(post.id) === 'downvote' ? 'text-blue-400' : 'text-muted-foreground'} hover:text-blue-400`}
+                  onClick={() => handleVotePost(post.id, false)}
+                  disabled={!canVote || isVoting}
+                >
+                  ▼
+                </button>
 
-                <div className="flex-1">
-                  <Link to={`/post/${post.id}`} className="block">
-                    <h2 className="text-lg font-bold hover:text-cyber-accent">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-baseline gap-1">
+                    <Link to={`/post/${post.id}`} className="text-foreground hover:underline font-medium">
                       {post.title}
-                    </h2>
-                    <p className="line-clamp-2 text-sm mb-3">
-                      <LinkRenderer text={post.content} />
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-cyber-neutral">
-                      <span>
-                        {formatDistanceToNow(post.timestamp, {
-                          addSuffix: true,
-                        })}
-                      </span>
-                      <span>by </span>
-                      <AuthorDisplay
-                        address={post.author}
-                        className="text-xs"
-                        showBadge={false}
-                      />
-                      <span>•</span>
-                      <span>
-                        <MessageSquare className="inline w-3 h-3 mr-1" />
-                        {commentsByPost[post.id]?.length || 0} comments
-                      </span>
-                      {typeof post.relevanceScore === 'number' && (
-                        <>
-                          <span>•</span>
-                          <RelevanceIndicator
-                            score={post.relevanceScore}
-                            details={post.relevanceDetails}
-                            type="post"
-                            showTooltip={true}
-                          />
-                        </>
-                      )}
-                      <ShareButton
-                        url={`${window.location.origin}/post/${post.id}`}
-                        title={post.title}
-                        description={post.content}
-                        size="sm"
-                        variant="ghost"
-                        className="text-cyber-neutral"
-                        showText={false}
-                      />
-                    </div>
-                  </Link>
-                  {canModerate(cell.id) && !post.moderated && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 text-cyber-neutral hover:text-orange-500"
+                    </Link>
+                    <span className="text-muted-foreground text-[10px]">
+                      by {post.author.slice(0, 6)}...{post.author.slice(-4)}
+                    </span>
+                    <span className="text-muted-foreground text-[10px]">·</span>
+                    <span className="text-muted-foreground text-[10px]">
+                      {formatDistanceToNow(post.timestamp, { addSuffix: true })}
+                    </span>
+                    <span className="text-muted-foreground text-[10px]">·</span>
+                    <Link to={`/post/${post.id}`} className="text-muted-foreground hover:underline text-[10px]">
+                      {commentsByPost[post.id]?.length || 0} comments
+                    </Link>
+                    {canModerate(cell.id) && !post.moderated && (
+                      <>
+                        <span className="text-muted-foreground text-[10px]">·</span>
+                        <button
                           onClick={() => handleModerate(post.id)}
+                          className="text-orange-400 hover:underline text-[10px]"
                         >
-                          <MessageSquareX className="h-3 w-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Moderate post</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                  {canModerate(cell.id) && post.author !== cell.author && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 text-cyber-neutral hover:text-red-500"
-                          onClick={() => handleModerateUser(post.author)}
-                        >
-                          <UserX className="h-3 w-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Moderate user</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                  {canModerate(cell.id) && post.moderated && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 text-cyber-neutral hover:text-green-500"
+                          moderate
+                        </button>
+                      </>
+                    )}
+                    {canModerate(cell.id) && post.moderated && (
+                      <>
+                        <span className="text-muted-foreground text-[10px]">·</span>
+                        <button
                           onClick={() => handleUnmoderate(post.id)}
+                          className="text-green-400 hover:underline text-[10px]"
                         >
-                          Unmoderate
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Unmoderate post</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
+                          unmoderate
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

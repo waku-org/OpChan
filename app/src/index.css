@@ -139,7 +139,7 @@
   }
 
   .page-header {
-    @apply mb-4 sm:mb-6 border-b border-border pb-3 sm:pb-4;
+    @apply mb-2 sm:mb-3 border-b border-border pb-2 sm:pb-3;
   }
 
   .page-title {
@@ -151,53 +151,53 @@
   }
 
   .page-content {
-    @apply flex-1 pt-8 sm:pt-10;
+    @apply flex-1 pt-4 sm:pt-6;
   }
 
   .page-main {
-    @apply w-full mx-auto px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-8 max-w-5xl;
+    @apply w-full mx-auto px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 max-w-5xl;
   }
 
   .page-footer {
     @apply border-t border-border py-2 sm:py-3 text-center text-[10px] text-muted-foreground px-3;
   }
 
-  /* Card Components */
+  /* Card Components - Simplified to flat list items */
   .card-base {
-    @apply bg-transparent border border-border/70 rounded-none shadow-none;
+    @apply bg-transparent border-0 rounded-none shadow-none;
   }
 
   .card-hover {
-    @apply hover:bg-white/5;
+    @apply hover:bg-transparent;
   }
 
   .card-padding {
-    @apply p-3 sm:p-4;
+    @apply p-2;
   }
 
   .card-padding-sm {
-    @apply p-2 sm:p-3;
+    @apply p-1;
   }
 
   .thread-card {
-    @apply card-base card-hover card-padding-sm mb-3;
+    @apply border-b border-border/30 py-2 mb-0;
   }
 
   .board-card {
-    @apply card-base card-hover card-padding-sm mb-2;
+    @apply border-b border-border/30 py-2 mb-0;
   }
 
   .comment-card {
-    @apply border-l border-border pl-3 py-2 my-2;
+    @apply border-l border-border pl-2 py-1 my-1;
   }
 
   /* Content Cards */
   .content-card {
-    @apply card-base card-hover card-padding;
+    @apply border-b border-border/30 py-2;
   }
 
   .content-card-sm {
-    @apply card-base card-hover card-padding-sm;
+    @apply border-b border-border/30 py-1;
   }
 
   /* Status Indicators */
@@ -227,17 +227,17 @@
   }
 
   /* Typography */
-  /* Spacing Utilities */
+  /* Spacing Utilities - Simplified for raw layout */
   .section-spacing {
-    @apply mb-8;
+    @apply mb-4;
   }
 
   .content-spacing {
-    @apply mb-6;
+    @apply mb-3;
   }
 
   .item-spacing {
-    @apply mb-4;
+    @apply mb-2;
   }
 
   /* Grid Layouts */
@@ -253,21 +253,21 @@
     @apply lg:col-span-1;
   }
 
-  /* Empty States */
+  /* Empty States - Simplified */
   .empty-state {
-    @apply flex flex-col items-center justify-center py-8 sm:py-12 md:py-16 px-3 sm:px-4 text-center;
+    @apply py-4 px-2 text-center;
   }
 
   .empty-state-icon {
-    @apply w-12 h-12 sm:w-16 sm:h-16 text-cyber-accent/50 mb-3 sm:mb-4;
+    @apply hidden;
   }
 
   .empty-state-title {
-    @apply text-base sm:text-lg md:text-xl font-mono font-bold text-white mb-2;
+    @apply text-xs font-mono text-muted-foreground mb-1;
   }
 
   .empty-state-description {
-    @apply text-sm sm:text-base text-cyber-neutral mb-3 sm:mb-4 px-2;
+    @apply text-xs text-muted-foreground mb-2;
   }
 }
 

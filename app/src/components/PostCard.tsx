@@ -1,14 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { Post } from '@opchan/core';
-import { RelevanceIndicator } from '@/components/ui/relevance-indicator';
-import { AuthorDisplay } from '@/components/ui/author-display';
-import { BookmarkButton } from '@/components/ui/bookmark-button';
-import { LinkRenderer } from '@/components/ui/link-renderer';
 import { useAuth, useContent, usePermissions } from '@/hooks';
-import { ShareButton } from '@/components/ui/ShareButton';
 
 interface PostCardProps {
   post: Post;
@@ -72,99 +66,72 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   };
 
   return (
-    <div className="border-b border-border/30 py-3 px-2 hover:bg-border/5">
-      <div className="flex gap-3">
-        {/* Vote column - compact */}
-        <div className="flex flex-col items-center gap-0.5 text-xs min-w-[40px]">
-          <button
-            className={`hover:text-primary ${
-              userUpvoted ? 'text-primary' : 'text-muted-foreground'
-            }`}
-            onClick={e => handleVote(e, true)}
-            disabled={!permissions.canVote}
-            title={permissions.canVote ? 'Upvote' : permissions.reasons.vote}
-          >
-            ▲
-          </button>
-          <span className={`font-mono text-xs ${score > 0 ? 'text-primary' : score < 0 ? 'text-red-400' : 'text-muted-foreground'}`}>
-            {score}
-          </span>
-          <button
-            className={`hover:text-blue-400 ${
-              userDownvoted ? 'text-blue-400' : 'text-muted-foreground'
-            }`}
-            onClick={e => handleVote(e, false)}
-            disabled={!permissions.canVote}
-            title={permissions.canVote ? 'Downvote' : permissions.reasons.vote}
-          >
-            ▼
-          </button>
-        </div>
+    <div className="border-b border-border/30 py-1.5 px-2 text-xs">
+      <div className="flex items-start gap-2">
+        {/* Inline vote display */}
+        <button
+          className={`${userUpvoted ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
+          onClick={e => handleVote(e, true)}
+          disabled={!permissions.canVote}
+          title={permissions.canVote ? 'Upvote' : permissions.reasons.vote}
+        >
+          ▲
+        </button>
+        <span className={`font-mono text-xs min-w-[2ch] text-center ${score > 0 ? 'text-primary' : score < 0 ? 'text-red-400' : 'text-muted-foreground'}`}>
+          {score}
+        </span>
+        <button
+          className={`${userDownvoted ? 'text-blue-400' : 'text-muted-foreground'} hover:text-blue-400`}
+          onClick={e => handleVote(e, false)}
+          disabled={!permissions.canVote}
+          title={permissions.canVote ? 'Downvote' : permissions.reasons.vote}
+        >
+          ▼
+        </button>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0 text-xs">
-          {/* Title */}
-          <Link to={`/post/${post.id}`} className="block mb-1">
-            <h2 className="text-sm font-semibold text-foreground hover:underline break-words">
-              {post.title}
-            </h2>
-          </Link>
-
-          {/* Metadata line */}
-          <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground mb-2">
+        {/* Content - all inline */}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-baseline gap-1">
             <Link
               to={cellName ? `/cell/${post.cellId}` : '#'}
-              className="text-primary hover:underline"
+              className="text-primary hover:underline text-[10px]"
               onClick={e => {
                 if (!cellName) e.preventDefault();
               }}
             >
               r/{cellName}
             </Link>
-            <span>·</span>
-            <AuthorDisplay
-              address={post.author}
-              className="text-[11px]"
-              showBadge={false}
-            />
-            <span>·</span>
-            <span className="text-muted-foreground/80">
+            <span className="text-muted-foreground">·</span>
+            <Link to={`/post/${post.id}`} className="text-foreground hover:underline font-medium">
+              {post.title}
+            </Link>
+            <span className="text-muted-foreground text-[10px]">
+              by {post.author.slice(0, 6)}...{post.author.slice(-4)}
+            </span>
+            <span className="text-muted-foreground text-[10px]">·</span>
+            <span className="text-muted-foreground text-[10px]">
               {formatDistanceToNow(new Date(post.timestamp), {
                 addSuffix: true,
               })}
             </span>
-            {isPending && (
-              <>
-                <span>·</span>
-                <span className="text-yellow-400 text-[10px]">syncing</span>
-              </>
-            )}
-          </div>
-
-          {/* Content preview */}
-          {contentPreview && (
-            <p className="text-muted-foreground text-xs leading-relaxed mb-2">
-              <LinkRenderer text={contentPreview} />
-            </p>
-          )}
-
-          {/* Actions */}
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <Link to={`/post/${post.id}`} className="hover:underline">
+            <span className="text-muted-foreground text-[10px]">·</span>
+            <Link to={`/post/${post.id}`} className="text-muted-foreground hover:underline text-[10px]">
               {commentCount} {commentCount === 1 ? 'reply' : 'replies'}
             </Link>
+            <span className="text-muted-foreground text-[10px]">·</span>
             <button
               onClick={handleBookmark}
               disabled={bookmarkLoading}
-              className="hover:underline"
+              className="text-muted-foreground hover:underline text-[10px]"
             >
               {isBookmarked ? 'unsave' : 'save'}
             </button>
-            <ShareButton
-              size="sm"
-              url={`${window.location.origin}/post/${post.id}`}
-              title={post.title}
-            />
+            {isPending && (
+              <>
+                <span className="text-muted-foreground text-[10px]">·</span>
+                <span className="text-yellow-400 text-[10px]">syncing</span>
+              </>
+            )}
           </div>
         </div>
       </div>
