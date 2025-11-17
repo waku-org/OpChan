@@ -180,7 +180,7 @@ export class DefaultMessageManager {
     });
     
     // Set up a listener to retry sync subscriptions when reliable messaging becomes available
-    const reliableMessaging = this._instance.getReliableMessaging();
+    const reliableMessaging = this._instance?.getReliableMessaging();
     if (!reliableMessaging) {
       // Watch for when it becomes available
       const checkInterval = setInterval(() => {
