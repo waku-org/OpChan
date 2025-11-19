@@ -251,7 +251,7 @@ const Header = () => {
                   onClick={handleConnect}
                   className="text-primary hover:underline text-[10px]"
                 >
-                  CONNECT
+                  LOGIN
                 </button>
               )}
             </div>
