@@ -230,7 +230,7 @@ Check user permissions for various actions.
 **Data:**
 - `canPost: boolean` - Can create posts (wallet or anonymous)
 - `canComment: boolean` - Can create comments (wallet or anonymous)
-- `canVote: boolean` - Can vote (wallet or anonymous)
+- `canVote: boolean` - Can vote (wallet only)
 - `canCreateCell: boolean` - Can create cells (ENS verified only)
 - `canDelegate: boolean` - Can delegate keys (wallet only)
 - `canModerate(cellId): boolean` - Can moderate cell (cell creator only)
