@@ -23,7 +23,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { urlLoads } from '@/utils';
 
 const formSchema = z.object({
   title: z
@@ -39,8 +38,13 @@ const formSchema = z.object({
     .optional()
     .refine(
       val => {
-        if (!val) return true;
-        return urlLoads(val);
+        if (!val || val.trim() === '') return true;
+        try {
+          const urlObj = new URL(val);
+          return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+        } catch {
+          return false;
+        }
       },
       {
         message: 'Icon must be a valid URL',
