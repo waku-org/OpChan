@@ -34,6 +34,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useEthereumWallet } from '@opchan/react';
 import { WalletWizard } from '@/components/ui/wallet-wizard';
 import { CallSignSetupDialog } from '@/components/ui/call-sign-setup-dialog';
+import RemixBanner from '@/components/RemixBanner';
 
 
 const Header = () => {
@@ -258,6 +259,9 @@ const Header = () => {
           </div>
         </div>
       </header>
+
+      {/* Remix Banner */}
+      <RemixBanner />
 
       {/* Wallet Wizard */}
       <WalletWizard
