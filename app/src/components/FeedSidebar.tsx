@@ -51,8 +51,8 @@ const FeedSidebar: React.FC = () => {
       {/* User Status Card */}
       {currentUser && (
         <Card className="bg-transparent">
-          <CardHeader className="pb-0 border-b-0 text-[11px] tracking-[0.2em] text-muted-foreground">
-            <CardTitle className="text-xs uppercase tracking-[0.2em]">Your Status</CardTitle>
+          <CardHeader className="pb-0 border-b-0 text-xs tracking-[0.2em] text-muted-foreground">
+            <CardTitle className="text-sm uppercase tracking-[0.2em]">Your Status</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center space-x-3">
@@ -60,7 +60,7 @@ const FeedSidebar: React.FC = () => {
                 <Users className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <div className="text-sm font-semibold text-foreground">
+                <div className="text-base font-semibold text-foreground">
                   {currentUser?.displayName}
                 </div>
                 <Badge
@@ -92,30 +92,30 @@ const FeedSidebar: React.FC = () => {
       {/* Forum Stats */}
       <Card className="bg-transparent">
         <CardHeader className="pb-0 border-b-0">
-          <CardTitle className="text-xs uppercase tracking-[0.2em] flex items-center gap-2 text-muted-foreground">
+          <CardTitle className="text-sm uppercase tracking-[0.2em] flex items-center gap-2 text-muted-foreground">
             <TrendingUp className="w-4 h-4" />
             Forum Stats
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-2">
-          <div className="grid grid-cols-3 gap-4 text-center text-[11px] uppercase tracking-[0.15em]">
+          <div className="grid grid-cols-3 gap-4 text-center text-xs uppercase tracking-[0.15em]">
             <div className="space-y-1">
-              <div className="text-lg font-semibold text-primary">
+              <div className="text-xl font-semibold text-primary">
                 {stats.totalCells}
               </div>
-              <div className="text-[10px] text-muted-foreground">Cells</div>
+              <div className="text-xs text-muted-foreground">Cells</div>
             </div>
             <div className="space-y-1">
-              <div className="text-lg font-semibold text-primary">
+              <div className="text-xl font-semibold text-primary">
                 {stats.totalPosts}
               </div>
-              <div className="text-[10px] text-muted-foreground">Posts</div>
+              <div className="text-xs text-muted-foreground">Posts</div>
             </div>
             <div className="space-y-1">
-              <div className="text-lg font-semibold text-primary">
+              <div className="text-xl font-semibold text-primary">
                 {stats.totalComments}
               </div>
-              <div className="text-[10px] text-muted-foreground">Comments</div>
+              <div className="text-xs text-muted-foreground">Comments</div>
             </div>
           </div>
         </CardContent>
@@ -124,7 +124,7 @@ const FeedSidebar: React.FC = () => {
       {/* Trending Cells */}
       <Card className="bg-transparent">
         <CardHeader className="pb-0 border-b-0">
-          <CardTitle className="text-xs uppercase tracking-[0.2em]">
+          <CardTitle className="text-sm uppercase tracking-[0.2em]">
             Trending Cells
           </CardTitle>
         </CardHeader>
@@ -142,10 +142,10 @@ const FeedSidebar: React.FC = () => {
                 generateUniqueFallback={true}
               />
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm truncate text-foreground">
+                <div className="font-semibold text-base truncate text-foreground">
                   {cell.name}
                 </div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-[0.15em]">
+                <div className="text-xs text-muted-foreground uppercase tracking-[0.15em]">
                   {cell.postCount} posts • {cell.activeUsers} members
                 </div>
               </div>
@@ -153,7 +153,7 @@ const FeedSidebar: React.FC = () => {
           ))}
 
           {trendingCells.length === 0 && (
-            <div className="text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground py-4">
+            <div className="text-center text-xs uppercase tracking-[0.2em] text-muted-foreground py-4">
               No active cells yet
             </div>
           )}

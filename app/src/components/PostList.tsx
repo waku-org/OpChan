@@ -130,18 +130,18 @@ const PostList = () => {
 
   return (
     <div className="w-full mx-auto px-2 py-2 max-w-4xl">
-      <div className="mb-2 pb-1 border-b border-border/30 flex items-center justify-between text-xs">
+      <div className="mb-2 pb-1 border-b border-border/30 flex items-center justify-between text-sm">
         <div className="flex items-center gap-2">
           <Link to="/" className="text-primary hover:underline">
             ← Back
           </Link>
           <span className="text-muted-foreground">|</span>
           <span className="font-semibold text-foreground">r/{cell.name}</span>
-          <span className="text-muted-foreground text-[10px]">{cell.description}</span>
+          <span className="text-muted-foreground text-xs">{cell.description}</span>
         </div>
         <button
           onClick={refresh}
-          className="text-muted-foreground hover:text-foreground text-[10px]"
+          className="text-muted-foreground hover:text-foreground text-xs"
         >
           refresh
         </button>
@@ -150,19 +150,19 @@ const PostList = () => {
       {canPost && (
         <div className="mb-2 border-b border-border/30 pb-2">
           <form onSubmit={handleCreatePost} onKeyDown={handleKeyDown}>
-            <div className="text-[10px] font-semibold mb-1">NEW THREAD</div>
+            <div className="text-xs font-semibold mb-1">NEW THREAD</div>
             <Input
               placeholder="Title"
               value={newPostTitle}
               onChange={e => setNewPostTitle(e.target.value)}
-              className="mb-1 text-xs h-7"
+              className="mb-1 text-sm h-9"
               disabled={isCreatingPost}
             />
             <Textarea
               placeholder="Content"
               value={newPostContent}
               onChange={e => setNewPostContent(e.target.value)}
-              className="text-xs resize-none h-16"
+              className="text-sm resize-none h-20"
               disabled={isCreatingPost}
             />
             <div className="flex justify-end mt-1">
@@ -173,7 +173,7 @@ const PostList = () => {
                   !newPostContent.trim() ||
                   !newPostTitle.trim()
                 }
-                className="text-primary hover:underline text-[10px] disabled:opacity-50"
+                className="text-primary hover:underline text-xs disabled:opacity-50"
               >
                 {isCreatingPost ? 'posting...' : 'post'}
               </button>
@@ -195,20 +195,20 @@ const PostList = () => {
           </div>
         ) : (
           visiblePosts.map((post: ForumPost) => (
-            <div key={post.id} className="border-b border-border/30 py-1.5 text-xs">
-              <div className="flex items-start gap-2">
+            <div key={post.id} className="border-b border-border/30 py-3 text-sm">
+              <div className="flex items-start gap-3">
                 <button
-                  className={`${getPostVoteType(post.id) === 'upvote' ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
+                  className={`${getPostVoteType(post.id) === 'upvote' ? 'text-primary' : 'text-muted-foreground'} hover:text-primary text-lg`}
                   onClick={() => handleVotePost(post.id, true)}
                   disabled={!canVote || isVoting}
                 >
                   ▲
                 </button>
-                <span className={`font-mono text-xs min-w-[2ch] text-center ${(post.upvotes.length - post.downvotes.length) > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                <span className={`font-mono text-base min-w-[2ch] text-center ${(post.upvotes.length - post.downvotes.length) > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
                   {post.upvotes.length - post.downvotes.length}
                 </span>
                 <button
-                  className={`${getPostVoteType(post.id) === 'downvote' ? 'text-blue-400' : 'text-muted-foreground'} hover:text-blue-400`}
+                  className={`${getPostVoteType(post.id) === 'downvote' ? 'text-blue-400' : 'text-muted-foreground'} hover:text-blue-400 text-lg`}
                   onClick={() => handleVotePost(post.id, false)}
                   disabled={!canVote || isVoting}
                 >
@@ -216,27 +216,27 @@ const PostList = () => {
                 </button>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-baseline gap-1">
-                    <Link to={`/post/${post.id}`} className="text-foreground hover:underline font-medium">
+                  <div className="flex flex-wrap items-baseline gap-1.5">
+                    <Link to={`/post/${post.id}`} className="text-foreground hover:underline font-medium text-lg">
                       {post.title}
                     </Link>
-                    <span className="text-muted-foreground text-[10px]">
+                    <span className="text-muted-foreground text-xs">
                       by {post.author.slice(0, 6)}...{post.author.slice(-4)}
                     </span>
-                    <span className="text-muted-foreground text-[10px]">·</span>
-                    <span className="text-muted-foreground text-[10px]">
+                    <span className="text-muted-foreground text-xs">·</span>
+                    <span className="text-muted-foreground text-xs">
                       {formatDistanceToNow(post.timestamp, { addSuffix: true })}
                     </span>
-                    <span className="text-muted-foreground text-[10px]">·</span>
-                    <Link to={`/post/${post.id}`} className="text-muted-foreground hover:underline text-[10px]">
+                    <span className="text-muted-foreground text-xs">·</span>
+                    <Link to={`/post/${post.id}`} className="text-muted-foreground hover:underline text-xs">
                       {commentsByPost[post.id]?.length || 0} comments
                     </Link>
                     {canModerate(cell.id) && !post.moderated && (
                       <>
-                        <span className="text-muted-foreground text-[10px]">·</span>
+                        <span className="text-muted-foreground text-xs">·</span>
                         <button
                           onClick={() => handleModerate(post.id)}
-                          className="text-orange-400 hover:underline text-[10px]"
+                          className="text-orange-400 hover:underline text-xs"
                         >
                           moderate
                         </button>
@@ -244,10 +244,10 @@ const PostList = () => {
                     )}
                     {canModerate(cell.id) && post.moderated && (
                       <>
-                        <span className="text-muted-foreground text-[10px]">·</span>
+                        <span className="text-muted-foreground text-xs">·</span>
                         <button
                           onClick={() => handleUnmoderate(post.id)}
-                          className="text-green-400 hover:underline text-[10px]"
+                          className="text-green-400 hover:underline text-xs"
                         >
                           unmoderate
                         </button>

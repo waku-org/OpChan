@@ -66,22 +66,22 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   };
 
   return (
-    <div className="border-b border-border/30 py-1.5 px-2 text-xs">
-      <div className="flex items-start gap-2">
+    <div className="border-b border-border/30 py-3 px-4 text-sm">
+      <div className="flex items-start gap-3">
         {/* Inline vote display */}
         <button
-          className={`${userUpvoted ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
+          className={`${userUpvoted ? 'text-primary' : 'text-muted-foreground'} hover:text-primary text-lg`}
           onClick={e => handleVote(e, true)}
           disabled={!permissions.canVote}
           title={permissions.canVote ? 'Upvote' : permissions.reasons.vote}
         >
           ▲
         </button>
-        <span className={`font-mono text-xs min-w-[2ch] text-center ${score > 0 ? 'text-primary' : score < 0 ? 'text-red-400' : 'text-muted-foreground'}`}>
+        <span className={`font-mono text-base min-w-[2ch] text-center ${score > 0 ? 'text-primary' : score < 0 ? 'text-red-400' : 'text-muted-foreground'}`}>
           {score}
         </span>
         <button
-          className={`${userDownvoted ? 'text-blue-400' : 'text-muted-foreground'} hover:text-blue-400`}
+          className={`${userDownvoted ? 'text-blue-400' : 'text-muted-foreground'} hover:text-blue-400 text-lg`}
           onClick={e => handleVote(e, false)}
           disabled={!permissions.canVote}
           title={permissions.canVote ? 'Downvote' : permissions.reasons.vote}
@@ -91,10 +91,10 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
         {/* Content - all inline */}
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-baseline gap-1">
+          <div className="flex flex-wrap items-baseline gap-1.5">
             <Link
               to={cellName ? `/cell/${post.cellId}` : '#'}
-              className="text-primary hover:underline text-[10px]"
+              className="text-primary hover:underline text-sm font-medium"
               onClick={e => {
                 if (!cellName) e.preventDefault();
               }}
@@ -102,34 +102,34 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               r/{cellName}
             </Link>
             <span className="text-muted-foreground">·</span>
-            <Link to={`/post/${post.id}`} className="text-foreground hover:underline font-medium">
+            <Link to={`/post/${post.id}`} className="text-foreground hover:underline font-medium text-lg">
               {post.title}
             </Link>
-            <span className="text-muted-foreground text-[10px]">
+            <span className="text-muted-foreground text-xs">
               by {post.author.slice(0, 6)}...{post.author.slice(-4)}
             </span>
-            <span className="text-muted-foreground text-[10px]">·</span>
-            <span className="text-muted-foreground text-[10px]">
+            <span className="text-muted-foreground text-xs">·</span>
+            <span className="text-muted-foreground text-xs">
               {formatDistanceToNow(new Date(post.timestamp), {
                 addSuffix: true,
               })}
             </span>
-            <span className="text-muted-foreground text-[10px]">·</span>
-            <Link to={`/post/${post.id}`} className="text-muted-foreground hover:underline text-[10px]">
+            <span className="text-muted-foreground text-xs">·</span>
+            <Link to={`/post/${post.id}`} className="text-muted-foreground hover:underline text-xs">
               {commentCount} {commentCount === 1 ? 'reply' : 'replies'}
             </Link>
-            <span className="text-muted-foreground text-[10px]">·</span>
+            <span className="text-muted-foreground text-xs">·</span>
             <button
               onClick={handleBookmark}
               disabled={bookmarkLoading}
-              className="text-muted-foreground hover:underline text-[10px]"
+              className="text-muted-foreground hover:underline text-xs"
             >
               {isBookmarked ? 'unsave' : 'save'}
             </button>
             {isPending && (
               <>
-                <span className="text-muted-foreground text-[10px]">·</span>
-                <span className="text-yellow-400 text-[10px]">syncing</span>
+                <span className="text-muted-foreground text-xs">·</span>
+                <span className="text-yellow-400 text-xs">syncing</span>
               </>
             )}
           </div>

@@ -5,7 +5,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-cyber-dark border-t border-border mt-auto">
       <div className="max-w-6xl mx-auto px-2 py-2">
-        <div className="text-center text-[10px] text-muted-foreground">
+        <div className="text-center text-xs text-muted-foreground">
           <span>© 2025 OPCHAN</span>
           <span className="mx-1">|</span>
           <Link to="/terms" className="hover:text-foreground">TERMS</Link>

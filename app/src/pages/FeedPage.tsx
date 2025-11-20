@@ -42,7 +42,7 @@ const FeedPage: React.FC = () => {
     <div className="page-container">
       <div className="w-full mx-auto px-2 py-2 max-w-4xl">
         {/* Minimal Header */}
-        <div className="mb-2 pb-1 border-b border-border/30 flex items-center justify-between text-xs">
+        <div className="mb-2 pb-1 border-b border-border/30 flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <span className="text-primary font-semibold">FEED</span>
             <ModerationToggle />
@@ -52,7 +52,7 @@ const FeedPage: React.FC = () => {
               value={sortOption}
               onValueChange={(value: SortOption) => setSortOption(value)}
             >
-              <SelectTrigger className="w-24 text-[10px] h-6">
+              <SelectTrigger className="w-24 text-xs h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -62,7 +62,7 @@ const FeedPage: React.FC = () => {
             </Select>
             <button
               onClick={content.refresh}
-              className="text-muted-foreground hover:text-foreground text-[10px]"
+              className="text-muted-foreground hover:text-foreground text-xs"
             >
               refresh
             </button>

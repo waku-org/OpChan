@@ -88,11 +88,10 @@ const CommentCard: React.FC<CommentCardProps> = ({
     <div className="border-b border-border/20 py-3 pl-3 pr-2">
       <div className="flex gap-3">
         {/* Vote column */}
-        <div className="flex flex-col items-center gap-0.5 text-xs min-w-[40px]">
+        <div className="flex flex-col items-center gap-0.5 text-sm min-w-[40px]">
           <button
-            className={`hover:text-primary ${
-              userUpvoted ? 'text-primary' : 'text-muted-foreground'
-            }`}
+            className={`hover:text-primary text-base ${userUpvoted ? 'text-primary' : 'text-muted-foreground'
+              }`}
             onClick={() => handleVoteComment(true)}
             disabled={!permissions.canVote}
             title={
@@ -101,13 +100,12 @@ const CommentCard: React.FC<CommentCardProps> = ({
           >
             ▲
           </button>
-          <span className={`font-mono text-xs ${score > 0 ? 'text-primary' : score < 0 ? 'text-red-400' : 'text-muted-foreground'}`}>
+          <span className={`font-mono text-sm ${score > 0 ? 'text-primary' : score < 0 ? 'text-red-400' : 'text-muted-foreground'}`}>
             {score}
           </span>
           <button
-            className={`hover:text-blue-400 ${
-              userDownvoted ? 'text-blue-400' : 'text-muted-foreground'
-            }`}
+            className={`hover:text-blue-400 text-base ${userDownvoted ? 'text-blue-400' : 'text-muted-foreground'
+              }`}
             onClick={() => handleVoteComment(false)}
             disabled={!permissions.canVote}
             title={
@@ -121,12 +119,12 @@ const CommentCard: React.FC<CommentCardProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0 text-xs">
+        <div className="flex-1 min-w-0 text-sm">
           {/* Metadata */}
-          <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground mb-2">
+          <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground mb-2">
             <AuthorDisplay
               address={comment.author}
-              className="text-[11px]"
+              className="text-xs"
               showBadge={false}
             />
             <span>·</span>
@@ -138,18 +136,18 @@ const CommentCard: React.FC<CommentCardProps> = ({
             {commentVotePending && (
               <>
                 <span>·</span>
-                <span className="text-yellow-400 text-[10px]">syncing</span>
+                <span className="text-yellow-400 text-xs">syncing</span>
               </>
             )}
           </div>
 
           {/* Content */}
-          <div className="text-xs text-foreground leading-relaxed mb-2 prose prose-invert max-w-none">
+          <div className="text-sm text-foreground leading-relaxed mb-2 prose prose-invert max-w-none">
             <MarkdownRenderer content={comment.content} />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <button
               onClick={handleBookmark}
               disabled={bookmarkLoading}

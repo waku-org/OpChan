@@ -79,7 +79,7 @@ const Header = () => {
       window.location.reload(); // Reload to reset state
       return;
     }
-    
+
     // For wallet users, disconnect wallet
     await disconnect();
     setHasShownWizard(false); // Reset so wizard can show again on next connection
@@ -111,7 +111,7 @@ const Header = () => {
 
     if (
       currentUser?.verificationStatus ===
-        EVerificationStatus.ENS_VERIFIED &&
+      EVerificationStatus.ENS_VERIFIED &&
       delegationInfo?.isValid
     ) {
       return <CheckCircle className="w-4 h-4" />;
@@ -134,7 +134,7 @@ const Header = () => {
       <header className="bg-cyber-dark border-b border-border sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-2 py-2">
           {/* Single Row - Logo, Nav, Status, User */}
-          <div className="flex items-center justify-between text-xs gap-2">
+          <div className="flex items-center justify-between text-sm gap-2">
             {/* Logo & Nav */}
             <div className="flex items-center gap-3">
               <Link to="/" className="font-semibold text-foreground">
@@ -169,7 +169,7 @@ const Header = () => {
             </div>
 
             {/* Network Status */}
-            <div className="hidden md:flex items-center gap-2 text-[10px] text-muted-foreground">
+            <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
               <span>{statusMessage}</span>
               {syncStatus === 'syncing' && syncDetail && syncDetail.missing > 0 && (
                 <span className="text-yellow-400">SYNCING ({syncDetail.missing})</span>
@@ -183,11 +183,11 @@ const Header = () => {
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="text-foreground hover:text-primary text-[10px]">
+                      <button className="text-foreground hover:text-primary text-sm">
                         {currentUser?.displayName}
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 bg-[#050505] border border-border text-xs">
+                    <DropdownMenuContent align="end" className="w-48 bg-[#050505] border border-border text-sm">
                       <DropdownMenuItem asChild>
                         <Link to="/profile">Profile</Link>
                       </DropdownMenuItem>
@@ -250,7 +250,7 @@ const Header = () => {
               ) : (
                 <button
                   onClick={handleConnect}
-                  className="text-primary hover:underline text-[10px]"
+                  className="text-primary hover:underline text-sm"
                 >
                   LOGIN
                 </button>

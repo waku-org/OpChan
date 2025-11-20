@@ -12,7 +12,7 @@ const RemixBanner = () => {
       <div className="max-w-6xl mx-auto px-2 py-2">
         <div className="flex items-center justify-between gap-4">
           {/* Badge */}
-          <div className="flex items-center gap-2 text-[10px]">
+          <div className="flex items-center gap-2 text-xs">
             <div className="flex items-center gap-1 px-2 py-1 border transition-colors border-primary text-primary bg-primary/10">
               <Code className="w-3 h-3" />
               <span className="hidden sm:inline">DEVS</span>
@@ -20,7 +20,7 @@ const RemixBanner = () => {
           </div>
 
           {/* Message Content */}
-          <div className="flex-1 text-[10px] text-foreground">
+          <div className="flex-1 text-xs text-foreground">
             <p>
               <span className="text-primary font-semibold">BUILD YOUR OWN:</span>{' '}
               <span className="text-muted-foreground">
