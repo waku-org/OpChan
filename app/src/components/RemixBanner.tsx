@@ -1,12 +1,7 @@
 
-import { X, Code } from 'lucide-react';
-import { useUIState } from '@/hooks';
+import { Code } from 'lucide-react';
 
 const RemixBanner = () => {
-  const [isDismissed, setIsDismissed] = useUIState('remixBannerDismissed', false);
-
-  if (isDismissed) return null;
-
   return (
     <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/30">
       <div className="max-w-6xl mx-auto px-2 py-2">
@@ -36,15 +31,6 @@ const RemixBanner = () => {
               </span>
             </p>
           </div>
-
-          {/* Dismiss Button */}
-          <button
-            onClick={() => setIsDismissed(true)}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1"
-            aria-label="Dismiss banner"
-          >
-            <X className="w-3 h-3" />
-          </button>
         </div>
       </div>
     </div>
